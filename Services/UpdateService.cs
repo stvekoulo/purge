@@ -30,7 +30,7 @@ public sealed class UpdateCheckResult
 /// </summary>
 public static class UpdateService
 {
-    public const string CurrentVersion = "1.0.1";
+    public const string CurrentVersion = "1.0.2";
     private const string ApiEndpoint = "https://api.github.com/repos/stvekoulo/purge/releases/latest";
 
     private static readonly HttpClient Http = new()

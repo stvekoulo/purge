@@ -85,7 +85,7 @@ public sealed partial class AboutView : UserControl
 
     private void SyncTexts()
     {
-        TxtVersion.Text = Loc.T("Version 1.0.1 pour Windows", "Version 1.0.1 for Windows");
+        TxtVersion.Text = Loc.T("Version 1.0.2 pour Windows", "Version 1.0.2 for Windows");
         TxtTagline.Text = Loc.T("Libérez votre PC. En toute sécurité.", "Declutter your PC. Safely.");
         TxtUpdateHeader.Text = Loc.T("Mises à jour du logiciel", "Software Updates");
         TxtBadgeUpdateState.Text = Loc.T("Nouveau", "New");
