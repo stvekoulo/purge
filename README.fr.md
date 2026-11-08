@@ -66,9 +66,9 @@ Chaque élément est documenté en langage clair pour expliquer son rôle et l'e
 
 | Architecture | Installateur (`.exe`) | Systèmes cibles |
 | :--- | :--- | :--- |
-| **x64 (64 bits)** | [`Purge-Setup-v1.0.0-win-x64.exe`](https://github.com/stvekoulo/purge/releases/latest) | PC Windows 10/11 Intel & AMD 64 bits |
-| **ARM64** | [`Purge-Setup-v1.0.0-win-arm64.exe`](https://github.com/stvekoulo/purge/releases/latest) | Snapdragon X Elite / Plus, Surface Pro, Windows on ARM |
-| **x86 (32 bits)** | [`Purge-Setup-v1.0.0-win-x86.exe`](https://github.com/stvekoulo/purge/releases/latest) | Systèmes et machines virtuelles Windows 32 bits |
+| **x64 (64 bits)** | [`Purge-1.0.0-win-x64-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | PC Windows 10/11 Intel & AMD 64 bits |
+| **ARM64** | [`Purge-1.0.0-win-arm64-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Snapdragon X Elite / Plus, Surface Pro, Windows on ARM |
+| **x86 (32 bits)** | [`Purge-1.0.0-win-x86-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Systèmes et machines virtuelles Windows 32 bits |
 
 Lancez l'installateur (`Purge-Setup-*.exe`) correspondant à votre architecture pour installer Purge avec raccourci Menu Démarrer, icône Bureau et désinstalleur Windows intégré.
 
