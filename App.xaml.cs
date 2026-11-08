@@ -43,7 +43,7 @@ public partial class App : Application
 
     private static void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        LogCrash("XamlUnhandled", e.Exception);
+        LogCrash($"XamlUnhandled: {e.Message}", e.Exception);
         e.Handled = true;
     }
 
@@ -52,8 +52,18 @@ public partial class App : Application
         try
         {
             var logFile = Path.Combine(AppData.Folder, "crash.log");
-            var entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{source}] {ex?.GetType().FullName}: {ex?.Message}\r\n{ex?.StackTrace}\r\n\r\n";
-            File.AppendAllText(logFile, entry);
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{source}] {ex?.GetType().FullName}: {ex?.Message}");
+            sb.AppendLine(ex?.StackTrace);
+            var inner = ex?.InnerException;
+            while (inner != null)
+            {
+                sb.AppendLine($"--- INNER: {inner.GetType().FullName}: {inner.Message}");
+                sb.AppendLine(inner.StackTrace);
+                inner = inner.InnerException;
+            }
+            sb.AppendLine();
+            File.AppendAllText(logFile, sb.ToString());
         }
         catch { }
     }

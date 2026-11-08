@@ -3,7 +3,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:v="using:PurgeWin.Views"
-    xmlns:c="using:PurgeWin.Controls"
     Title="Purge">
 
   <Grid x:Name="RootGrid" Background="{ThemeResource SurfaceBase}">
@@ -46,14 +45,7 @@
                         IsActive="False" Visibility="Collapsed"
                         Foreground="{ThemeResource ActionPrimary}"/>
           <Image x:Name="BrandLogoImage" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"
-                 Source="ms-appx:///Assets/AppIcon.png" Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
-            <Image.RenderTransform>
-              <TransformGroup>
-                <ScaleTransform x:Name="LogoScale" ScaleX="1" ScaleY="1"/>
-                <RotateTransform x:Name="LogoRotate" Angle="0"/>
-              </TransformGroup>
-            </Image.RenderTransform>
-          </Image>
+                 Source="ms-appx:///Assets/AppIcon.png" Stretch="Uniform"/>
           <FontIcon x:Name="BrandCleanSparkle" Glyph="&#xE735;" FontSize="11" Foreground="#F59E0B"
                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-3,-3,0"
                     Visibility="Collapsed"/>
@@ -254,7 +246,10 @@
             <TextBlock x:Name="TxtUpdateBannerTitle" Text="Mise à jour disponible" FontWeight="SemiBold" FontSize="13"/>
             <TextBlock x:Name="TxtUpdateBannerDesc" Text="Une nouvelle version de Purge est disponible." FontSize="12" Foreground="{ThemeResource TextSecondary}"/>
           </StackPanel>
-          <c:PurgeButton Grid.Column="2" x:Name="BtnBannerDownload" Content="Télécharger" Role="Primary" Size="Compact" Click="BtnBannerDownload_Click" VerticalAlignment="Center"/>
+          <Button Grid.Column="2" x:Name="BtnBannerDownload" Content="Télécharger"
+                  Background="{ThemeResource ActionPrimary}" Foreground="{ThemeResource OnActionPrimary}"
+                  Padding="12,5" CornerRadius="12" FontSize="12" FontWeight="SemiBold"
+                  Click="BtnBannerDownload_Click" VerticalAlignment="Center"/>
           <Button Grid.Column="3" x:Name="BtnBannerDismiss" Click="BtnBannerDismiss_Click" Background="Transparent" BorderThickness="0" Padding="6" CornerRadius="8" VerticalAlignment="Center">
             <FontIcon Glyph="&#xE711;" FontSize="11" Foreground="{ThemeResource TextSecondary}"/>
           </Button>
