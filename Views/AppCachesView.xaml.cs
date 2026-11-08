@@ -34,15 +34,24 @@ public sealed partial class AppCachesView : UserControl
         TxtFilterSafe.Text = $"{Loc.T("Sûr à nettoyer", "Safe to clean")} ({store.SafeCount})";
         TxtFilterCheck.Text = $"{Loc.T("À vérifier", "Check first")} ({store.CheckFirstCount})";
 
+        BtnScan.IsBusy = store.CachePhase == ScanPhase.Scanning;
         BtnScan.Content = store.CachePhase == ScanPhase.Scanning
-            ? Loc.T("Analyse...", "Scanning...")
+            ? Loc.T("Analyse en cours...", "Scanning...")
             : Loc.T("Analyser", "Scan");
-        BtnScan.IsEnabled = !store.IsScanning && !store.IsCleaning;
+        BtnScan.IsEnabled = !store.IsCleaning;
 
-        BtnCleanSelected.IsEnabled = store.SelectedCount > 0 && !store.IsScanning && !store.IsCleaning;
-        BtnCleanSelected.Content = store.SelectedBytes > 0
-            ? Loc.T($"Nettoyer ({ByteFormatter.Format(store.SelectedBytes)})", $"Clean ({ByteFormatter.Format(store.SelectedBytes)})")
-            : Loc.T("Nettoyer la sélection", "Clean Selected");
+        BtnCleanSelected.IsBusy = store.IsCleaning;
+        if (store.IsCleaning)
+        {
+            BtnCleanSelected.Content = Loc.T("Nettoyage en cours...", "Cleaning...");
+        }
+        else
+        {
+            BtnCleanSelected.Content = store.SelectedBytes > 0
+                ? Loc.T($"Nettoyer ({ByteFormatter.Format(store.SelectedBytes)})", $"Clean ({ByteFormatter.Format(store.SelectedBytes)})")
+                : Loc.T("Nettoyer la sélection", "Clean Selected");
+        }
+        BtnCleanSelected.IsEnabled = store.SelectedCount > 0 && !store.IsScanning;
 
         ChkSelectAll.Content = Loc.T("Tout sélectionner", "Select All");
         SortLargestItem.Content = Loc.T("Plus volumineux", "Largest");

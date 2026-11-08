@@ -14,7 +14,7 @@ public sealed partial class AboutView : UserControl
 
     private void SyncTexts()
     {
-        TxtVersion.Text = Loc.T("Version 1.0.0 pour Windows", "Version 1.0.0 for Windows");
+        TxtVersion.Text = Loc.T("Version 1.0.1 pour Windows", "Version 1.0.1 for Windows");
         TxtTagline.Text = Loc.T("Libérez votre PC. En toute sécurité.", "Declutter your PC. Safely.");
         TxtCard1Title.Text = Loc.T("Corbeille par défaut", "Recycle Bin by Default");
         TxtCard1Body.Text = Loc.T(

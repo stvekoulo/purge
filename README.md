@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>English</strong> · <a href="./README.fr.md">Français</a> · <a href="https://github.com/stvekoulo/purge/releases/latest"><strong>⬇ Download Latest Release (v1.0.0)</strong></a>
+  <strong>English</strong> · <a href="./README.fr.md">Français</a> · <a href="https://github.com/stvekoulo/purge/releases/latest"><strong>⬇ Download Latest Release (v1.0.1)</strong></a>
 </p>
 
 <p align="center">
@@ -90,9 +90,9 @@ Every item displays a plain-language explanation of what it is and what happens 
 
 | Architecture | Installer (`.exe`) | Target Systems |
 | :--- | :--- | :--- |
-| **x64 (64-bit)** | [`Purge-1.0.0-win-x64-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Standard Intel & AMD 64-bit Windows 10/11 PCs |
-| **ARM64** | [`Purge-1.0.0-win-arm64-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Snapdragon X Elite / Plus, Surface Pro, Windows on ARM |
-| **x86 (32-bit)** | [`Purge-1.0.0-win-x86-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Legacy 32-bit Windows 10 systems & VMs |
+| **x64 (64-bit)** | [`Purge-1.0.1-win-x64-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Standard Intel & AMD 64-bit Windows 10/11 PCs |
+| **ARM64** | [`Purge-1.0.1-win-arm64-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Snapdragon X Elite / Plus, Surface Pro, Windows on ARM |
+| **x86 (32-bit)** | [`Purge-1.0.1-win-x86-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Legacy 32-bit Windows 10 systems & VMs |
 
 Run the installer (`Purge-Setup-*.exe`) for your architecture to install Purge into the Start Menu, optional Desktop shortcut, and Windows Installed Apps.
 

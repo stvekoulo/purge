@@ -36,6 +36,7 @@ public sealed partial class MainWindow : Window
         SettingsView.ReplayOnboardingRequested += () => OnboardingControl.ShowWelcome();
 
         ThemeBrushes.ApplyAppearance(store.Settings.Appearance, this);
+        InitLogoAnimation();
         SyncSidebarTexts();
         UpdateActiveTabUI();
         UpdateTrashSummary();
@@ -111,6 +112,7 @@ public sealed partial class MainWindow : Window
         TxtNavAbout.Text = Loc.T("À propos", "About");
         UpdateTrashSummary();
         UpdateBadges();
+        UpdateLogoCleaningState();
         OnThemeUpdated();
     }
 
@@ -123,6 +125,8 @@ public sealed partial class MainWindow : Window
         else if (e.PropertyName is nameof(PurgeStore.CacheBytes) or nameof(PurgeStore.DevBytes)
                  or nameof(PurgeStore.LargeFileBytes) or nameof(PurgeStore.LeftoverBytes) or nameof(PurgeStore.InstalledAppBytes))
             UpdateBadges();
+        else if (e.PropertyName is nameof(PurgeStore.IsCleaning) or nameof(PurgeStore.CleaningLabel))
+            UpdateLogoCleaningState();
     }
 
     private void UpdateTrashSummary()

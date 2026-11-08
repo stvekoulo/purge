@@ -14,7 +14,7 @@
 
         <StackPanel Spacing="4">
           <TextBlock Text="Purge" Style="{StaticResource TitleText}"/>
-          <TextBlock x:Name="TxtVersion" Text="Version 1.0.0 pour Windows" Style="{StaticResource CalloutText}"
+          <TextBlock x:Name="TxtVersion" Text="Version 1.0.1 pour Windows" Style="{StaticResource CalloutText}"
                      Foreground="{ThemeResource TextSecondary}"/>
           <TextBlock x:Name="TxtTagline" Text="Libérez votre PC. En toute sécurité." Style="{StaticResource HeadlineText}"
                      Margin="0,4,0,0" TextWrapping="Wrap"/>

@@ -26,15 +26,25 @@ public sealed partial class DevToolsView : UserControl
     {
         PageTitle.Text = Loc.T("Outils de dev", "Dev Tools");
         SubtitleText.Text = Store.DevSubtitle;
-        ScanBtn.Content = Store.DevPhase == ScanPhase.Scanning
-            ? Loc.T("Analyse...", "Scanning...")
-            : Loc.T("Analyser", "Scan");
-        ScanBtn.IsEnabled = !Store.IsScanning && !Store.IsCleaning;
 
-        CleanSelectedBtn.Content = Store.SelectedDevCount > 0
-            ? Loc.T($"Nettoyer ({ByteFormatter.Format(Store.SelectedDevBytes)})", $"Clean ({ByteFormatter.Format(Store.SelectedDevBytes)})")
-            : Loc.T("Nettoyer la sélection", "Clean Selected");
-        CleanSelectedBtn.IsEnabled = Store.SelectedDevCount > 0 && !Store.IsCleaning && !Store.IsScanning;
+        ScanBtn.IsBusy = Store.DevPhase == ScanPhase.Scanning;
+        ScanBtn.Content = Store.DevPhase == ScanPhase.Scanning
+            ? Loc.T("Analyse en cours...", "Scanning...")
+            : Loc.T("Analyser", "Scan");
+        ScanBtn.IsEnabled = !Store.IsCleaning;
+
+        CleanSelectedBtn.IsBusy = Store.IsCleaning;
+        if (Store.IsCleaning)
+        {
+            CleanSelectedBtn.Content = Loc.T("Nettoyage en cours...", "Cleaning...");
+        }
+        else
+        {
+            CleanSelectedBtn.Content = Store.SelectedDevCount > 0
+                ? Loc.T($"Nettoyer ({ByteFormatter.Format(Store.SelectedDevBytes)})", $"Clean ({ByteFormatter.Format(Store.SelectedDevBytes)})")
+                : Loc.T("Nettoyer la sélection", "Clean Selected");
+        }
+        CleanSelectedBtn.IsEnabled = Store.SelectedDevCount > 0 && !Store.IsScanning;
 
         FilterAllBtn.Content = Loc.T("Tout", "All");
         FilterGlobalBtn.Content = Loc.T("Caches globaux", "Global Caches");

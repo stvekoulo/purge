@@ -32,15 +32,24 @@ public sealed partial class UninstallerView : UserControl
         PageTitle.Text = Loc.T("Désinstalleur", "Uninstaller");
         SubtitleText.Text = Store.UninstallSubtitle;
 
+        ScanBtn.IsBusy = Store.UninstallPhase == ScanPhase.Scanning;
         ScanBtn.Content = Store.UninstallPhase == ScanPhase.Scanning
-            ? Loc.T("Analyse...", "Scanning...")
+            ? Loc.T("Analyse en cours...", "Scanning...")
             : Loc.T("Analyser", "Scan");
-        ScanBtn.IsEnabled = !Store.IsScanning && !Store.IsCleaning;
+        ScanBtn.IsEnabled = !Store.IsCleaning;
 
-        CleanSelectedBtn.Content = Store.SelectedUninstallCount > 0
-            ? Loc.T($"Nettoyer ({ByteFormatter.Format(Store.SelectedUninstallBytes)})", $"Clean ({ByteFormatter.Format(Store.SelectedUninstallBytes)})")
-            : Loc.T("Nettoyer la sélection", "Clean Selected");
-        CleanSelectedBtn.IsEnabled = Store.SelectedUninstallCount > 0 && !Store.IsCleaning && !Store.IsScanning;
+        CleanSelectedBtn.IsBusy = Store.IsCleaning;
+        if (Store.IsCleaning)
+        {
+            CleanSelectedBtn.Content = Loc.T("Nettoyage en cours...", "Cleaning...");
+        }
+        else
+        {
+            CleanSelectedBtn.Content = Store.SelectedUninstallCount > 0
+                ? Loc.T($"Nettoyer ({ByteFormatter.Format(Store.SelectedUninstallBytes)})", $"Clean ({ByteFormatter.Format(Store.SelectedUninstallBytes)})")
+                : Loc.T("Nettoyer la sélection", "Clean Selected");
+        }
+        CleanSelectedBtn.IsEnabled = Store.SelectedUninstallCount > 0 && !Store.IsScanning;
 
         TabAppsBtn.Content = $"{Loc.T("Applications installées", "Installed Apps")} ({Store.InstalledApps.Count})";
         TabLeftoversBtn.Content = $"{Loc.T("Restes orphelins", "Removed App Leftovers")} ({Store.OrphanLeftovers.Count})";

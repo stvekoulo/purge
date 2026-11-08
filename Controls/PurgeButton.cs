@@ -13,8 +13,8 @@ public enum ButtonSize { Small, Compact, Regular, Large }
 public enum PurgeButtonVariant { Primary, Secondary, Destructive, Ghost, Soft }
 public enum PurgeButtonSize { Small, Compact, Regular, Large }
 
-/// Port of PurgeButtonStyle: every action is a pill. Hover, pressed and
-/// disabled (0.45 opacity) come from here, never per view.
+/// Port of PurgeButtonStyle: every action is a pill. Hover, pressed,
+/// disabled (0.45 opacity), and active spinner (IsBusy) come from here.
 public sealed class PurgeButton : Button
 {
     private const string PillTemplateXaml = """
@@ -25,16 +25,22 @@ public sealed class PurgeButton : Button
                   BorderThickness="{TemplateBinding BorderThickness}"
                   CornerRadius="{TemplateBinding CornerRadius}"
                   Padding="{TemplateBinding Padding}">
-            <ContentPresenter Content="{TemplateBinding Content}"
-                              ContentTemplate="{TemplateBinding ContentTemplate}"
-                              Foreground="{TemplateBinding Foreground}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+              <ProgressRing x:Name="BusySpinner" Width="13" Height="13"
+                            IsActive="False" Visibility="Collapsed"
+                            Foreground="{TemplateBinding Foreground}"/>
+              <ContentPresenter Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                Foreground="{TemplateBinding Foreground}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
+            </StackPanel>
           </Border>
         </ControlTemplate>
         """;
 
     private static ControlTemplate? _pillTemplate;
+    private ProgressRing? _busySpinner;
 
     public static readonly DependencyProperty RoleProperty = DependencyProperty.Register(
         nameof(Role), typeof(ButtonRole), typeof(PurgeButton),
@@ -59,9 +65,14 @@ public sealed class PurgeButton : Button
         nameof(Size), typeof(PurgeButtonSize), typeof(PurgeButton),
         new PropertyMetadata(PurgeButtonSize.Regular, (d, _) => ((PurgeButton)d).ApplySize()));
 
+    public static readonly DependencyProperty IsBusyProperty = DependencyProperty.Register(
+        nameof(IsBusy), typeof(bool), typeof(PurgeButton),
+        new PropertyMetadata(false, (d, _) => ((PurgeButton)d).OnBusyChanged()));
+
     public ButtonRole Role { get => (ButtonRole)GetValue(RoleProperty); set => SetValue(RoleProperty, value); }
     public PurgeButtonVariant Variant { get => (PurgeButtonVariant)GetValue(VariantProperty); set => SetValue(VariantProperty, value); }
     public PurgeButtonSize Size { get => (PurgeButtonSize)GetValue(SizeProperty); set => SetValue(SizeProperty, value); }
+    public bool IsBusy { get => (bool)GetValue(IsBusyProperty); set => SetValue(IsBusyProperty, value); }
 
     private bool _hover;
     private bool _pressed;
@@ -80,6 +91,29 @@ public sealed class PurgeButton : Button
         AddHandler(PointerReleasedEvent, new PointerEventHandler((_, _) => { _pressed = false; Refresh(); }), true);
     }
 
+    protected override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        _busySpinner = GetTemplateChild("BusySpinner") as ProgressRing;
+        UpdateBusyUi();
+    }
+
+    private void OnBusyChanged()
+    {
+        UpdateBusyUi();
+        Refresh();
+    }
+
+    private void UpdateBusyUi()
+    {
+        if (_busySpinner is not null)
+        {
+            _busySpinner.IsActive = IsBusy;
+            _busySpinner.Visibility = IsBusy ? Visibility.Visible : Visibility.Collapsed;
+        }
+        IsHitTestVisible = !IsBusy;
+    }
+
     private void ApplySize()
     {
         (Height, FontSize, Padding) = Size switch
@@ -93,7 +127,7 @@ public sealed class PurgeButton : Button
 
     public void Refresh()
     {
-        Opacity = IsEnabled ? 1 : 0.45;
+        Opacity = IsBusy ? 0.95 : (IsEnabled ? 1.0 : 0.45);
         var state = _pressed ? "Pressed" : _hover ? "Hover" : "";
         string fill, label;
         string? border = null;
@@ -118,6 +152,7 @@ public sealed class PurgeButton : Button
         Foreground = fg;
         BorderBrush = border is null ? null : ThemeBrushes.Get(this, border);
         BorderThickness = new Thickness(border is null ? 0 : 1);
+        if (_busySpinner is not null) _busySpinner.Foreground = fg;
         PropagateForeground(Content as DependencyObject, fg);
     }
 

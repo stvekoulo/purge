@@ -27,18 +27,28 @@ public sealed partial class LargeFilesView : UserControl
     {
         PageTitle.Text = Loc.T("Fichiers volumineux", "Large Files");
         SubtitleText.Text = Store.LargeSubtitle;
+
+        ScanBtn.IsBusy = Store.LargePhase == ScanPhase.Scanning;
         ScanBtn.Content = Store.LargePhase == ScanPhase.Scanning
-            ? Loc.T("Analyse...", "Scanning...")
+            ? Loc.T("Analyse en cours...", "Scanning...")
             : Loc.T("Analyser", "Scan");
-        ScanBtn.IsEnabled = !Store.IsScanning && !Store.IsCleaning;
+        ScanBtn.IsEnabled = !Store.IsCleaning;
 
         KeepOneBtn.Content = Loc.T("Garder un exemplaire de chaque", "Keep One of Each");
         KeepOneBtn.Visibility = Store.LargeCategory == LargeFileCategory.Duplicate ? Visibility.Visible : Visibility.Collapsed;
 
-        CleanSelectedBtn.Content = Store.SelectedLargeCount > 0
-            ? Loc.T($"Corbeille ({ByteFormatter.Format(Store.SelectedLargeBytes)})", $"Move to Trash ({ByteFormatter.Format(Store.SelectedLargeBytes)})")
-            : Loc.T("Envoyer à la Corbeille", "Move to Recycle Bin");
-        CleanSelectedBtn.IsEnabled = Store.SelectedLargeCount > 0 && !Store.IsCleaning && !Store.IsScanning;
+        CleanSelectedBtn.IsBusy = Store.IsCleaning;
+        if (Store.IsCleaning)
+        {
+            CleanSelectedBtn.Content = Loc.T("Suppression en cours...", "Deleting...");
+        }
+        else
+        {
+            CleanSelectedBtn.Content = Store.SelectedLargeCount > 0
+                ? Loc.T($"Corbeille ({ByteFormatter.Format(Store.SelectedLargeBytes)})", $"Move to Trash ({ByteFormatter.Format(Store.SelectedLargeBytes)})")
+                : Loc.T("Envoyer à la Corbeille", "Move to Recycle Bin");
+        }
+        CleanSelectedBtn.IsEnabled = Store.SelectedLargeCount > 0 && !Store.IsScanning;
 
         ChipAll.Content = Loc.T("Tout", "All");
         ChipVideo.Content = Loc.T("Vidéos", "Videos");

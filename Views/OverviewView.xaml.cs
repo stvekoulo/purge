@@ -54,15 +54,30 @@ public sealed partial class OverviewView : UserControl
         TxtLastScan.Text = Store.LastScanText;
         TxtDrivesLabel.Text = Loc.T("Disques :", "Drives:");
 
+        BtnScanAll.IsBusy = Store.IsScanning;
         BtnScanAll.Content = Store.IsScanning
             ? Loc.T("Analyse en cours...", "Scanning...")
             : Loc.T("Tout analyser", "Scan Everything");
-        BtnScanAll.IsEnabled = !Store.IsScanning && !Store.IsCleaning;
+        BtnScanAll.IsEnabled = !Store.IsCleaning;
 
-        BtnCleanSafe.Content = Store.SafeBytes > 0
-            ? Loc.T($"Nettoyer ce qui est sûr ({ByteFormatter.Format(Store.SafeBytes)})", $"Clean Safe Items ({ByteFormatter.Format(Store.SafeBytes)})")
-            : Loc.T("Nettoyer les éléments sûrs", "Clean Safe Items");
-        BtnCleanSafe.IsEnabled = Store.SafeBytes > 0 && !Store.IsScanning && !Store.IsCleaning;
+        BtnCleanSafe.IsBusy = Store.IsCleaning;
+        if (Store.IsCleaning)
+        {
+            BtnCleanSafe.Content = Loc.T("Nettoyage en cours...", "Cleaning...");
+            CleaningBanner.Visibility = Visibility.Visible;
+            TxtCleaningBannerTitle.Text = Loc.T("Nettoyage en cours...", "Cleaning in progress...");
+            TxtCleaningBannerSub.Text = string.IsNullOrWhiteSpace(Store.CleaningLabel)
+                ? Loc.T("Suppression sécurisée vers la Corbeille...", "Safe removal to Recycle Bin...")
+                : Store.CleaningLabel;
+        }
+        else
+        {
+            CleaningBanner.Visibility = Visibility.Collapsed;
+            BtnCleanSafe.Content = Store.SafeBytes > 0
+                ? Loc.T($"Nettoyer ce qui est sûr ({ByteFormatter.Format(Store.SafeBytes)})", $"Clean Safe Items ({ByteFormatter.Format(Store.SafeBytes)})")
+                : Loc.T("Nettoyer les éléments sûrs", "Clean Safe Items");
+        }
+        BtnCleanSafe.IsEnabled = Store.SafeBytes > 0 && !Store.IsScanning;
 
         TxtCachesTitle.Text = Loc.T("Caches d'applications", "App Caches");
         TxtDevTitle.Text = Loc.T("Outils de développement", "Dev Tools");
