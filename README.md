@@ -3,10 +3,11 @@
 </p>
 
 <p align="center">
-  <strong>English</strong> · <a href="./README.fr.md">Français</a>
+  <strong>English</strong> · <a href="./README.fr.md">Français</a> · <a href="https://github.com/stvekoulo/purge/releases/latest"><strong>⬇ Download Latest Release (v1.0.0)</strong></a>
 </p>
 
 <p align="center">
+  <a href="https://github.com/stvekoulo/purge/releases/latest"><img src="https://img.shields.io/github/v/release/stvekoulo/purge?style=flat-square&label=Download&color=8A6CF6" alt="Download Latest Release"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20(x64%20%26%20ARM64)-6B4DE6?style=flat-square" alt="Platform: Windows 10/11">
   <img src="https://img.shields.io/badge/UI-WinUI%203%20%C2%B7%20.NET%2010-2E2D2B?style=flat-square" alt="UI: WinUI 3 .NET 10">
   <img src="https://img.shields.io/badge/Safety-Recycle%20Bin%20First-1F7A35?style=flat-square" alt="Safety: Recycle Bin First">
@@ -36,7 +37,7 @@
 
 ## What is Purge?
 
-**Purge** is a fast, native **WinUI 3** disk and developer cache cleaner for Windows. It inspects your local drives (`C:`, `D:`, `E:`, or all drives combined) and breaks down reclaimable space into five clear categories—plus an interactive squarified treemap of everything else on your PC.
+**Purge** is a fast, open-source, native **WinUI 3** disk space analyzer, system cache cleaner, and developer artifact cleaner for **Windows 11 and Windows 10**. It inspects all your local drives (`C:`, `D:`, `E:`, or all drives combined) and breaks down reclaimable disk space into five clear categories—paired with an interactive squarified treemap of everything else on your PC.
 
 Every item displays a plain-language explanation of what it is and what happens after you clean it. Nothing is permanently erased behind your back: **all cleaned files are moved to the Windows Recycle Bin first**.
 
@@ -53,9 +54,23 @@ Every item displays a plain-language explanation of what it is and what happens 
 | **Recycle Bin by Default** | Uses native Windows Shell `SHFileOperationW` (`FOF_ALLOWUNDO`) so cleaned caches, build folders, and leftovers can be restored at any time. |
 | **Strict Allowlist Policy** | Only verified cache locations in [`windows-cache-catalog.json`](./Resources/windows-cache-catalog.json) are eligible for one-click safe cleaning. Browser passwords, cookies, sessions, and SSH/GPG keys are never touched. |
 | **Multi-Drive Scanning** | Scan all fixed and removable volumes (`All drives`) at once or filter by an individual drive (`C:`, `D:`, `E:`). |
-| **Developer-First Intelligence** | Finds global package caches (`npm`, `pnpm`, `Yarn`, `Bun`, `NuGet`, `Cargo`, `pip`, `Gradle`, `Maven`, `Go`, `JetBrains`, `VS Code`, `Cursor`) and stale project build folders (`node_modules`, `target`, `.next`, `dist`, `bin/obj`, `.venv`, Android AVDs, and orphaned AI git worktrees). |
+| **Developer-First Intelligence** | Finds global package caches (`npm`, `pnpm`, `Yarn`, `Bun`, `NuGet`, `Cargo`, `pip`, `uv`, `Gradle`, `Maven`, `Go`, `JetBrains`, `VS Code`, `Cursor`) and stale project build folders (`node_modules`, `target`, `.next`, `dist`, `bin/obj`, `.venv`, Android AVDs, and orphaned AI git worktrees). |
 | **Cloud & Reparse-Point Safe** | Never traverses NTFS junctions/symlinks during sizing and detects OneDrive cloud-only files (`FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS`) with one-click local cache eviction (`attrib +U -P`). |
 | **100% Offline & Bilingual** | Zero telemetry, zero network requests, instant **English / Français** switching, and adaptive **Dark / Light / System** themes. |
+
+---
+
+## How Purge Compares to Traditional Windows Cleaners
+
+| Capability | **Purge** | CCleaner | BleachBit | WinDirStat / WizTree | `npkill` |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Moves to Recycle Bin by default** | **Yes** | No | No | Manual | No (`rm -rf`) |
+| **Developer Caches & `node_modules` / `target` / `NuGet`** | **Yes** | No | Partial | Manual | `node_modules` only |
+| **Local AI Models (`Ollama`, `LM Studio`, `Hugging Face` `.gguf`)** | **Yes** | No | No | Manual | No |
+| **Squarified Treemap Disk Visualizer** | **Yes** | No | No | Yes | No |
+| **SHA-256 Duplicate File Finder** | **Yes** | Paid | No | No | No |
+| **Orphaned `%APPDATA%` Leftover Detector** | **Yes** | No | No | No | No |
+| **100% Open Source, No Ads, Zero Telemetry** | **Yes (MIT)** | No | Yes | Yes / No | Yes |
 
 ---
 
@@ -69,14 +84,17 @@ Every item displays a plain-language explanation of what it is and what happens 
 
 ---
 
-## Build & Run from Source
+## Download or Build from Source
 
-### Prerequisites
+### Option 1 — Portable Release (No SDK Required)
+
+1. Download **`Purge-v1.0.0-win-x64.zip`** from [**GitHub Releases**](https://github.com/stvekoulo/purge/releases/latest).
+2. Extract the archive and launch **`Purge.exe`**.
+
+### Option 2 — Build from Source
 
 - **Windows 10** (build 19041+) or **Windows 11** (x64 or ARM64)
-- **.NET 10 SDK** (`10.0.100` or later) with Windows App SDK workload
-
-### Quick Start
+- **.NET 10 SDK** (`10.0.100` or later)
 
 ```powershell
 # Clone the repository
@@ -107,23 +125,6 @@ dotnet run --project PurgeWin.csproj -p:Platform=x64
 | `Ctrl + R` | Scan current category |
 | `Ctrl + Shift + R` | Scan all categories across active drives |
 | `Ctrl + 1` … `Ctrl + 5` | Jump between *Overview*, *App Caches*, *Dev Tools*, *Large Files*, and *Uninstaller* |
-
----
-
-## Project Structure
-
-```text
-purge/
-├── Assets/                  # AppIcon (.ico/.png), Onest font, Windows theme preview cards
-├── Controls/                # Custom pill button (PurgeButton) with Primary/Secondary/Destructive roles
-├── Models/                  # Safety levels, CacheItem, DevModels, LargeFileModels, TreemapModels, DriveModels
-├── Resources/               # Strict allowlist catalog (windows-cache-catalog.json)
-├── Services/                # Multi-drive scanners, DeletionSafetyPolicy, native RecycleBin (SHFileOperationW)
-├── Theme/                   # Warm graphite & alabaster palette (Colors.xaml, Styles.xaml, ThemeBrushes.cs)
-├── Utilities/               # Bilingual localization (EN/FR), ByteFormatter, ExplorerReveal, SizeComparisons
-├── ViewModels/              # Observable PurgeStore state container (Drives, Filters, Safe Cleaning)
-└── Views/                   # WinUI 3 views (MainWindow, Overview, AppCaches, DevTools, LargeFiles, Uninstaller, Settings, About)
-```
 
 ---
 

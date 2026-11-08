@@ -189,6 +189,15 @@ public sealed partial class MainWindow : Window
     private void BtnLangToggle_Click(object sender, RoutedEventArgs e) =>
         PurgeStore.Shared.SetLanguage(Loc.IsEn ? "fr" : "en");
 
+    private void BtnOpenRecycleBin_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", "shell:RecycleBinFolder") { UseShellExecute = true });
+        }
+        catch { }
+    }
+
     private void NavOverview_Click(object sender, RoutedEventArgs e) { PurgeStore.Shared.OverviewPage = OverviewSubPage.Summary; PurgeStore.Shared.SelectedTab = AppTab.Overview; }
     private void NavAppCaches_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.AppCaches;
     private void NavDevTools_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.DevTools;

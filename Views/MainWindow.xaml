@@ -176,19 +176,25 @@
         </StackPanel>
       </ScrollViewer>
 
-      <!-- Bottom Card: Recycle Bin Summary -->
-      <Border Grid.Row="2" Margin="12,8,12,14" Padding="12,10"
-              Background="{ThemeResource FillSecondary}" CornerRadius="{StaticResource RadiusLg}">
+      <!-- Bottom Card: Recycle Bin Summary (click to open Windows Recycle Bin) -->
+      <Button Grid.Row="2" x:Name="BtnOpenRecycleBin" Click="BtnOpenRecycleBin_Click"
+              Margin="12,8,12,14" Padding="12,10"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+              Background="{ThemeResource FillSecondary}" BorderThickness="0"
+              CornerRadius="{StaticResource RadiusLg}"
+              ToolTipService.ToolTip="Ouvrir la Corbeille Windows / Open Windows Recycle Bin">
         <Grid ColumnSpacing="8">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <FontIcon Grid.Column="0" Glyph="&#xE74D;" FontSize="13" Foreground="{ThemeResource TextSecondary}"/>
           <TextBlock Grid.Column="1" x:Name="TxtTrashSummary" Text="Corbeille..."
-                     Style="{StaticResource CalloutText}" FontWeight="Medium"/>
+                     Style="{StaticResource CalloutText}" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
+          <FontIcon Grid.Column="2" Glyph="&#xE8A7;" FontSize="11" Foreground="{ThemeResource TextTertiary}"/>
         </Grid>
-      </Border>
+      </Button>
     </Grid>
 
     <!-- Hairline Divider -->
