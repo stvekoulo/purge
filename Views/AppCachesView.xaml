@@ -1,0 +1,154 @@
+<UserControl
+    x:Class="PurgeWin.Views.AppCachesView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:PurgeWin.Controls"
+    xmlns:m="using:PurgeWin.Models">
+
+  <Grid Padding="28,16,28,0">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- Header: Title & Actions -->
+    <Grid Grid.Row="0" Margin="0,0,0,16" ColumnSpacing="12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+
+      <StackPanel Grid.Column="0" Spacing="2">
+        <TextBlock x:Name="TxtPageTitle" Text="Caches d'applications" Style="{StaticResource PageTitleText}"/>
+        <TextBlock x:Name="TxtSubtitle" Text="0 élément"
+                   Style="{StaticResource CalloutText}"
+                   Foreground="{ThemeResource TextSecondary}"/>
+      </StackPanel>
+
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <c:PurgeButton x:Name="BtnScan" Content="Analyser" Role="Secondary" Size="Regular" Click="BtnScan_Click"/>
+        <c:PurgeButton x:Name="BtnCleanSelected" Content="Nettoyer la sélection" Role="Primary" Size="Regular" Click="BtnCleanSelected_Click"/>
+      </StackPanel>
+    </Grid>
+
+    <!-- Filter Chips Bar -->
+    <ScrollViewer Grid.Row="1" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Hidden"
+                  VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="ChipAll" Click="ChipAll_Click"
+                CornerRadius="14" Height="28" Padding="12,0"
+                BorderThickness="1" BorderBrush="{ThemeResource BorderStrong}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <FontIcon Glyph="&#xE80F;" FontSize="11"/>
+            <TextBlock x:Name="TxtFilterAll" Text="Tout (0)" Style="{StaticResource CalloutText}" FontWeight="SemiBold"/>
+          </StackPanel>
+        </Button>
+
+        <Button x:Name="ChipSafe" Click="ChipSafe_Click"
+                CornerRadius="14" Height="28" Padding="12,0"
+                BorderThickness="1" BorderBrush="{ThemeResource BorderStrong}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <FontIcon Glyph="&#xE73E;" FontSize="11" Foreground="{ThemeResource StatusSafeText}"/>
+            <TextBlock x:Name="TxtFilterSafe" Text="Sûr à nettoyer (0)" Style="{StaticResource CalloutText}" FontWeight="SemiBold"/>
+          </StackPanel>
+        </Button>
+
+        <Button x:Name="ChipCheck" Click="ChipCheck_Click"
+                CornerRadius="14" Height="28" Padding="12,0"
+                BorderThickness="1" BorderBrush="{ThemeResource BorderStrong}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <FontIcon Glyph="&#xE897;" FontSize="11" Foreground="{ThemeResource StatusCheckText}"/>
+            <TextBlock x:Name="TxtFilterCheck" Text="À vérifier (0)" Style="{StaticResource CalloutText}" FontWeight="SemiBold"/>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Toolbar: Select All Checkbox & Sort Selector -->
+    <Grid Grid.Row="2" Margin="4,0,4,8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+
+      <CheckBox x:Name="ChkSelectAll" Grid.Column="0" Content="Tout sélectionner"
+                IsThreeState="True" Click="ChkSelectAll_Click"
+                FontFamily="{StaticResource Onest}" FontSize="13" FontWeight="Medium"/>
+
+      <ComboBox x:Name="CmbSort" Grid.Column="2" SelectionChanged="CmbSort_SelectionChanged"
+                SelectedIndex="0" Height="28" Padding="10,0" CornerRadius="{StaticResource RadiusMd}"
+                FontFamily="{StaticResource Onest}" FontSize="12">
+        <ComboBoxItem x:Name="SortLargestItem" Content="Plus volumineux"/>
+        <ComboBoxItem x:Name="SortNameItem" Content="Nom"/>
+        <ComboBoxItem x:Name="SortDateItem" Content="Date de modification"/>
+      </ComboBox>
+    </Grid>
+
+    <!-- Results List -->
+    <ListView x:Name="ItemsList" Grid.Row="3"
+              SelectionMode="None"
+              Padding="0,0,0,24">
+      <ListView.ItemContainerStyle>
+        <Style TargetType="ListViewItem">
+          <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+          <Setter Property="Padding" Value="0,3"/>
+        </Style>
+      </ListView.ItemContainerStyle>
+      <ListView.ItemTemplate>
+        <DataTemplate x:DataType="m:CacheItem">
+          <Border Style="{StaticResource Card}" Padding="14,12">
+            <Grid ColumnSpacing="12">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+
+              <CheckBox Grid.Column="0" IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                        VerticalAlignment="Center" Margin="0,0,4,0"/>
+
+              <Border Grid.Column="1" Width="28" Height="28" CornerRadius="{StaticResource RadiusXs}"
+                      VerticalAlignment="Center">
+                <Grid>
+                  <Image Source="{x:Bind IconSource}" Width="26" Height="26"
+                         Visibility="{x:Bind IconVisibility}"
+                         Stretch="Uniform"/>
+                  <FontIcon Glyph="&#xE8B7;" FontSize="16" Foreground="{ThemeResource TextSecondary}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{x:Bind FallbackIconVisibility}"/>
+                </Grid>
+              </Border>
+
+              <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="{x:Bind Title}" Style="{StaticResource RowTitleText}"/>
+                  <Border CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Background="{x:Bind BadgeBgBrush}">
+                    <TextBlock Text="{x:Bind SafetyText}" Style="{StaticResource MicroText}" Foreground="{x:Bind BadgeFgBrush}"/>
+                  </Border>
+                </StackPanel>
+                <TextBlock Text="{x:Bind Explanation}" Style="{StaticResource CalloutText}"
+                           Foreground="{ThemeResource TextSecondary}"
+                           MaxLines="2" TextWrapping="Wrap"/>
+                <TextBlock Text="{x:Bind PathSummary}" FontSize="11" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
+              </StackPanel>
+
+              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="{x:Bind SizeText}" Style="{StaticResource NumbersText}" VerticalAlignment="Center"/>
+                <Button Click="OnRevealClick" Background="Transparent" BorderThickness="0" Padding="6">
+                  <FontIcon Glyph="&#xE8DA;" FontSize="13" Foreground="{ThemeResource TextSecondary}"/>
+                </Button>
+                <Button Click="OnExcludeClick" Background="Transparent" BorderThickness="0" Padding="6">
+                  <FontIcon Glyph="&#xECC9;" FontSize="13" Foreground="{ThemeResource TextTertiary}"/>
+                </Button>
+              </StackPanel>
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ListView.ItemTemplate>
+    </ListView>
+  </Grid>
+</UserControl>

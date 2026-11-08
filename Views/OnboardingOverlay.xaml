@@ -1,0 +1,71 @@
+<UserControl
+    x:Class="PurgeWin.Views.OnboardingOverlay"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:PurgeWin.Controls">
+
+  <Grid Background="{ThemeResource SurfaceBase}">
+    <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+            Width="520" Padding="36,32"
+            Style="{StaticResource Card}">
+      <StackPanel Spacing="22">
+
+        <!-- Step 1: Welcome -->
+        <StackPanel x:Name="StepWelcome" Spacing="18" HorizontalAlignment="Center">
+          <Image Width="84" Height="84" HorizontalAlignment="Center"
+                 Source="ms-appx:///Assets/AppIcon.png" Stretch="Uniform"/>
+          <StackPanel Spacing="6" HorizontalAlignment="Center">
+            <TextBlock x:Name="TxtWelcomeTitle" Text="Bienvenue dans Purge" Style="{StaticResource TitleText}" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="TxtWelcomeSub" Text="Libérez de l'espace sur vos disques en toute sécurité."
+                       Style="{StaticResource CalloutText}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+          </StackPanel>
+
+          <StackPanel Spacing="10">
+            <Border Style="{StaticResource InsetCard}" Padding="14,10">
+              <StackPanel Spacing="2">
+                <TextBlock x:Name="TxtPillar1Title" Text="✓ Corbeille Windows par défaut" Style="{StaticResource RowTitleText}"/>
+                <TextBlock x:Name="TxtPillar1Sub" Text="Tout ce que Purge nettoie va dans la Corbeille : rien n'est effacé dans votre dos." Style="{StaticResource CalloutText}" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource InsetCard}" Padding="14,10">
+              <StackPanel Spacing="2">
+                <TextBlock x:Name="TxtPillar2Title" Text="✓ Liste blanche vérifiée &amp; Multi-disques" Style="{StaticResource RowTitleText}"/>
+                <TextBlock x:Name="TxtPillar2Sub" Text="Analyse vos disques (C:, D:, E:...) hors-ligne sans jamais toucher à vos réglages ou sessions." Style="{StaticResource CalloutText}" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <c:PurgeButton x:Name="BtnStartScan" Role="Primary" Size="Large" Content="Lancer la première analyse →"
+                         HorizontalAlignment="Center" Click="OnStartScanClick"/>
+        </StackPanel>
+
+        <!-- Step 2: Results Summary -->
+        <StackPanel x:Name="StepResults" Spacing="18" HorizontalAlignment="Center" Visibility="Collapsed">
+          <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <TextBlock x:Name="TxtResultsKicker" Text="ESPACE RÉCUPÉRABLE DÉTECTÉ" Style="{StaticResource MicroText}"
+                       Foreground="{ThemeResource TextTertiary}" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="TxtResultsBytes" Text="0 Go" Style="{StaticResource DisplayText}" HorizontalAlignment="Center"/>
+            <Border x:Name="ComparisonChip" Background="{ThemeResource FillSecondary}" CornerRadius="14" Padding="12,5" HorizontalAlignment="Center">
+              <TextBlock x:Name="TxtComparison" Style="{StaticResource CalloutText}" FontWeight="SemiBold"/>
+            </Border>
+          </StackPanel>
+
+          <Border Style="{StaticResource InsetCard}" Padding="16,12">
+            <StackPanel Spacing="6">
+              <TextBlock x:Name="TxtSafeLine" Style="{StaticResource RowTitleText}" HorizontalAlignment="Center"/>
+              <TextBlock x:Name="TxtReviewLine" Style="{StaticResource CalloutText}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+
+          <StackPanel Spacing="10" HorizontalAlignment="Center">
+            <c:PurgeButton x:Name="BtnCleanSafeNow" Role="Primary" Size="Large" Content="Nettoyer les éléments sûrs"
+                           HorizontalAlignment="Center" Click="OnCleanSafeNowClick"/>
+            <c:PurgeButton x:Name="BtnReviewFirst" Role="Secondary" Size="Regular" Content="Tout examiner d'abord"
+                           HorizontalAlignment="Center" Click="OnReviewFirstClick"/>
+          </StackPanel>
+        </StackPanel>
+
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

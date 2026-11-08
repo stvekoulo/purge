@@ -1,0 +1,123 @@
+﻿<!-- Purge colour tokens, warm graphite & alabaster design tokens for Purge on Windows.
+     Warm graphite neutrals. Views reference these brushes by job, never raw hex. -->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="TextPrimary" Color="#2E2D2B"/>
+      <SolidColorBrush x:Key="TextSecondary" Color="#64625E"/>
+      <SolidColorBrush x:Key="TextTertiary" Color="#85827C"/>
+      <SolidColorBrush x:Key="SurfaceBase" Color="#F6F5F3"/>
+      <SolidColorBrush x:Key="SurfacePrimary" Color="#F6F5F3"/>
+      <SolidColorBrush x:Key="SurfaceCard" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="SurfaceElevated" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="SurfaceRaised" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="SurfaceCardHover" Color="#F4F2EF"/>
+      <SolidColorBrush x:Key="FillSecondary" Color="#EFEDEA"/>
+      <SolidColorBrush x:Key="FillSecondaryHover" Color="#E8E6E2"/>
+      <SolidColorBrush x:Key="FillSecondaryPressed" Color="#DFDCD8"/>
+      <SolidColorBrush x:Key="BorderSubtle" Color="#E6E3DF"/>
+      <SolidColorBrush x:Key="Hairline" Color="#E6E3DF"/>
+      <SolidColorBrush x:Key="BorderStrong" Color="#D5D2CD"/>
+      <SolidColorBrush x:Key="ActionPrimary" Color="#353431"/>
+      <SolidColorBrush x:Key="ActionPrimaryHover" Color="#42403D"/>
+      <SolidColorBrush x:Key="ActionPrimaryPressed" Color="#2A2927"/>
+      <SolidColorBrush x:Key="OnActionPrimary" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="ActionDestructive" Color="#D1312A"/>
+      <SolidColorBrush x:Key="ActionDestructiveHover" Color="#BC2B25"/>
+      <SolidColorBrush x:Key="ActionDestructivePressed" Color="#A92620"/>
+      <SolidColorBrush x:Key="StatusSafeText" Color="#1F7A35"/>
+      <SolidColorBrush x:Key="StatusSafeFill" Color="#E6F4EA"/>
+      <SolidColorBrush x:Key="StatusCheckText" Color="#8A5300"/>
+      <SolidColorBrush x:Key="StatusCheckFill" Color="#FAEEDA"/>
+      <SolidColorBrush x:Key="StatusDangerText" Color="#B4302A"/>
+      <SolidColorBrush x:Key="StatusDangerFill" Color="#FBE8E5"/>
+      <SolidColorBrush x:Key="StatusUnsureText" Color="#5A5853"/>
+      <SolidColorBrush x:Key="StatusUnsureFill" Color="#EFEDEA"/>
+      <SolidColorBrush x:Key="AccentCelebrate" Color="#D18F00"/>
+      <SolidColorBrush x:Key="ChartAppCaches" Color="#56B4E9"/>
+      <SolidColorBrush x:Key="ChartDevTools" Color="#0072B2"/>
+      <SolidColorBrush x:Key="ChartLargeFiles" Color="#E69F00"/>
+      <SolidColorBrush x:Key="ChartApps" Color="#D55E00"/>
+      <SolidColorBrush x:Key="ChartInstalledApps" Color="#D55E00"/>
+      <SolidColorBrush x:Key="ChartLeftovers" Color="#CC79A7"/>
+      <SolidColorBrush x:Key="ChartAppLeftovers" Color="#CC79A7"/>
+      <SolidColorBrush x:Key="ChartAppCachesTile" Color="#3399D3"/>
+      <SolidColorBrush x:Key="ChartDevToolsTile" Color="#0072B2"/>
+      <SolidColorBrush x:Key="ChartLeftoversTile" Color="#B35A8D"/>
+      <SolidColorBrush x:Key="ChartEverythingElse" Color="#8C8983"/>
+      <SolidColorBrush x:Key="ChartFreeSpace" Color="#DAD7D2"/>
+      <SolidColorBrush x:Key="ManagedInApps" Color="#3478C6"/>
+      <SolidColorBrush x:Key="YourFiles" Color="#C98A2C"/>
+      <SolidColorBrush x:Key="LeftAlone" Color="#B8564B"/>
+      <SolidColorBrush x:Key="ManagedByWindows" Color="#8C8983"/>
+      <!-- Checkbox accent = actionPrimary -->
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#353431"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#42403D"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#2A2927"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminate" Color="#353431"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="#42403D"/>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="#FFFFFF"/>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="TextPrimary" Color="#ECEAE6"/>
+      <SolidColorBrush x:Key="TextSecondary" Color="#A6A39D"/>
+      <SolidColorBrush x:Key="TextTertiary" Color="#807D78"/>
+      <SolidColorBrush x:Key="SurfaceBase" Color="#171615"/>
+      <SolidColorBrush x:Key="SurfacePrimary" Color="#171615"/>
+      <SolidColorBrush x:Key="SurfaceCard" Color="#1E1D1C"/>
+      <SolidColorBrush x:Key="SurfaceElevated" Color="#1E1D1C"/>
+      <SolidColorBrush x:Key="SurfaceRaised" Color="#2B2A28"/>
+      <SolidColorBrush x:Key="SurfaceCardHover" Color="#2A2927"/>
+      <SolidColorBrush x:Key="FillSecondary" Color="#282725"/>
+      <SolidColorBrush x:Key="FillSecondaryHover" Color="#2F2E2C"/>
+      <SolidColorBrush x:Key="FillSecondaryPressed" Color="#373533"/>
+      <SolidColorBrush x:Key="BorderSubtle" Color="#302F2D"/>
+      <SolidColorBrush x:Key="Hairline" Color="#302F2D"/>
+      <SolidColorBrush x:Key="BorderStrong" Color="#3D3B38"/>
+      <SolidColorBrush x:Key="ActionPrimary" Color="#ECEAE6"/>
+      <SolidColorBrush x:Key="ActionPrimaryHover" Color="#F6F4F1"/>
+      <SolidColorBrush x:Key="ActionPrimaryPressed" Color="#D8D5D0"/>
+      <SolidColorBrush x:Key="OnActionPrimary" Color="#171615"/>
+      <SolidColorBrush x:Key="ActionDestructive" Color="#D9372D"/>
+      <SolidColorBrush x:Key="ActionDestructiveHover" Color="#E2453B"/>
+      <SolidColorBrush x:Key="ActionDestructivePressed" Color="#C4302A"/>
+      <SolidColorBrush x:Key="StatusSafeText" Color="#5FD36B"/>
+      <SolidColorBrush x:Key="StatusSafeFill" Color="#1B2E22"/>
+      <SolidColorBrush x:Key="StatusCheckText" Color="#F2B84B"/>
+      <SolidColorBrush x:Key="StatusCheckFill" Color="#332910"/>
+      <SolidColorBrush x:Key="StatusDangerText" Color="#F47468"/>
+      <SolidColorBrush x:Key="StatusDangerFill" Color="#321B19"/>
+      <SolidColorBrush x:Key="StatusUnsureText" Color="#A9A6A0"/>
+      <SolidColorBrush x:Key="StatusUnsureFill" Color="#282725"/>
+      <SolidColorBrush x:Key="AccentCelebrate" Color="#FFC70D"/>
+      <SolidColorBrush x:Key="ChartAppCaches" Color="#6CC3F0"/>
+      <SolidColorBrush x:Key="ChartDevTools" Color="#3A94D0"/>
+      <SolidColorBrush x:Key="ChartLargeFiles" Color="#F0B020"/>
+      <SolidColorBrush x:Key="ChartApps" Color="#E8772A"/>
+      <SolidColorBrush x:Key="ChartInstalledApps" Color="#E8772A"/>
+      <SolidColorBrush x:Key="ChartLeftovers" Color="#DA93BA"/>
+      <SolidColorBrush x:Key="ChartAppLeftovers" Color="#DA93BA"/>
+      <SolidColorBrush x:Key="ChartAppCachesTile" Color="#3A9BD5"/>
+      <SolidColorBrush x:Key="ChartDevToolsTile" Color="#1E78BA"/>
+      <SolidColorBrush x:Key="ChartLeftoversTile" Color="#BE6C9C"/>
+      <SolidColorBrush x:Key="ChartEverythingElse" Color="#A8A49D"/>
+      <SolidColorBrush x:Key="ChartFreeSpace" Color="#4E4B47"/>
+      <SolidColorBrush x:Key="ManagedInApps" Color="#4285D6"/>
+      <SolidColorBrush x:Key="YourFiles" Color="#D4953A"/>
+      <SolidColorBrush x:Key="LeftAlone" Color="#C46458"/>
+      <SolidColorBrush x:Key="ManagedByWindows" Color="#6E6B66"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#ECEAE6"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#F6F4F1"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#D8D5D0"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminate" Color="#ECEAE6"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="#F6F4F1"/>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#171615"/>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#171615"/>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="#171615"/>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

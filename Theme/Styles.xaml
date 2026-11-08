@@ -1,0 +1,105 @@
+<!-- Type scale, radii, spacing and shared control styles for Purge on Windows. -->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <FontFamily x:Key="Onest">ms-appx:///Assets/Fonts/OnestText.ttf#Onest, Segoe UI Variable Text</FontFamily>
+  <FontFamily x:Key="Numbers">Segoe UI Variable Display</FontFamily>
+  <FontFamily x:Key="Mono">Cascadia Mono, Consolas</FontFamily>
+
+  <CornerRadius x:Key="RadiusXs">4</CornerRadius>
+  <CornerRadius x:Key="RadiusSm">6</CornerRadius>
+  <CornerRadius x:Key="RadiusMd">8</CornerRadius>
+  <CornerRadius x:Key="RadiusLg">14</CornerRadius>
+  <CornerRadius x:Key="RadiusXl">18</CornerRadius>
+  <CornerRadius x:Key="RadiusTile">7</CornerRadius>
+
+  <Style x:Key="TextBase" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Onest}"/>
+    <Setter Property="Foreground" Value="{ThemeResource TextPrimary}"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+  </Style>
+  <Style x:Key="DisplayText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontFamily" Value="{StaticResource Numbers}"/>
+    <Setter Property="FontSize" Value="56"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+  </Style>
+  <Style x:Key="DisplaySmallText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontFamily" Value="{StaticResource Numbers}"/>
+    <Setter Property="FontSize" Value="32"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+  </Style>
+  <Style x:Key="TitleText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontSize" Value="26"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style x:Key="PageTitleText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontSize" Value="20"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style x:Key="PurgeTitle" TargetType="TextBlock" BasedOn="{StaticResource PageTitleText}"/>
+  <Style x:Key="SectionTitleText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontSize" Value="15"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="CharacterSpacing" Value="7"/>
+  </Style>
+  <Style x:Key="PurgeSection" TargetType="TextBlock" BasedOn="{StaticResource SectionTitleText}"/>
+  <Style x:Key="HeadlineText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="CharacterSpacing" Value="12"/>
+  </Style>
+  <Style x:Key="BodyText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="CharacterSpacing" Value="12"/>
+  </Style>
+  <Style x:Key="PurgeBody" TargetType="TextBlock" BasedOn="{StaticResource BodyText}"/>
+  <Style x:Key="RowTitleText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+    <Setter Property="CharacterSpacing" Value="12"/>
+  </Style>
+  <Style x:Key="CalloutText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="CharacterSpacing" Value="21"/>
+    <Setter Property="Foreground" Value="{ThemeResource TextSecondary}"/>
+  </Style>
+  <Style x:Key="PurgeCaption" TargetType="TextBlock" BasedOn="{StaticResource CalloutText}"/>
+  <Style x:Key="MetadataText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="CharacterSpacing" Value="27"/>
+    <Setter Property="Foreground" Value="{ThemeResource TextSecondary}"/>
+  </Style>
+  <Style x:Key="SidebarSectionText" TargetType="TextBlock" BasedOn="{StaticResource MetadataText}">
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{ThemeResource TextTertiary}"/>
+    <Setter Property="Margin" Value="10,12,10,2"/>
+  </Style>
+  <Style x:Key="MicroText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontSize" Value="10"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="CharacterSpacing" Value="40"/>
+  </Style>
+  <Style x:Key="NumbersText" TargetType="TextBlock" BasedOn="{StaticResource TextBase}">
+    <Setter Property="FontFamily" Value="{StaticResource Numbers}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style x:Key="PurgeMono" TargetType="TextBlock" BasedOn="{StaticResource NumbersText}"/>
+  <Style x:Key="IconGlyph" TargetType="FontIcon">
+    <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+    <Setter Property="FontSize" Value="15"/>
+  </Style>
+
+  <!-- Cards use a hairline borderSubtle edge instead of a shadow. -->
+  <Style x:Key="Card" TargetType="Border">
+    <Setter Property="Background" Value="{ThemeResource SurfaceCard}"/>
+    <Setter Property="BorderBrush" Value="{ThemeResource BorderSubtle}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusLg}"/>
+  </Style>
+  <Style x:Key="PurgeCard" TargetType="Border" BasedOn="{StaticResource Card}"/>
+  <Style x:Key="InsetCard" TargetType="Border" BasedOn="{StaticResource Card}">
+    <Setter Property="Background" Value="{ThemeResource FillSecondary}"/>
+  </Style>
+</ResourceDictionary>

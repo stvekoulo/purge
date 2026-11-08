@@ -1,0 +1,209 @@
+<UserControl
+    x:Class="PurgeWin.Views.OverviewView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:PurgeWin.Controls">
+
+  <ScrollViewer VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto"
+                HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="20" Padding="28,16,28,32" HorizontalAlignment="Stretch">
+
+      <!-- Header Section -->
+      <Grid ColumnSpacing="16">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0" Spacing="2">
+          <TextBlock x:Name="TxtPageTitle" Text="Vue d'ensemble" Style="{StaticResource PageTitleText}" TextTrimming="CharacterEllipsis"/>
+          <TextBlock x:Name="TxtLastScan" Text="Pas encore analysé"
+                     Style="{StaticResource CalloutText}"
+                     Foreground="{ThemeResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <c:PurgeButton x:Name="BtnScanAll" Content="Tout analyser" Role="Secondary" Size="Regular" Click="BtnScanAll_Click"/>
+          <c:PurgeButton x:Name="BtnCleanSafe" Content="Nettoyer les éléments sûrs" Role="Primary" Size="Regular" Click="BtnCleanSafe_Click"/>
+        </StackPanel>
+      </Grid>
+
+      <!-- Multi-Drive Selector Bar -->
+      <Border Style="{StaticResource Card}" Padding="14,10">
+        <Grid ColumnSpacing="12">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <FontIcon Glyph="&#xEDA2;" FontSize="14" Foreground="{ThemeResource TextSecondary}"/>
+            <TextBlock x:Name="TxtDrivesLabel" Text="Disques :" Style="{StaticResource MetadataText}" FontWeight="SemiBold" Foreground="{ThemeResource TextSecondary}" VerticalAlignment="Center"/>
+          </StackPanel>
+          <ScrollViewer Grid.Column="1" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Auto"
+                        VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="DriveButtonsPanel" Orientation="Horizontal" Spacing="6"/>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <!-- Disk Summary & 7-Segment Bar -->
+      <StackPanel Spacing="10">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
+            <TextBlock x:Name="TxtDiskUsed" Text="0 Go utilisés" Style="{StaticResource TitleText}" FontFamily="{StaticResource Numbers}"/>
+            <TextBlock x:Name="TxtDiskTotal" Text="sur 0 Go" Style="{StaticResource BodyText}" Foreground="{ThemeResource TextSecondary}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+          </StackPanel>
+
+          <TextBlock Grid.Column="2" x:Name="TxtDiskFree" Text="0 Go libres"
+                     Style="{StaticResource BodyText}" FontWeight="SemiBold"
+                     Foreground="{ThemeResource TextSecondary}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+        </Grid>
+
+        <Border Height="14" CornerRadius="7" Background="{ThemeResource ChartFreeSpace}">
+          <Grid x:Name="DiskBarGrid">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition x:Name="ColCaches" Width="0"/>
+              <ColumnDefinition x:Name="ColDev" Width="0"/>
+              <ColumnDefinition x:Name="ColLarge" Width="0"/>
+              <ColumnDefinition x:Name="ColApps" Width="0"/>
+              <ColumnDefinition x:Name="ColLeftovers" Width="0"/>
+              <ColumnDefinition x:Name="ColRest" Width="*"/>
+              <ColumnDefinition x:Name="ColFree" Width="0"/>
+            </Grid.ColumnDefinitions>
+            <Rectangle Grid.Column="0" Fill="{ThemeResource ChartAppCaches}"/>
+            <Rectangle Grid.Column="1" Fill="{ThemeResource ChartDevTools}"/>
+            <Rectangle Grid.Column="2" Fill="{ThemeResource ChartLargeFiles}"/>
+            <Rectangle Grid.Column="3" Fill="{ThemeResource ChartInstalledApps}"/>
+            <Rectangle Grid.Column="4" Fill="{ThemeResource ChartAppLeftovers}"/>
+            <Rectangle Grid.Column="5" Fill="{ThemeResource ChartEverythingElse}"/>
+            <Rectangle Grid.Column="6" Fill="{ThemeResource ChartFreeSpace}"/>
+          </Grid>
+        </Border>
+      </StackPanel>
+
+      <!-- Category Breakdown Card (5 Purge Categories) -->
+      <Border Style="{StaticResource Card}" Padding="0">
+        <StackPanel Spacing="0">
+
+          <!-- 1. App Caches -->
+          <Button Click="RowAppCaches_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,13" Background="Transparent" BorderThickness="0">
+            <Grid ColumnSpacing="14">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Border Width="28" Height="28" CornerRadius="{StaticResource RadiusTile}" Background="{ThemeResource ChartAppCachesTile}">
+                <FontIcon Glyph="&#xE7B8;" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock x:Name="TxtCachesTitle" Text="Caches d'applications" Style="{StaticResource RowTitleText}"/>
+                <TextBlock x:Name="TxtCachesSubtitle" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextSecondary}"/>
+              </StackPanel>
+              <TextBlock Grid.Column="2" x:Name="TxtCachesPercent" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+              <TextBlock Grid.Column="3" x:Name="TxtCachesSize" Style="{StaticResource NumbersText}" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Border Height="1" Background="{ThemeResource BorderSubtle}"/>
+
+          <!-- 2. Dev Tools -->
+          <Button Click="RowDevTools_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,13" Background="Transparent" BorderThickness="0">
+            <Grid ColumnSpacing="14">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Border Width="28" Height="28" CornerRadius="{StaticResource RadiusTile}" Background="{ThemeResource ChartDevToolsTile}">
+                <FontIcon Glyph="&#xE943;" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock x:Name="TxtDevTitle" Text="Outils de développement" Style="{StaticResource RowTitleText}"/>
+                <TextBlock x:Name="TxtDevSubtitle" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextSecondary}"/>
+              </StackPanel>
+              <TextBlock Grid.Column="2" x:Name="TxtDevPercent" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+              <TextBlock Grid.Column="3" x:Name="TxtDevSize" Style="{StaticResource NumbersText}" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Border Height="1" Background="{ThemeResource BorderSubtle}"/>
+
+          <!-- 3. Large Files -->
+          <Button Click="RowLargeFiles_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,13" Background="Transparent" BorderThickness="0">
+            <Grid ColumnSpacing="14">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Border Width="28" Height="28" CornerRadius="{StaticResource RadiusTile}" Background="{ThemeResource ChartLargeFiles}">
+                <FontIcon Glyph="&#xE8B7;" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock x:Name="TxtLargeTitle" Text="Fichiers volumineux" Style="{StaticResource RowTitleText}"/>
+                <TextBlock x:Name="TxtLargeSubtitle" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextSecondary}"/>
+              </StackPanel>
+              <TextBlock Grid.Column="2" x:Name="TxtLargePercent" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+              <TextBlock Grid.Column="3" x:Name="TxtLargeSize" Style="{StaticResource NumbersText}" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Border Height="1" Background="{ThemeResource BorderSubtle}"/>
+
+          <!-- 4. Installed Apps & Leftovers -->
+          <Button Click="RowUninstaller_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,13" Background="Transparent" BorderThickness="0">
+            <Grid ColumnSpacing="14">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Border Width="28" Height="28" CornerRadius="{StaticResource RadiusTile}" Background="{ThemeResource ChartInstalledApps}">
+                <FontIcon Glyph="&#xE74D;" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock x:Name="TxtUninstallTitle" Text="Applications &amp; Restes orphelins" Style="{StaticResource RowTitleText}"/>
+                <TextBlock x:Name="TxtUninstallSubtitle" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextSecondary}"/>
+              </StackPanel>
+              <TextBlock Grid.Column="2" x:Name="TxtUninstallPercent" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+              <TextBlock Grid.Column="3" x:Name="TxtUninstallSize" Style="{StaticResource NumbersText}" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+
+        </StackPanel>
+      </Border>
+
+      <!-- Clickable Everything Else Card (opens Treemap) -->
+      <Border Style="{StaticResource Card}" Padding="0">
+        <Button Click="RowEverythingElse_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,14" Background="Transparent" BorderThickness="0">
+          <Grid ColumnSpacing="14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Width="28" Height="28" CornerRadius="{StaticResource RadiusTile}" Background="{ThemeResource ChartEverythingElse}">
+              <FontIcon Glyph="&#xE7C3;" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock x:Name="TxtEverythingTitle" Text="Tout le reste" Style="{StaticResource RowTitleText}"/>
+              <TextBlock x:Name="TxtEverythingSubtitle" Text="Windows, bibliothèques d'applications et dossiers personnels (cliquez pour ouvrir la carte)" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextSecondary}" TextWrapping="Wrap"/>
+            </StackPanel>
+            <TextBlock Grid.Column="2" x:Name="TxtRestOfDiskSize" Style="{StaticResource NumbersText}" FontSize="14" VerticalAlignment="Center"/>
+            <FontIcon Grid.Column="3" Glyph="&#xE76C;" FontSize="12" Foreground="{ThemeResource TextTertiary}" VerticalAlignment="Center"/>
+          </Grid>
+        </Button>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

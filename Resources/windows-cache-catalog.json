@@ -1,0 +1,122 @@
+[
+  {
+    "key": "user-temp", "display_name": "Fichiers temporaires", "tag": "safe", "kind": "system", "mode": "contents", "min_age_hours": 24,
+    "explanation": "Fichiers que les applications et Windows laissent dans votre dossier Temp. Seuls ceux inchangés depuis plus d'un jour sont pris, et un fichier encore ouvert est ignoré.",
+    "paths": ["%TEMP%"]
+  },
+  {
+    "key": "windows-temp", "display_name": "Fichiers temporaires de Windows", "tag": "medium", "kind": "system", "mode": "contents", "min_age_hours": 72, "needs_admin": true,
+    "explanation": "Le dossier Temp de Windows, utilisé par les installeurs et les services. Il demande souvent des droits administrateur ; ce qui est refusé reste en place.",
+    "paths": ["%SystemRoot%\\Temp"]
+  },
+  {
+    "key": "windows-update-download", "display_name": "Téléchargements Windows Update", "tag": "medium", "kind": "system", "mode": "contents", "min_age_hours": 168, "needs_admin": true,
+    "explanation": "Paquets de mises à jour déjà téléchargés. Windows les retélécharge si une mise à jour en a encore besoin. À nettoyer quand aucune mise à jour n'est en attente.",
+    "paths": ["%SystemRoot%\\SoftwareDistribution\\Download"]
+  },
+  {
+    "key": "inet-cache", "display_name": "Cache Internet de Windows", "tag": "safe", "kind": "system", "mode": "contents",
+    "explanation": "Cache web partagé par les composants Windows et les anciennes applications. Il se reconstruit à la prochaine page chargée.",
+    "paths": ["%LOCALAPPDATA%\\Microsoft\\Windows\\INetCache"]
+  },
+  {
+    "key": "crash-dumps", "display_name": "Rapports de plantage", "tag": "safe", "kind": "logs", "mode": "contents",
+    "explanation": "Images mémoire écrites quand une application plante. Utiles seulement pour un diagnostic en cours ; rien ne s'appuie dessus ensuite.",
+    "paths": ["%LOCALAPPDATA%\\CrashDumps"]
+  },
+  {
+    "key": "wer-reports", "display_name": "Rapports d'erreurs Windows", "tag": "safe", "kind": "logs", "mode": "contents",
+    "explanation": "Rapports d'erreurs déjà envoyés ou en file d'attente. Windows en recrée au prochain problème.",
+    "paths": ["%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportArchive", "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportQueue"]
+  },
+  {
+    "key": "directx-shader-cache", "display_name": "Cache de shaders DirectX", "tag": "safe", "kind": "system", "mode": "contents",
+    "explanation": "Shaders compilés pour vos jeux et applications 3D. Ils sont recompilés au besoin ; le premier lancement d'un jeu peut être un peu plus lent.",
+    "paths": ["%LOCALAPPDATA%\\D3DSCache"]
+  },
+  {
+    "key": "gpu-driver-cache", "display_name": "Cache du pilote graphique", "tag": "safe", "kind": "system", "mode": "contents", "icon": null,
+    "explanation": "Shaders mis en cache par les pilotes NVIDIA, AMD ou Intel. Le pilote les recrée au fil de l'utilisation.",
+    "paths": ["%LOCALAPPDATA%\\NVIDIA\\DXCache", "%LOCALAPPDATA%\\NVIDIA\\GLCache", "%LOCALAPPDATA%\\AMD\\DxCache", "%LOCALAPPDATA%\\AMD\\GLCache", "%LOCALAPPDATA%\\Intel\\ShaderCache"]
+  },
+  {
+    "key": "chrome", "display_name": "Google Chrome", "tag": "safe", "kind": "browser", "icon": "googlechrome",
+    "explanation": "Pages, scripts et images que Chrome garde pour recharger plus vite. Vos favoris, mots de passe, historique et sessions ne sont pas touchés.",
+    "paths": ["%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Cache", "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Code Cache", "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\GPUCache", "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\ShaderCache", "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\GrShaderCache"]
+  },
+  {
+    "key": "edge", "display_name": "Microsoft Edge", "tag": "safe", "kind": "browser",
+    "explanation": "Cache web d'Edge. Il se reconstruit en naviguant ; favoris, mots de passe et historique restent en place.",
+    "paths": ["%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Cache", "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Code Cache", "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\GPUCache", "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\ShaderCache", "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\GrShaderCache"]
+  },
+  {
+    "key": "brave", "display_name": "Brave", "tag": "safe", "kind": "browser", "icon": "brave",
+    "explanation": "Cache web de Brave. Il se reconstruit en naviguant ; vos données de profil ne sont pas touchées.",
+    "paths": ["%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Cache", "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Code Cache", "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\GPUCache"]
+  },
+  {
+    "key": "opera", "display_name": "Opera", "tag": "safe", "kind": "browser", "icon": "opera",
+    "explanation": "Cache web d'Opera, reconstruit en naviguant.",
+    "paths": ["%LOCALAPPDATA%\\Opera Software\\Opera Stable\\Cache", "%LOCALAPPDATA%\\Opera Software\\Opera GX Stable\\Cache"]
+  },
+  {
+    "key": "firefox", "display_name": "Firefox", "tag": "safe", "kind": "browser", "icon": "firefox",
+    "explanation": "Cache disque de Firefox (cache2). Les profils, marque-pages et mots de passe sont ailleurs et ne sont pas touchés.",
+    "paths": ["%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\cache2", "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\startupCache"]
+  },
+  {
+    "key": "discord", "display_name": "Discord", "tag": "safe", "kind": "chat", "icon": "discord",
+    "explanation": "Images, vidéos et scripts que Discord met en cache. Vos messages restent sur les serveurs de Discord.",
+    "paths": ["%APPDATA%\\discord\\Cache", "%APPDATA%\\discord\\Code Cache", "%APPDATA%\\discord\\GPUCache"]
+  },
+  {
+    "key": "slack", "display_name": "Slack", "tag": "safe", "kind": "chat", "icon": "slack",
+    "explanation": "Cache web de Slack. Il se recharge depuis vos espaces de travail au prochain lancement.",
+    "paths": ["%APPDATA%\\Slack\\Cache", "%APPDATA%\\Slack\\Code Cache", "%APPDATA%\\Slack\\GPUCache", "%APPDATA%\\Slack\\Service Worker\\CacheStorage"]
+  },
+  {
+    "key": "teams", "display_name": "Microsoft Teams", "tag": "safe", "kind": "chat",
+    "explanation": "Cache de Teams. Conversations et fichiers restent dans le cloud Microsoft ; le premier lancement suivant est un peu plus long.",
+    "paths": ["%APPDATA%\\Microsoft\\Teams\\Cache", "%APPDATA%\\Microsoft\\Teams\\Code Cache", "%APPDATA%\\Microsoft\\Teams\\GPUCache", "%LOCALAPPDATA%\\Packages\\MSTeams_8wekyb3d8bbwe\\LocalCache\\Microsoft\\MSTeams\\EBWebView\\Default\\Cache"]
+  },
+  {
+    "key": "notion", "display_name": "Notion", "tag": "safe", "kind": "productivity", "icon": "notion",
+    "explanation": "Cache web de l'application Notion. Vos pages vivent dans votre espace Notion.",
+    "paths": ["%APPDATA%\\Notion\\Cache", "%APPDATA%\\Notion\\Code Cache", "%APPDATA%\\Notion\\GPUCache"]
+  },
+  {
+    "key": "figma", "display_name": "Figma", "tag": "safe", "kind": "design", "icon": "figma",
+    "explanation": "Cache de l'application Figma. Vos fichiers sont dans le cloud Figma.",
+    "paths": ["%APPDATA%\\Figma\\DesktopProfile\\*\\Cache", "%APPDATA%\\Figma\\DesktopProfile\\*\\Code Cache", "%APPDATA%\\Figma\\DesktopProfile\\*\\GPUCache"]
+  },
+  {
+    "key": "spotify", "display_name": "Spotify", "tag": "medium", "kind": "media", "icon": "spotify",
+    "explanation": "Musique mise en cache pour la lecture. Les titres téléchargés pour l'écoute hors ligne peuvent y être aussi : ils seront à retélécharger.",
+    "paths": ["%LOCALAPPDATA%\\Spotify\\Storage", "%LOCALAPPDATA%\\Spotify\\Data"]
+  },
+  {
+    "key": "steam-htmlcache", "display_name": "Steam (cache web)", "tag": "safe", "kind": "games",
+    "explanation": "Le cache du navigateur intégré de Steam (boutique, communauté). Vos jeux et sauvegardes ne sont pas touchés.",
+    "paths": ["%LOCALAPPDATA%\\Steam\\htmlcache"]
+  },
+  {
+    "key": "adobe-media-cache-files", "display_name": "Fichiers du cache média Adobe", "tag": "safe", "kind": "media", "icon": "adobe",
+    "explanation": "Aperçus rendus et audio conformé de Premiere Pro et After Effects. Les applications les reconstruisent, ce qui peut prendre quelques minutes sur de gros projets.",
+    "paths": ["%APPDATA%\\Adobe\\Common\\Media Cache Files", "%APPDATA%\\Adobe\\Common\\Media Cache"]
+  },
+  {
+    "key": "adobe-camera-raw", "display_name": "Cache Adobe Camera Raw", "tag": "safe", "kind": "photos", "icon": "adobe",
+    "explanation": "Aperçus RAW de Photoshop, Lightroom et Bridge. Recréés automatiquement à l'ouverture des images.",
+    "paths": ["%LOCALAPPDATA%\\Adobe\\CameraRaw\\Cache"]
+  },
+  {
+    "key": "zoom", "display_name": "Zoom", "tag": "safe", "kind": "chat", "icon": "zoom",
+    "explanation": "Fichiers temporaires et journaux de Zoom. Vos enregistrements sont dans Documents\\Zoom et ne sont pas touchés.",
+    "paths": ["%APPDATA%\\Zoom\\logs", "%APPDATA%\\Zoom\\data\\Cache"]
+  },
+  {
+    "key": "electron-updaters", "display_name": "Mises à jour d'applications téléchargées", "tag": "safe", "kind": "updater", "icon": "electron",
+    "explanation": "Installeurs que les applications (Discord, Slack, Cursor…) téléchargent pour se mettre à jour. Ils sont retéléchargés à la prochaine mise à jour.",
+    "paths": ["%LOCALAPPDATA%\\*-updater\\pending", "%LOCALAPPDATA%\\SquirrelTemp"]
+  }
+]

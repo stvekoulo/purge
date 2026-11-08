@@ -1,0 +1,50 @@
+<UserControl
+    x:Class="PurgeWin.Views.CelebrationOverlay"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:PurgeWin.Controls">
+
+  <Grid Background="#66000000">
+    <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+            Width="440" Padding="32,28"
+            Background="{ThemeResource SurfaceCard}"
+            BorderBrush="{ThemeResource BorderSubtle}"
+            BorderThickness="1"
+            CornerRadius="{StaticResource RadiusXl}">
+      <StackPanel HorizontalAlignment="Center" Spacing="14">
+        <Border Width="54" Height="54" HorizontalAlignment="Center"
+                Background="{ThemeResource StatusSafeFill}"
+                CornerRadius="27">
+          <FontIcon Glyph="&#xE73E;" FontSize="24"
+                    Foreground="{ThemeResource StatusSafeText}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+
+        <StackPanel Spacing="4" HorizontalAlignment="Center">
+          <TextBlock x:Name="TxtFreedBytes" Text="1.2 Go"
+                     Style="{StaticResource DisplayText}"
+                     HorizontalAlignment="Center"/>
+          <TextBlock x:Name="TxtSubtitle" Text="libérés et placés dans la Corbeille"
+                     Style="{StaticResource HeadlineText}"
+                     Foreground="{ThemeResource TextSecondary}"
+                     HorizontalAlignment="Center"/>
+          <TextBlock x:Name="TxtItemCount" Text="14 éléments nettoyés"
+                     Style="{StaticResource CalloutText}"
+                     Foreground="{ThemeResource TextTertiary}"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <Border x:Name="ComparisonChip" Background="{ThemeResource FillSecondary}" CornerRadius="14" Padding="12,5" HorizontalAlignment="Center" Visibility="Collapsed">
+          <TextBlock x:Name="TxtComparison" Style="{StaticResource CalloutText}" FontWeight="SemiBold"/>
+        </Border>
+
+        <TextBlock x:Name="TxtTagline" Style="{StaticResource MetadataText}" HorizontalAlignment="Center"/>
+
+        <c:PurgeButton x:Name="BtnDone" Role="Primary" Size="Regular"
+                       Content="Terminé" Width="140"
+                       HorizontalAlignment="Center"
+                       Click="BtnDone_Click" Margin="0,4,0,0"/>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

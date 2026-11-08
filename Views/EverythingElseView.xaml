@@ -1,0 +1,104 @@
+<UserControl
+    x:Class="PurgeWin.Views.EverythingElseView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:PurgeWin.Controls">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Padding="28,16,28,14" BorderBrush="{ThemeResource Hairline}" BorderThickness="0,0,0,1" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <c:PurgeButton x:Name="BackBtn" Content="← Vue d'ensemble" Variant="Ghost" Size="Compact" Click="OnBackClick" Margin="0,0,4,0"/>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <TextBlock x:Name="PageTitle" Text="Tout le reste" Style="{StaticResource PageTitleText}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock x:Name="PageSubtitle" Text="Carte en lecture seule de ce que Purge ne nettoie pas automatiquement." Style="{StaticResource CalloutText}" Foreground="{ThemeResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+            <c:PurgeButton Grid.Column="2" x:Name="RefreshBtn" Content="Actualiser" Variant="Secondary" Size="Compact" Click="OnRefreshClick"/>
+        </Grid>
+
+        <!-- 4 Bucket Legend Cards -->
+        <Grid Grid.Row="1" Padding="24,14" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource PurgeCard}" Padding="12,10">
+                <StackPanel Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse Width="10" Height="10" Fill="{ThemeResource ManagedInApps}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="Bucket1Title" Text="Géré dans les apps" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <TextBlock x:Name="Bucket1Size" Text="0 B" Style="{StaticResource PurgeMono}" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource PurgeCard}" Padding="12,10">
+                <StackPanel Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse Width="10" Height="10" Fill="{ThemeResource YourFiles}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="Bucket2Title" Text="Vos fichiers" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <TextBlock x:Name="Bucket2Size" Text="0 B" Style="{StaticResource PurgeMono}" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource PurgeCard}" Padding="12,10">
+                <StackPanel Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse Width="10" Height="10" Fill="{ThemeResource LeftAlone}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="Bucket3Title" Text="Laissé par Purge" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <TextBlock x:Name="Bucket3Size" Text="0 B" Style="{StaticResource PurgeMono}" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="3" Style="{StaticResource PurgeCard}" Padding="12,10">
+                <StackPanel Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse Width="10" Height="10" Fill="{ThemeResource ManagedByWindows}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="Bucket4Title" Text="Géré par Windows" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <TextBlock x:Name="Bucket4Size" Text="0 B" Style="{StaticResource PurgeMono}" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Squarified Treemap Canvas -->
+        <Border Grid.Row="2" Margin="24,0,24,14" Style="{StaticResource PurgeCard}" Padding="10">
+            <Canvas x:Name="TreemapCanvas" SizeChanged="OnCanvasSizeChanged"/>
+        </Border>
+
+        <!-- Selected Folder Inspector -->
+        <Border Grid.Row="3" Margin="24,0,24,18" Style="{StaticResource PurgeCard}" Padding="16,12">
+            <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock x:Name="SelectedNameText" Style="{StaticResource PurgeBody}" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="SelectedSizeText" Style="{StaticResource PurgeMono}" Foreground="{ThemeResource TextSecondary}"/>
+                    </StackPanel>
+                    <TextBlock x:Name="SelectedDescText" Style="{StaticResource PurgeCaption}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="SelectedAdviceText" FontSize="11" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <c:PurgeButton Grid.Column="1" x:Name="RevealBtn" Content="Afficher dans l'Explorateur" Variant="Secondary" Size="Compact" Click="OnRevealSelectedClick" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
