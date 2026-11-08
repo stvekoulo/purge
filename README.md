@@ -86,10 +86,15 @@ Every item displays a plain-language explanation of what it is and what happens 
 
 ## Download or Build from Source
 
-### Option 1 — Portable Release (No SDK Required)
+### Option 1 — Official Windows Installers (`Setup.exe`)
 
-1. Download **`Purge-v1.0.0-win-x64.zip`** from [**GitHub Releases**](https://github.com/stvekoulo/purge/releases/latest).
-2. Extract the archive and launch **`Purge.exe`**.
+| Architecture | Installer (`.exe`) | Target Systems |
+| :--- | :--- | :--- |
+| **x64 (64-bit)** | [`Purge-Setup-v1.0.0-win-x64.exe`](https://github.com/stvekoulo/purge/releases/latest) | Standard Intel & AMD 64-bit Windows 10/11 PCs |
+| **ARM64** | [`Purge-Setup-v1.0.0-win-arm64.exe`](https://github.com/stvekoulo/purge/releases/latest) | Snapdragon X Elite / Plus, Surface Pro, Windows on ARM |
+| **x86 (32-bit)** | [`Purge-Setup-v1.0.0-win-x86.exe`](https://github.com/stvekoulo/purge/releases/latest) | Legacy 32-bit Windows 10 systems & VMs |
+
+Run the installer (`Purge-Setup-*.exe`) for your architecture to install Purge into the Start Menu, optional Desktop shortcut, and Windows Installed Apps.
 
 ### Option 2 — Build from Source
 

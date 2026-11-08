@@ -3,9 +3,7 @@ using System.Runtime.InteropServices;
 namespace PurgeWin.Services;
 
 /// Moves files to the Recycle Bin through the shell, never deleting for good.
-/// FOF_WANTNUKEWARNING makes the shell ask before it would delete an item
-/// permanently (too big for the bin, or a drive without one), so Purge's
-/// "Trash by default, never empties it" promise holds on Windows too.
+/// Supports x64, ARM64 (natural packing) and x86 (1-byte packing per shellapi.h).
 public static class RecycleBin
 {
     private const uint FO_DELETE = 0x0003;
@@ -16,7 +14,7 @@ public static class RecycleBin
     private const ushort FOF_WANTNUKEWARNING = 0x4000;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private struct SHFILEOPSTRUCT
+    private struct SHFILEOPSTRUCT64
     {
         public IntPtr hwnd;
         public uint wFunc;
@@ -28,32 +26,67 @@ public static class RecycleBin
         public string? lpszProgressTitle;
     }
 
-    // 64-bit only build: shellapi.h uses natural packing on Win64.
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 1)]
+    private struct SHFILEOPSTRUCT32
+    {
+        public IntPtr hwnd;
+        public uint wFunc;
+        public string pFrom;
+        public string? pTo;
+        public ushort fFlags;
+        [MarshalAs(UnmanagedType.Bool)] public bool fAnyOperationsAborted;
+        public IntPtr hNameMappings;
+        public string? lpszProgressTitle;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
-    private struct SHQUERYRBINFO
+    private struct SHQUERYRBINFO64
     {
         public int cbSize;
         public long i64Size;
         public long i64NumItems;
     }
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-    private static extern int SHFileOperation(ref SHFILEOPSTRUCT op);
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    private struct SHQUERYRBINFO32
+    {
+        public int cbSize;
+        public long i64Size;
+        public long i64NumItems;
+    }
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-    private static extern int SHQueryRecycleBin(string? rootPath, ref SHQUERYRBINFO info);
+    [DllImport("shell32.dll", EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
+    private static extern int SHFileOperation64(ref SHFILEOPSTRUCT64 op);
+
+    [DllImport("shell32.dll", EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
+    private static extern int SHFileOperation32(ref SHFILEOPSTRUCT32 op);
+
+    [DllImport("shell32.dll", EntryPoint = "SHQueryRecycleBinW", CharSet = CharSet.Unicode)]
+    private static extern int SHQueryRecycleBin64(string? rootPath, ref SHQUERYRBINFO64 info);
+
+    [DllImport("shell32.dll", EntryPoint = "SHQueryRecycleBinW", CharSet = CharSet.Unicode)]
+    private static extern int SHQueryRecycleBin32(string? rootPath, ref SHQUERYRBINFO32 info);
 
     /// Returns null on success, or a short reason.
     public static string? MoveToRecycleBin(string path)
     {
-        var op = new SHFILEOPSTRUCT
+        const ushort flags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_WANTNUKEWARNING | FOF_NOERRORUI | FOF_SILENT;
+        int result;
+        bool aborted;
+        if (IntPtr.Size == 8)
         {
-            wFunc = FO_DELETE,
-            pFrom = path + "\0\0",
-            fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_WANTNUKEWARNING | FOF_NOERRORUI | FOF_SILENT,
-        };
-        var result = SHFileOperation(ref op);
-        if (op.fAnyOperationsAborted) return "Annulé : l'élément ne pouvait pas aller dans la Corbeille";
+            var op = new SHFILEOPSTRUCT64 { wFunc = FO_DELETE, pFrom = path + "\0\0", fFlags = flags };
+            result = SHFileOperation64(ref op);
+            aborted = op.fAnyOperationsAborted;
+        }
+        else
+        {
+            var op = new SHFILEOPSTRUCT32 { wFunc = FO_DELETE, pFrom = path + "\0\0", fFlags = flags };
+            result = SHFileOperation32(ref op);
+            aborted = op.fAnyOperationsAborted;
+        }
+
+        if (aborted) return "Annulé : l'élément ne pouvait pas aller dans la Corbeille";
         if (File.Exists(path) || Directory.Exists(path))
         {
             return result switch
@@ -70,7 +103,15 @@ public static class RecycleBin
     /// Bytes already in the Recycle Bin across all drives (sidebar summary).
     public static long Size()
     {
-        var info = new SHQUERYRBINFO { cbSize = Marshal.SizeOf<SHQUERYRBINFO>() };
-        return SHQueryRecycleBin(null, ref info) == 0 ? info.i64Size : 0;
+        if (IntPtr.Size == 8)
+        {
+            var info = new SHQUERYRBINFO64 { cbSize = Marshal.SizeOf<SHQUERYRBINFO64>() };
+            return SHQueryRecycleBin64(null, ref info) == 0 ? info.i64Size : 0;
+        }
+        else
+        {
+            var info = new SHQUERYRBINFO32 { cbSize = Marshal.SizeOf<SHQUERYRBINFO32>() };
+            return SHQueryRecycleBin32(null, ref info) == 0 ? info.i64Size : 0;
+        }
     }
 }

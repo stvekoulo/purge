@@ -23,7 +23,14 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
-        if (Environment.GetCommandLineArgs().Any(a => string.Equals(a, "--scheduled-clean", StringComparison.OrdinalIgnoreCase)))
+        var cliArgs = Environment.GetCommandLineArgs();
+        if (cliArgs.Any(a => string.Equals(a, "--uninstall-cleanup", StringComparison.OrdinalIgnoreCase)))
+        {
+            SystemIntegration.UninstallPurge(removeAppData: false);
+            Environment.Exit(0);
+            return;
+        }
+        if (cliArgs.Any(a => string.Equals(a, "--scheduled-clean", StringComparison.OrdinalIgnoreCase)))
         {
             await SystemIntegration.RunHeadlessScheduledCleanAsync();
             Environment.Exit(0);
