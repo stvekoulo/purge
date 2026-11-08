@@ -41,6 +41,7 @@ public sealed partial class MainWindow : Window
         UpdateActiveTabUI();
         UpdateTrashSummary();
         UpdateBadges();
+        InitializeUpdateDetection();
 
         bool isSelfTest = Environment.GetCommandLineArgs().Any(a => string.Equals(a, "--selftest", StringComparison.OrdinalIgnoreCase));
         bool isScreenshots = Environment.GetCommandLineArgs().Any(a => string.Equals(a, "--screenshots", StringComparison.OrdinalIgnoreCase));

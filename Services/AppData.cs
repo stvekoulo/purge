@@ -58,6 +58,7 @@ public sealed class AppSettings
     public string ScheduledFrequency { get; set; } = "off";
     /// Minimum days untouched for project build folders (0 = all, 30, 90, 180, 365).
     public int StaleProjectDays { get; set; } = 0;
+    public bool AutoCheckUpdates { get; set; } = true;
     public bool HasCompletedOnboarding { get; set; }
 }
 

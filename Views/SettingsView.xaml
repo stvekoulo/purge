@@ -153,6 +153,20 @@
 
             <Border Height="1" Background="{ThemeResource BorderSubtle}"/>
 
+            <Grid ColumnSpacing="16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock x:Name="TxtAutoUpdateTitle" Text="Vérifier les mises à jour au démarrage" Style="{StaticResource RowTitleText}" TextWrapping="Wrap"/>
+                <TextBlock x:Name="TxtAutoUpdateSub" Text="Recherche discrètement si une nouvelle version est disponible sur GitHub" Style="{StaticResource CalloutText}" TextWrapping="Wrap"/>
+              </StackPanel>
+              <ToggleSwitch Grid.Column="1" x:Name="TglAutoUpdate" Toggled="OnAutoUpdateToggled" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+            </Grid>
+
+            <Border Height="1" Background="{ThemeResource BorderSubtle}"/>
+
             <StackPanel Spacing="8">
               <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>

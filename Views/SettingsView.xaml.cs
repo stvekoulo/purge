@@ -37,6 +37,7 @@ public sealed partial class SettingsView : UserControl
         {
             30 => 1, 90 => 2, 180 => 3, _ => 0
         };
+        TglAutoUpdate.IsOn = settings.AutoCheckUpdates;
         _loading = false;
 
         SyncTexts();
@@ -143,6 +144,8 @@ public sealed partial class SettingsView : UserControl
         TxtStaleSub.Text = Loc.T("Filtrer node_modules, target et .next selon leur dernière modification", "Filter node_modules, target, and .next by last modified date");
         StaleAllItem.Content = Loc.T("Tous les projets", "All projects");
         RefreshComboSelection(CmbStale);
+        TxtAutoUpdateTitle.Text = Loc.T("Vérifier les mises à jour au démarrage", "Check for updates on startup");
+        TxtAutoUpdateSub.Text = Loc.T("Recherche discrètement si une nouvelle version est disponible sur GitHub", "Silently checks if a newer version is available on GitHub");
         TxtCustomRootsTitle.Text = Loc.T("Dossiers de projets personnalisés", "Custom Project Folders");
         TxtCustomRootsSub.Text = Loc.T("Dossiers supplémentaires inspectés par Outils de dev", "Extra folders scanned by Dev Tools");
         BtnAddProjectFolder.Content = Loc.T("+ Ajouter", "+ Add Folder");
@@ -201,6 +204,13 @@ public sealed partial class SettingsView : UserControl
     {
         if (_loading || CmbStale is null) return;
         PurgeStore.Shared.Settings.StaleProjectDays = CmbStale.SelectedIndex switch { 1 => 30, 2 => 90, 3 => 180, _ => 0 };
+        PurgeStore.Shared.SaveSettings();
+    }
+
+    private void OnAutoUpdateToggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading || TglAutoUpdate is null) return;
+        PurgeStore.Shared.Settings.AutoCheckUpdates = TglAutoUpdate.IsOn;
         PurgeStore.Shared.SaveSettings();
     }
 
