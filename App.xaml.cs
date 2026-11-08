@@ -10,7 +10,6 @@ public partial class App : Application
 
     public App()
     {
-        InitializeComponent();
         UnhandledException += OnUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
             LogCrash("AppDomain", e.ExceptionObject as Exception);
@@ -19,32 +18,50 @@ public partial class App : Application
             LogCrash("TaskScheduler", e.Exception);
             e.SetObserved();
         };
+        try
+        {
+            InitializeComponent();
+        }
+        catch (Exception ex)
+        {
+            FatalError.Exit("Application.InitializeComponent", ex);
+        }
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         var cliArgs = Environment.GetCommandLineArgs();
-        if (cliArgs.Any(a => string.Equals(a, "--uninstall-cleanup", StringComparison.OrdinalIgnoreCase)))
+        bool headless = cliArgs.Any(a => a.Equals("--scheduled-clean", StringComparison.OrdinalIgnoreCase)
+            || a.Equals("--uninstall-cleanup", StringComparison.OrdinalIgnoreCase));
+        try
         {
-            SystemIntegration.UninstallPurge(removeAppData: false);
-            Environment.Exit(0);
-            return;
-        }
-        if (cliArgs.Any(a => string.Equals(a, "--scheduled-clean", StringComparison.OrdinalIgnoreCase)))
-        {
-            await SystemIntegration.RunHeadlessScheduledCleanAsync();
-            Environment.Exit(0);
-            return;
-        }
+            if (cliArgs.Any(a => string.Equals(a, "--uninstall-cleanup", StringComparison.OrdinalIgnoreCase)))
+            {
+                SystemIntegration.UninstallPurge(removeAppData: false);
+                Environment.Exit(0);
+                return;
+            }
+            if (cliArgs.Any(a => string.Equals(a, "--scheduled-clean", StringComparison.OrdinalIgnoreCase)))
+            {
+                await SystemIntegration.RunHeadlessScheduledCleanAsync();
+                Environment.Exit(0);
+                return;
+            }
 
-        CurrentWindow = new MainWindow();
-        CurrentWindow.Activate();
+            CurrentWindow = new MainWindow();
+            CurrentWindow.Activate();
+        }
+        catch (Exception ex)
+        {
+            FatalError.Exit("Application.OnLaunched", ex, showDialog: !headless);
+        }
     }
 
     private static void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        LogCrash($"XamlUnhandled: {e.Message}", e.Exception);
-        e.Handled = true;
+        // An unhandled XAML failure is not recoverable. Swallowing it can leave
+        // the dispatcher running forever without a window.
+        FatalError.Exit($"XamlUnhandled: {e.Message}", e.Exception);
     }
 
     public static void LogCrash(string source, Exception? ex)

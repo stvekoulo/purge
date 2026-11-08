@@ -1,8 +1,10 @@
+$ErrorActionPreference = "Stop"
 $env:DOTNET_ROOT = "E:\dev\dotnet"
+$env:PATH = "E:\dev\dotnet;$env:PATH"
 $dotnet = "E:\dev\dotnet\dotnet.exe"
 $iscc = "E:\dev\inno-setup\tools\ISCC.exe"
 $issFile = "E:\DEVS\Purges\PurgeWin\installer\PurgeSetup.iss"
-$version = "1.0.2"
+$version = "1.0.3"
 $distDir = "E:\DEVS\Purges\PurgeWin\dist"
 
 if (-not (Test-Path $distDir)) { New-Item -ItemType Directory -Path $distDir -Force | Out-Null }
@@ -10,9 +12,15 @@ if (-not (Test-Path $distDir)) { New-Item -ItemType Directory -Path $distDir -Fo
 $buildArch = {
     param($arch, $platform, $targetDir, $outDir)
     Write-Host "=== Building $arch ($platform) ==="
-    if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force -ErrorAction SilentlyContinue }
+    $publishPath = [IO.Path]::GetFullPath($outDir)
+    $buildRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "bin")) + [IO.Path]::DirectorySeparatorChar
+    if (!$publishPath.StartsWith($buildRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Publish directory must stay under $buildRoot"
+    }
+    if (Test-Path -LiteralPath $publishPath) { Remove-Item -LiteralPath $publishPath -Recurse -Force }
     
     & $dotnet publish "E:\DEVS\Purges\PurgeWin\PurgeWin.csproj" -c Release -r win-$arch --self-contained true -p:Platform=$platform -o $outDir
+    if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $arch (exit $LASTEXITCODE)" }
     
     # Ensure PRI and XBF are co-located in the publish directory
     if (Test-Path "$targetDir\Purge.pri") {
@@ -27,10 +35,20 @@ $buildArch = {
         Copy-Item "$targetDir\App.xbf" "$outDir\App.xbf" -Force
         Write-Host "  -> Copied App.xbf to publish"
     }
+
+    foreach ($required in @("Purge.exe", "Purge.dll", "Purge.pri", "Microsoft.UI.Xaml.dll", "Resources\windows-cache-catalog.json")) {
+        if (!(Test-Path -LiteralPath (Join-Path $outDir $required) -PathType Leaf)) {
+            throw "Missing publish file for ${arch}: $required"
+        }
+    }
+    if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant() -eq $arch) {
+        & "$PSScriptRoot\scripts\Test-Startup.ps1" -Executable "$outDir\Purge.exe"
+    }
     
     # Compile installer
     Write-Host "  -> Compiling Inno Setup for $arch..."
     & $iscc "/DMyAppVersion=$version" "/DMyArch=$arch" "/DSourceDir=$outDir" $issFile
+    if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed for $arch (exit $LASTEXITCODE)" }
     
     # Create portable ZIP
     Write-Host "  -> Creating portable ZIP for $arch..."
@@ -64,7 +82,7 @@ Write-Host "=== 4. Updating releases JSON manifests ==="
       "installer": "Purge-$version-win-$arch-Setup.exe",
       "zip": "Purge-$version-win-$arch.zip",
       "arch": "$arch",
-      "published": "$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')"
+      "published": "$([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
     }
   ]
 }

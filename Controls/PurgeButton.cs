@@ -19,6 +19,7 @@ public sealed class PurgeButton : Button
 {
     private const string PillTemplateXaml = """
         <ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                          TargetType="Button">
           <Border Background="{TemplateBinding Background}"
                   BorderBrush="{TemplateBinding BorderBrush}"

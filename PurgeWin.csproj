@@ -21,9 +21,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
-    <Version>1.0.2</Version>
-    <FileVersion>1.0.2.0</FileVersion>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <Version>1.0.3</Version>
+    <FileVersion>1.0.3.0</FileVersion>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,4 +36,12 @@
     <Content Include="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Resources\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Unpackaged WinUI views are indexed in this generated PRI. The SDK's
+       publish output omits it; a successful build alone cannot detect this. -->
+  <Target Name="PublishWinUIResources" AfterTargets="Publish">
+    <Error Condition="!Exists('$(TargetDir)$(AssemblyName).pri')"
+           Text="The generated WinUI resource index $(AssemblyName).pri is missing." />
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName).pri" DestinationFolder="$(PublishDir)" />
+  </Target>
 </Project>
