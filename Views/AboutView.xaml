@@ -15,7 +15,7 @@
 
         <StackPanel Spacing="4">
           <TextBlock Text="Purge" Style="{StaticResource TitleText}"/>
-          <TextBlock x:Name="TxtVersion" Text="Version 1.0.2 pour Windows" Style="{StaticResource CalloutText}"
+          <TextBlock x:Name="TxtVersion" Style="{StaticResource CalloutText}"
                      Foreground="{ThemeResource TextSecondary}"/>
           <TextBlock x:Name="TxtTagline" Text="Libérez votre PC. En toute sécurité." Style="{StaticResource HeadlineText}"
                      Margin="0,4,0,0" TextWrapping="Wrap"/>
@@ -24,32 +24,37 @@
 
       <!-- Update Card -->
       <Border Style="{StaticResource Card}" Padding="20,16">
-        <Grid ColumnSpacing="16">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-          </Grid.ColumnDefinitions>
+        <Grid RowSpacing="12">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
 
           <StackPanel Spacing="6" VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
               <FontIcon x:Name="IconUpdateStatus" Glyph="&#xE895;" FontSize="15" Foreground="{ThemeResource ActionPrimary}"/>
-              <TextBlock x:Name="TxtUpdateHeader" Text="Mises à jour du logiciel" Style="{StaticResource RowTitleText}"/>
+              <TextBlock x:Name="TxtUpdateHeader" Text="Mises à jour du logiciel" Style="{StaticResource HeadlineText}" TextWrapping="Wrap"/>
               <Border x:Name="BadgeUpdateState" CornerRadius="8" Padding="6,2" Visibility="Collapsed"
                       Background="{ThemeResource ActionPrimary}">
-                <TextBlock x:Name="TxtBadgeUpdateState" Text="Nouveau" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                <TextBlock x:Name="TxtBadgeUpdateState" Text="Nouveau" FontSize="10" FontWeight="Bold" Foreground="{ThemeResource OnActionPrimary}"/>
               </Border>
             </StackPanel>
 
             <TextBlock x:Name="TxtUpdateStatus"
-                       Text="Recherchez si une nouvelle version est disponible sur GitHub."
+                       Text="Recherchez une nouvelle version de Purge."
                        Style="{StaticResource CalloutText}" TextWrapping="Wrap"/>
           </StackPanel>
 
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <ProgressBar x:Name="AboutDownloadProgress" Grid.Row="1" Minimum="0" Maximum="100" Height="3"
+                       Visibility="Collapsed" AutomationProperties.Name="Progression du téléchargement"/>
+          <StackPanel Grid.Row="2" Spacing="8" HorizontalAlignment="Left">
             <c:PurgeButton x:Name="BtnCheckUpdate" Content="Vérifier les mises à jour"
                            Role="Secondary" Size="Compact" Click="BtnCheckUpdate_Click"/>
             <c:PurgeButton x:Name="BtnDownloadUpdate" Content="Télécharger"
                            Role="Primary" Size="Compact" Visibility="Collapsed" Click="BtnDownloadUpdate_Click"/>
+            <Button x:Name="BtnCancelUpdate" Content="Annuler" Click="BtnCancelUpdate_Click" Visibility="Collapsed"
+                    Background="Transparent" BorderThickness="0" FontSize="12" HorizontalAlignment="Left"/>
           </StackPanel>
         </Grid>
       </Border>
@@ -58,7 +63,7 @@
       <Border Style="{StaticResource Card}" Padding="20,16">
         <StackPanel Spacing="16">
           <StackPanel Spacing="4">
-            <TextBlock x:Name="TxtCard1Title" Text="Corbeille par défaut" Style="{StaticResource RowTitleText}" TextWrapping="Wrap"/>
+            <TextBlock x:Name="TxtCard1Title" Text="Corbeille par défaut" Style="{StaticResource HeadlineText}" TextWrapping="Wrap"/>
             <TextBlock x:Name="TxtCard1Body" Text="Les fichiers supprimés sont toujours envoyés dans la Corbeille de Windows et ne sont jamais effacés définitivement sans votre accord."
                        Style="{StaticResource CalloutText}" TextWrapping="Wrap"/>
           </StackPanel>
@@ -66,7 +71,7 @@
           <Border Height="1" Background="{ThemeResource BorderSubtle}"/>
 
           <StackPanel Spacing="4">
-            <TextBlock x:Name="TxtCard2Title" Text="Liste autorisée stricte (Allowlist)" Style="{StaticResource RowTitleText}" TextWrapping="Wrap"/>
+            <TextBlock x:Name="TxtCard2Title" Text="Liste autorisée stricte (Allowlist)" Style="{StaticResource HeadlineText}" TextWrapping="Wrap"/>
             <TextBlock x:Name="TxtCard2Body" Text="Seuls les répertoires et caches répertoriés dans le catalogue officiel sont nettoyés automatiquement. Rien d'inconnu n'est touché."
                        Style="{StaticResource CalloutText}" TextWrapping="Wrap"/>
           </StackPanel>
@@ -74,7 +79,7 @@
           <Border Height="1" Background="{ThemeResource BorderSubtle}"/>
 
           <StackPanel Spacing="4">
-            <TextBlock x:Name="TxtCard3Title" Text="Support multi-disques &amp; Confidentialité totale" Style="{StaticResource RowTitleText}" TextWrapping="Wrap"/>
+            <TextBlock x:Name="TxtCard3Title" Text="Support multi-disques &amp; Confidentialité totale" Style="{StaticResource HeadlineText}" TextWrapping="Wrap"/>
             <TextBlock x:Name="TxtCard3Body" Text="Analyse tous vos disques locaux (C:, D:, E:...) entièrement hors-ligne. Aucune donnée ni télémétrie n'est envoyée sur Internet."
                        Style="{StaticResource CalloutText}" TextWrapping="Wrap"/>
           </StackPanel>

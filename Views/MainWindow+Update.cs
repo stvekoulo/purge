@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using PurgeWin.Services;
 using PurgeWin.Utilities;
@@ -9,61 +7,60 @@ namespace PurgeWin.Views;
 
 public sealed partial class MainWindow
 {
-    private UpdateInfo? _activeUpdateInfo;
+    private string? _dismissedUpdate;
 
     private void InitializeUpdateDetection()
     {
-        UpdateService.UpdateAvailable += OnUpdateDiscovered;
-
-        // Si une mise à jour a déjà été mise en cache
-        if (UpdateService.CachedUpdate is { } cached && cached.IsNewer)
+        UpdateService.Shared.StateChanged += OnUpdateStateChanged;
+        Loc.LanguageChanged += RefreshUpdateUI;
+        Closed += (_, _) =>
         {
-            ShowUpdateBanner(cached);
-        }
-
-        // Détection automatique en tâche de fond au démarrage (si activée)
-        if (PurgeStore.Shared.Settings.AutoCheckUpdates)
-        {
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(2500); // Ne ralentit aucunement l'affichage initial
-                await UpdateService.CheckForUpdatesAsync(silent: true);
-            });
-        }
+            UpdateService.Shared.StateChanged -= OnUpdateStateChanged;
+            Loc.LanguageChanged -= RefreshUpdateUI;
+        };
+        RefreshUpdateUI();
+        if (PurgeStore.Shared.Settings.AutoCheckUpdates) _ = CheckUpdatesAfterLaunchAsync();
     }
 
-    private void OnUpdateDiscovered(UpdateInfo info)
+    private static async Task CheckUpdatesAfterLaunchAsync()
     {
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            ShowUpdateBanner(info);
-        });
+        await Task.Delay(2500);
+        await UpdateService.Shared.CheckAsync();
     }
 
-    private void ShowUpdateBanner(UpdateInfo info)
+    private void OnUpdateStateChanged(UpdateState state) => DispatcherQueue.TryEnqueue(RefreshUpdateUI);
+
+    private void RefreshUpdateUI()
     {
-        _activeUpdateInfo = info;
-        BadgeNavAboutUpdate.Visibility = Visibility.Visible;
-        UpdateBanner.Visibility = Visibility.Visible;
-
-        TxtUpdateBannerTitle.Text = Loc.T(
-            $"Mise à jour v{info.LatestVersion} disponible",
-            $"Update v{info.LatestVersion} available");
-
-        TxtUpdateBannerDesc.Text = Loc.T(
-            "Une nouvelle version de Purge pour Windows est prête au téléchargement.",
-            "A newer release of Purge for Windows is ready to download.");
-
-        BtnBannerDownload.Content = Loc.T("Télécharger", "Download");
+        var state = UpdateService.Shared.State;
+        var text = UpdatePresentation.From(state);
+        bool show = state.HasUpdate && (_dismissedUpdate != state.Info?.LatestVersion
+            || state.Stage is UpdateStage.Downloading or UpdateStage.Verifying or UpdateStage.Installing);
+        BadgeNavAboutUpdate.Visibility = state.HasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        UpdateBanner.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        TxtUpdateBannerTitle.Text = text.Title;
+        TxtUpdateBannerDesc.Text = text.Detail;
+        IconUpdateBanner.Glyph = text.Glyph;
+        BtnBannerDownload.Content = text.Action;
+        BtnBannerDownload.IsEnabled = UpdatePresentation.CanAct(state);
+        BtnBannerDownload.IsBusy = state.IsBusy;
+        BtnBannerCancel.Visibility = state.Stage == UpdateStage.Downloading ? Visibility.Visible : Visibility.Collapsed;
+        BtnBannerCancel.Content = Loc.T("Annuler", "Cancel");
+        BtnBannerDismiss.Visibility = state.IsBusy ? Visibility.Collapsed : Visibility.Visible;
+        UpdateDownloadProgress.Visibility = state.Stage is UpdateStage.Downloading or UpdateStage.Verifying
+            ? Visibility.Visible : Visibility.Collapsed;
+        UpdateDownloadProgress.IsIndeterminate = state.Stage == UpdateStage.Verifying;
+        UpdateDownloadProgress.Value = state.Percent;
+        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(BtnBannerDismiss, Loc.T("Masquer la notification", "Dismiss notification"));
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(BtnBannerDismiss, Loc.T("Masquer la notification de mise à jour", "Dismiss update notification"));
     }
 
-    private void BtnBannerDownload_Click(object sender, RoutedEventArgs e)
-    {
-        UpdateService.OpenDownloadOrRelease(_activeUpdateInfo);
-    }
+    private async void BtnBannerDownload_Click(object sender, RoutedEventArgs e) => await UpdatePresentation.ActAsync();
+    private void BtnBannerCancel_Click(object sender, RoutedEventArgs e) => UpdateService.Shared.CancelDownload();
 
     private void BtnBannerDismiss_Click(object sender, RoutedEventArgs e)
     {
-        UpdateBanner.Visibility = Visibility.Collapsed;
+        _dismissedUpdate = UpdateService.Shared.State.Info?.LatestVersion;
+        RefreshUpdateUI();
     }
 }

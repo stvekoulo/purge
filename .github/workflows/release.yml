@@ -30,6 +30,10 @@ jobs:
       - name: Restore dependencies (${{ matrix.rid }})
         run: dotnet restore PurgeWin.csproj -r ${{ matrix.rid }} -p:Platform=${{ matrix.arch }}
 
+      - name: Test update handling
+        if: matrix.arch == 'x64'
+        run: dotnet run --project Tests/UpdateTests.csproj -v quiet
+
       - name: Publish Release (${{ matrix.rid }})
         shell: pwsh
         run: |

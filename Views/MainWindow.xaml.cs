@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using PurgeWin.Services;
 using PurgeWin.Theme;
 using PurgeWin.Utilities;
 using PurgeWin.ViewModels;
@@ -43,6 +44,10 @@ public sealed partial class MainWindow : Window
         UpdateBadges();
         InitializeUpdateDetection();
 
+#if PURGE_UPDATE_PREVIEW
+        _ = UpdateService.Shared.CheckAsync();
+#else
+
         bool isSelfTest = Environment.GetCommandLineArgs().Any(a => string.Equals(a, "--selftest", StringComparison.OrdinalIgnoreCase));
         bool isScreenshots = Environment.GetCommandLineArgs().Any(a => string.Equals(a, "--screenshots", StringComparison.OrdinalIgnoreCase));
         if (!store.Settings.HasCompletedOnboarding && !isSelfTest && !isScreenshots)
@@ -54,6 +59,7 @@ public sealed partial class MainWindow : Window
             _ = ScreenshotCapturer.RunAsync(this);
         else
             _ = store.ScanEverythingAsync();
+#endif
     }
 
     private void ConfigureWindow()
@@ -127,7 +133,10 @@ public sealed partial class MainWindow : Window
                  or nameof(PurgeStore.LargeFileBytes) or nameof(PurgeStore.LeftoverBytes) or nameof(PurgeStore.InstalledAppBytes))
             UpdateBadges();
         else if (e.PropertyName is nameof(PurgeStore.IsCleaning) or nameof(PurgeStore.CleaningLabel))
+        {
             UpdateLogoCleaningState();
+            RefreshUpdateUI();
+        }
     }
 
     private void UpdateTrashSummary()

@@ -4,7 +4,7 @@ $env:PATH = "E:\dev\dotnet;$env:PATH"
 $dotnet = "E:\dev\dotnet\dotnet.exe"
 $iscc = "E:\dev\inno-setup\tools\ISCC.exe"
 $issFile = "E:\DEVS\Purges\PurgeWin\installer\PurgeSetup.iss"
-$version = "1.0.3"
+$version = ([xml](Get-Content "$PSScriptRoot\PurgeWin.csproj")).Project.PropertyGroup.Version | Select-Object -First 1
 $distDir = "E:\DEVS\Purges\PurgeWin\dist"
 
 if (-not (Test-Path $distDir)) { New-Item -ItemType Directory -Path $distDir -Force | Out-Null }

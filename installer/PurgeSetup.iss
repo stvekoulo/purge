@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.3"
+  #define MyAppVersion "1.0.4"
 #endif
 #ifndef MyArch
   #define MyArch "x64"
@@ -55,6 +55,9 @@ Name: "{autodesktop}\Purge"; Filename: "{app}\Purge.exe"; IconFilename: "{app}\A
 
 [Run]
 Filename: "{app}\Purge.exe"; Description: "{cm:LaunchProgram,Purge}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Purge.exe"; Flags: nowait runasoriginaluser; Check: IsPurgeUpdate
 
 [UninstallRun]
 Filename: "{app}\Purge.exe"; Parameters: "--uninstall-cleanup"; Flags: runhidden; RunOnceId: "CleanupPurgeTasks"
+
+#include "UpdateHandoff.iss"
