@@ -11,6 +11,9 @@
     <Compile Include="..\Services\PathScope.cs" Link="Services\PathScope.cs" />
     <Compile Include="..\Services\ScopeSession.cs" Link="Services\ScopeSession.cs" />
     <Compile Include="..\Services\PathExpander.cs" Link="Services\PathExpander.cs" />
+    <Compile Include="..\Services\DeletionSafetyPolicy.cs" Link="Services\DeletionSafetyPolicy.cs" />
+    <Compile Include="..\Services\UninstallCommand.cs" Link="Services\UninstallCommand.cs" />
+    <Compile Include="..\Models\Safety.cs" Link="Models\Safety.cs" />
     <Compile Include="..\Services\FolderExplorer.cs" Link="Services\FolderExplorer.cs" />
     <Compile Include="..\Services\EverythingElseScanner.cs" Link="Services\EverythingElseScanner.cs" />
     <Compile Include="..\Services\RecycleBin*.cs" Link="Services\%(Filename)%(Extension)" />

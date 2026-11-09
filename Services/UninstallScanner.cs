@@ -14,7 +14,7 @@ public static class UninstallScanner
     {
         "Microsoft", "Windows", "Packages", "Programs", "Temp", "ConnectedDevicesPlatform",
         "D3DSCache", "PlaceholderTileLogoFolder", "Publishers", "VirtualStore", "Purge",
-        "Comms", "PeerDistRepub", "SquirrelTemp", "CrashDumps", " NuGet", "pip", "uv",
+        "Comms", "PeerDistRepub", "SquirrelTemp", "CrashDumps", "NuGet", "pip", "uv",
         "npm-cache", "pnpm", "Yarn", "Google", "Mozilla", "BraveSoftware",
     };
 
@@ -86,7 +86,9 @@ public static class UninstallScanner
                             appBytes = FolderSizing.Measure(installLoc, token).Bytes;
 
                         var leftovers = MatchLeftovers(name, publisher, localDirs, roamingDirs, excluded, token);
-                        if (appBytes <= 0 && leftovers.Count == 0) continue;
+                        // Many legitimate uninstall entries have no EstimatedSize.
+                        // Hiding them would also make their AppData look orphaned.
+                        if (!installedHere && leftovers.Count == 0) continue;
 
                         var iconPath = AppIconService.GetAppIconPath(subName, name, displayIcon, installLoc);
 
@@ -95,7 +97,8 @@ public static class UninstallScanner
                             Key = subName, DisplayName = name, Publisher = publisher, DisplayVersion = version,
                             InstallLocation = installLoc, UninstallString = uninstallStr, DisplayIcon = displayIcon,
                             IconPath = iconPath,
-                            AppBytes = appBytes, Leftovers = leftovers, CanUninstall = installedHere,
+                            AppBytes = appBytes, Leftovers = leftovers,
+                            CanUninstall = installedHere && !string.IsNullOrWhiteSpace(uninstallStr),
                         };
                     }
                     catch { }

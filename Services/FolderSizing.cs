@@ -54,7 +54,11 @@ public static class FolderSizing
         catch { yield break; }
         foreach (var child in children)
         {
-            if (minAgeHours <= 0 || child.LastWriteTime < cutoff) yield return child;
+            DateTime modified;
+            try { modified = child.LastWriteTime; }
+            catch (IOException) { continue; }
+            catch (UnauthorizedAccessException) { continue; }
+            if (minAgeHours <= 0 || modified < cutoff) yield return child;
         }
     }
 }

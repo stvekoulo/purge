@@ -31,10 +31,10 @@ public sealed partial class CelebrationOverlay : UserControl
     {
         var store = PurgeStore.Shared;
         TxtSubtitle.Text = store.LastCleanOutcome?.RecycleBinEmptied == true
-            ? Loc.T("nettoyés · Corbeille vidée définitivement", "cleaned · Recycle Bin permanently emptied")
+            ? Loc.T("traités · Corbeille vidée définitivement", "processed · Recycle Bin permanently emptied")
             : store.LastCleanOutcome?.RecycleBinEmptyRequested == true
-                ? Loc.T("nettoyés · Vérifiez le résultat du vidage", "cleaned · Check the Recycle Bin result")
-            : Loc.T("nettoyés et placés dans la Corbeille", "cleaned and moved to the Recycle Bin");
+                ? Loc.T("traités · Vérifiez le résultat du vidage", "processed · Check the Recycle Bin result")
+            : Loc.T("déplacés dans la Corbeille (espace non encore libéré)", "moved to Recycle Bin (space not yet freed)");
         BtnDone.Content = Loc.T("Terminé", "Done");
         TxtTagline.Text = SizeComparisonCatalog.TimeTagline();
 

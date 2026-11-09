@@ -24,9 +24,10 @@
           <TextBlock x:Name="TxtFreedBytes" Text="1.2 Go"
                      Style="{StaticResource DisplayText}"
                      HorizontalAlignment="Center"/>
-          <TextBlock x:Name="TxtSubtitle" Text="libérés et placés dans la Corbeille"
+          <TextBlock x:Name="TxtSubtitle" Text="déplacés dans la Corbeille"
                      Style="{StaticResource HeadlineText}"
                      Foreground="{ThemeResource TextSecondary}"
+                     TextWrapping="Wrap" TextAlignment="Center" MaxWidth="380"
                      HorizontalAlignment="Center"/>
           <TextBlock x:Name="TxtItemCount" Text="14 éléments nettoyés"
                      Style="{StaticResource CalloutText}"

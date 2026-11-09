@@ -94,7 +94,8 @@ public static class DevScanner
 
     public static async Task<List<DevItem>> ScanAsync(
         Action<DevItem>? onItem, ISet<string> excluded, int staleDays,
-        IReadOnlyList<string> customRoots, IReadOnlyList<string> activeDrives, CancellationToken token)
+        IReadOnlyList<string> customRoots, IReadOnlyList<string> activeDrives, CancellationToken token,
+        bool globalCachesOnly = false)
     {
         var list = new List<DevItem>();
         var scope = new PathScope(activeDrives, excluded);
@@ -135,9 +136,12 @@ public static class DevScanner
                 });
             }
 
-            ScanAndroidAvds(Emit, excluded, token, scope);
-            ScanProjects(Emit, excluded, staleDays, customRoots, activeDrives, token);
-            ScanOrphanWorktrees(Emit, excluded, token, scope);
+            if (!globalCachesOnly)
+            {
+                ScanAndroidAvds(Emit, excluded, token, scope);
+                ScanProjects(Emit, excluded, staleDays, customRoots, activeDrives, token);
+                ScanOrphanWorktrees(Emit, excluded, token, scope);
+            }
         }, token);
         return list.OrderByDescending(i => i.Bytes).ToList();
     }

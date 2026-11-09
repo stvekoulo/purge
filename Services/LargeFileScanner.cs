@@ -132,36 +132,41 @@ public static class LargeFileScanner
         foreach (var entry in entries)
         {
             token.ThrowIfCancellationRequested();
-            if (excluded.Contains(entry.FullName)) continue;
-
-            if (entry is DirectoryInfo subDir)
+            try
             {
-                if (subDir.Name.StartsWith('.') || SkippedDirs.Contains(subDir.Name)) continue;
-                WalkFolder(subDir.FullName, rootLabel, oneDriveRoot, excluded, depth + 1, maxDepth, seenFiles, emit, token);
-            }
-            else if (entry is FileInfo file)
-            {
-                if (file.Length < MinimumBytes || !seenFiles.Add(file.FullName)) continue;
-                var ext = file.Extension;
-                var category = ExtMap.GetValueOrDefault(ext, LargeFileCategory.Other);
-                var (specialLabel, specialExplain) = InspectSpecialFile(ext);
-                var isOneDrive = !string.IsNullOrEmpty(oneDriveRoot)
-                    && file.FullName.StartsWith(oneDriveRoot, StringComparison.OrdinalIgnoreCase)
-                    && ((int)file.Attributes & 0x00400000) == 0;
+                if (excluded.Contains(entry.FullName)) continue;
 
-                emit(new LargeFileItem
+                if (entry is DirectoryInfo subDir)
                 {
-                    FullPath = file.FullName,
-                    Name = file.Name,
-                    FolderDisplay = $"{rootLabel} ({Path.GetDirectoryName(file.FullName)})",
-                    Bytes = file.Length,
-                    LastModified = file.LastWriteTime,
-                    Category = category,
-                    SpecialLabel = specialLabel,
-                    SpecialExplanation = specialExplain,
-                    IsOneDriveSynced = isOneDrive,
-                });
+                    if (subDir.Name.StartsWith('.') || SkippedDirs.Contains(subDir.Name)) continue;
+                    WalkFolder(subDir.FullName, rootLabel, oneDriveRoot, excluded, depth + 1, maxDepth, seenFiles, emit, token);
+                }
+                else if (entry is FileInfo file)
+                {
+                    if (file.Length < MinimumBytes || !seenFiles.Add(file.FullName)) continue;
+                    var ext = file.Extension;
+                    var category = ExtMap.GetValueOrDefault(ext, LargeFileCategory.Other);
+                    var (specialLabel, specialExplain) = InspectSpecialFile(ext);
+                    var isOneDrive = !string.IsNullOrEmpty(oneDriveRoot)
+                        && PathScope.IsWithin(file.FullName, oneDriveRoot)
+                        && ((int)file.Attributes & 0x00400000) == 0;
+
+                    emit(new LargeFileItem
+                    {
+                        FullPath = file.FullName,
+                        Name = file.Name,
+                        FolderDisplay = $"{rootLabel} ({Path.GetDirectoryName(file.FullName)})",
+                        Bytes = file.Length,
+                        LastModified = file.LastWriteTime,
+                        Category = category,
+                        SpecialLabel = specialLabel,
+                        SpecialExplanation = specialExplain,
+                        IsOneDriveSynced = isOneDrive,
+                    });
+                }
             }
+            catch (IOException) { /* File changed or was removed during the scan. */ }
+            catch (UnauthorizedAccessException) { /* Skip an inaccessible entry. */ }
         }
     }
 

@@ -87,15 +87,12 @@ public static partial class RecycleBin
         }
 
         if (aborted) return "Annulé : l'élément ne pouvait pas aller dans la Corbeille";
+        // Do not claim success just because the original path disappeared:
+        // Windows may have completed only part of a failing shell operation.
+        if (result != 0) return $"Impossible de déplacer (code 0x{result:X})";
         if (File.Exists(path) || Directory.Exists(path))
         {
-            return result switch
-            {
-                0 => "Utilisé par une application ouverte : en partie conservé",
-                5 or 0x78 => "Accès refusé (droits administrateur requis)",
-                0x20 => "Utilisé par une application ouverte",
-                _ => $"Impossible de déplacer (code 0x{result:X})",
-            };
+            return "Utilisé par une application ouverte : en partie conservé";
         }
         return null;
     }

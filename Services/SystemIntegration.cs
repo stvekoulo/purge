@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Microsoft.Win32;
+using PurgeWin.Models;
 using PurgeWin.Utilities;
 
 namespace PurgeWin.Services;
@@ -25,12 +26,12 @@ public static class SystemIntegration
         catch { return false; }
     }
 
-    public static void SetLaunchAtStartup(bool enabled)
+    public static bool SetLaunchAtStartup(bool enabled)
     {
         try
         {
             using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
-            if (key is null) return;
+            if (key is null) return false;
             if (enabled)
             {
                 var exe = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "Purge.exe");
@@ -40,18 +41,18 @@ public static class SystemIntegration
             {
                 key.DeleteValue(RunValueName, throwOnMissingValue: false);
             }
+            return true;
         }
-        catch { }
+        catch { return false; }
     }
 
-    public static void ApplyScheduledCleaning(string frequency)
+    public static bool ApplyScheduledCleaning(string frequency)
     {
         try
         {
             if (string.IsNullOrEmpty(frequency) || frequency == "off")
             {
-                RunSchtasks($"/Delete /TN \"{ScheduledTaskName}\" /F");
-                return;
+                return RunSchtasks($"/Delete /TN \"{ScheduledTaskName}\" /F", allowMissing: true);
             }
 
             var exe = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "Purge.exe");
@@ -61,9 +62,9 @@ public static class SystemIntegration
                 "quarterly" => "/SC MONTHLY /MO 3 /D 1 /ST 12:00",
                 _ => "/SC MONTHLY /D 1 /ST 12:00",
             };
-            RunSchtasks($"/Create /TN \"{ScheduledTaskName}\" /TR \"\\\"{exe}\\\" --scheduled-clean\" {scheduleArgs} /F");
+            return RunSchtasks($"/Create /TN \"{ScheduledTaskName}\" /TR \"\\\"{exe}\\\" --scheduled-clean\" {scheduleArgs} /F");
         }
-        catch { }
+        catch { return false; }
     }
 
     public static async Task RunHeadlessScheduledCleanAsync()
@@ -77,15 +78,27 @@ public static class SystemIntegration
 
         var items = await CacheScanner.ScanAsync(null, excluded, CancellationToken.None, roots);
         var safeItems = items.Where(i => i.IsSafe).ToList();
-        if (safeItems.Count == 0) return;
+        var devItems = await DevScanner.ScanAsync(null, excluded, settings.StaleProjectDays,
+            settings.CustomProjectRoots, roots, CancellationToken.None, globalCachesOnly: true);
+        var devPaths = devItems.Where(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache)
+            .SelectMany(i => i.Paths.Select(path => (i.Title, path))).ToList();
+        if (safeItems.Count == 0 && devPaths.Count == 0) return;
 
-        var outcome = await FileDeleter.CleanAsync(safeItems, scope: scope);
+        var caches = await FileDeleter.CleanAsync(safeItems, scope: scope);
+        var dev = await FileDeleter.CleanPathsAsync(devPaths, scope: scope);
+        var outcome = new CleanOutcome(caches.FreedBytes + dev.FreedBytes, caches.MovedCount + dev.MovedCount,
+            caches.MovedPaths.Concat(dev.MovedPaths).ToList(), caches.Failures.Concat(dev.Failures).ToList());
         if (settings.EmptyRecycleBinAfterCleaning && outcome.MovedCount > 0)
         {
             var empty = await RecycleBin.EmptyAsync(roots);
-            outcome = outcome with { RecycleBinEmptied = empty.Failures.Count == 0, RecycleBinEmptyRequested = true };
+            outcome = outcome with
+            {
+                RecycleBinEmptied = empty.Failures.Count == 0,
+                RecycleBinEmptyRequested = true,
+                Failures = outcome.Failures.Concat(empty.Failures.Select(f => new CleanFailure("Corbeille / Recycle Bin", f))).ToList(),
+            };
         }
-        if (outcome.MovedCount > 0)
+        if (outcome.MovedCount > 0 || outcome.Failures.Count > 0)
         {
             history.Entries.Insert(0, new HistoryEntry
             {
@@ -116,7 +129,7 @@ public static class SystemIntegration
         catch { }
     }
 
-    private static void RunSchtasks(string arguments)
+    private static bool RunSchtasks(string arguments, bool allowMissing = false)
     {
         try
         {
@@ -125,8 +138,11 @@ public static class SystemIntegration
                 CreateNoWindow = true,
                 UseShellExecute = false,
             });
-            p?.WaitForExit(4000);
+            if (p is null || !p.WaitForExit(4000)) return false;
+            // schtasks reports a missing task with 1 when disabling an already
+            // disabled schedule. Treat that case as a successful no-op.
+            return p.ExitCode == 0 || (allowMissing && p.ExitCode == 1);
         }
-        catch { }
+        catch { return false; }
     }
 }

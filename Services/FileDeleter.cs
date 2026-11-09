@@ -54,7 +54,11 @@ public static class FileDeleter
             progress?.Report(title);
             string full;
             try { full = Path.GetFullPath(rawPath).TrimEnd('\\'); }
-            catch { continue; }
+            catch
+            {
+                failures.Add(new CleanFailure(rawPath, "Chemin invalide / Invalid path"));
+                continue;
+            }
 
             if (!File.Exists(full) && !Directory.Exists(full)) continue;
             if (scope?.CanDelete(full) == false)
@@ -62,7 +66,8 @@ public static class FileDeleter
                 failures.Add(new(full, "Hors du disque sélectionné ou chemin exclu / Outside selected disk or excluded"));
                 continue;
             }
-            if (DeletionSafetyPolicy.IsProtected(full) || full.Count(c => c == '\\') < 2)
+            if (DeletionSafetyPolicy.IsProtected(full) || DeletionSafetyPolicy.IsSystemPath(full)
+                || full.Count(c => c == '\\') < 2)
             {
                 failures.Add(new CleanFailure(full, "Ignoré par sécurité : emplacement protégé"));
                 continue;
@@ -81,19 +86,20 @@ public static class FileDeleter
 
     private static void MoveOne(FileSystemInfo target, ref long freed, List<string> moved, List<CleanFailure> failures)
     {
-        var size = FolderSizing.MeasureEntry(target);
-        var error = RecycleBin.MoveToRecycleBin(target.FullName);
-        if (error is null)
+        try
         {
-            freed += size;
-            moved.Add(target.FullName);
+            var size = FolderSizing.MeasureEntry(target);
+            var error = RecycleBin.MoveToRecycleBin(target.FullName);
+            if (error is null)
+            {
+                freed += size;
+                moved.Add(target.FullName);
+            }
+            else failures.Add(new CleanFailure(target.FullName, error));
         }
-        else
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            var left = File.Exists(target.FullName) || Directory.Exists(target.FullName)
-                ? FolderSizing.MeasureEntry(Refresh(target)) : 0;
-            freed += Math.Max(0, size - left);
-            failures.Add(new CleanFailure(target.FullName, error));
+            failures.Add(new CleanFailure(target.FullName, ex.Message));
         }
     }
 
@@ -112,6 +118,4 @@ public static class FileDeleter
         }
     }
 
-    private static FileSystemInfo Refresh(FileSystemInfo info) =>
-        Directory.Exists(info.FullName) ? new DirectoryInfo(info.FullName) : new FileInfo(info.FullName);
 }

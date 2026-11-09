@@ -28,7 +28,8 @@ public sealed partial class PurgeStore
     {
         var targets = new List<(string, string)>();
         if (UninstallSubTab == UninstallerSubTab.InstalledApps)
-            targets.AddRange(InstalledApps.Where(i => i.IsSelected).SelectMany(i => i.Leftovers.Select(l => (i.DisplayName, l.Path))));
+            targets.AddRange(InstalledApps.Where(i => i.IsSelected).SelectMany(i => i.Leftovers
+                .Where(l => l.IsExactMatch).Select(l => (i.DisplayName, l.Path))));
         else if (UninstallSubTab == UninstallerSubTab.Leftovers)
             targets.AddRange(OrphanLeftovers.Where(i => i.IsSelected).Select(i => (i.FolderName, i.FullPath)));
         else targets.AddRange(CliTools.Where(i => i.IsSelected).Select(i => (i.Name, i.Path)));
@@ -40,6 +41,8 @@ public sealed partial class PurgeStore
         if (!CanClean || caches.Count + paths.Count == 0) return null;
         var scope = CreateScope();
         var context = _scopeSession.Current;
+        var selectedLargePaths = LargeFileItems.Where(i => i.IsSelected)
+            .Select(i => i.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
         IsCleaning = true;
         NotifyScope();
         var progress = new Progress<string>(name => CleaningLabel = Loc.T($"Nettoyage de {name}…", $"Cleaning {name}…"));
@@ -67,6 +70,10 @@ public sealed partial class PurgeStore
             }
             RecordOutcome(outcome, trigger);
             ClearSelections();
+            // Keep failed large-file selections available for an explicit retry.
+            var movedPaths = outcome.MovedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in LargeFileItems.Where(i => selectedLargePaths.Contains(i.FullPath) && !movedPaths.Contains(i.FullPath)))
+                item.IsSelected = true;
         }
         finally { IsCleaning = false; CleaningLabel = ""; NotifyScope(); }
         if (_scopeSession.IsCurrent(context))
@@ -77,7 +84,9 @@ public sealed partial class PurgeStore
                 if (DevItems.Any(d => d.Paths.Any(dp => paths.Any(p => string.Equals(p.Path, dp, StringComparison.OrdinalIgnoreCase)))))
                     await ScanDevToolsAsync();
 
-                var removed = paths.Select(p => p.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                // An attempted move is not a successful one. Failed files must
+                // remain in the current view until a later scan or retry.
+                var removed = outcome.MovedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
                 OnUi(() =>
                 {
                     var remaining = LargeFileItems.Where(l => !removed.Contains(l.FullPath)).ToList();
@@ -96,15 +105,18 @@ public sealed partial class PurgeStore
         return outcome;
     }
 
-    public void LaunchAppUninstaller(InstalledAppItem app)
+    public bool LaunchAppUninstaller(InstalledAppItem app)
     {
-        if (!app.CanUninstall || !CanClean || string.IsNullOrWhiteSpace(app.UninstallString)) return;
+        if (!app.CanUninstall || !CanClean || string.IsNullOrWhiteSpace(app.UninstallString)) return false;
         try
         {
-            Process.Start(new ProcessStartInfo("cmd.exe", $"/c {app.UninstallString}") { CreateNoWindow = true, UseShellExecute = false });
+            // The registered uninstaller owns removal of files, services and
+            // registry keys. Never trash an installed application's directory.
+            Process.Start(UninstallCommand.CreateStartInfo(app.UninstallString));
             _scopeCache.Clear();
+            return true;
         }
-        catch (Exception ex) { App.LogCrash("Launch uninstaller", ex); }
+        catch (Exception ex) { App.LogCrash("Launch uninstaller", ex); return false; }
     }
 
     public bool EvictOneDriveFile(LargeFileItem item)
