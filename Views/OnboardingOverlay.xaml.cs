@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using PurgeWin.Utilities;
 using PurgeWin.ViewModels;
@@ -14,9 +14,25 @@ public sealed partial class OnboardingOverlay : UserControl
     public OnboardingOverlay()
     {
         InitializeComponent();
-        Loc.LanguageChanged += SyncTexts;
-        Store.PropertyChanged += (_, _) => SyncResults();
-        Loaded += (_, _) => SyncTexts();
+        Loc.LanguageChanged += () => SafeDispatch(SyncTexts);
+        Store.PropertyChanged += (_, e) =>
+        {
+            if (Visibility == Visibility.Visible && e.PropertyName is nameof(PurgeStore.TotalReclaimableBytes)
+                or nameof(PurgeStore.SafeBytes) or nameof(PurgeStore.SafeCount))
+            {
+                SafeDispatch(SyncResults);
+            }
+        };
+        Loaded += (_, _) => SafeDispatch(SyncTexts);
+    }
+
+    private void SafeDispatch(Action action)
+    {
+        if (DispatcherQueue is { } q)
+        {
+            if (q.HasThreadAccess) action();
+            else q.TryEnqueue(() => action());
+        }
     }
 
     public void ShowWelcome()
@@ -50,6 +66,7 @@ public sealed partial class OnboardingOverlay : UserControl
 
     private void SyncResults()
     {
+        if (Visibility != Visibility.Visible) return;
         long total = Store.TotalReclaimableBytes;
         long safe = Store.SafeBytes;
         TxtResultsBytes.Text = ByteFormatter.Format(total > 0 ? total : safe);

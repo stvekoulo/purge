@@ -58,11 +58,31 @@ public sealed partial class PurgeStore : ObservableObject
         _scopeSession.Change(Settings.SelectedDrive, CreateScope());
     }
 
-    public void Attach(DispatcherQueue queue) => _ui = queue;
+    private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _pendingUi = new();
+
+    public void Attach(DispatcherQueue queue)
+    {
+        _ui = queue;
+        while (_pendingUi.TryDequeue(out var action))
+        {
+            _ui.TryEnqueue(() => action());
+        }
+    }
+
     private void OnUi(Action action)
     {
-        if (_ui == null || _ui.HasThreadAccess) action();
-        else _ui.TryEnqueue(() => action());
+        if (_ui != null)
+        {
+            if (_ui.HasThreadAccess) action();
+            else _ui.TryEnqueue(() => action());
+        }
+        else
+        {
+            if (!Thread.CurrentThread.IsThreadPoolThread && !Thread.CurrentThread.IsBackground)
+                action();
+            else
+                _pendingUi.Enqueue(action);
+        }
     }
 
     public long DiskUsed => Math.Max(0, DiskTotal - DiskFree);

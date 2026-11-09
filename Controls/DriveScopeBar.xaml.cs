@@ -25,7 +25,14 @@ public sealed partial class DriveScopeBar : UserControl
     {
         if (e.PropertyName is nameof(PurgeStore.ScopeStatus) or nameof(PurgeStore.ScopeTitle)
             or nameof(PurgeStore.DriveCatalogVersion) or nameof(PurgeStore.IsCleaning)
-            or nameof(PurgeStore.IsScanning) or nameof(PurgeStore.SelectedTab)) Sync();
+            or nameof(PurgeStore.IsScanning) or nameof(PurgeStore.SelectedTab))
+        {
+            if (DispatcherQueue is { } q)
+            {
+                if (q.HasThreadAccess) Sync();
+                else q.TryEnqueue(Sync);
+            }
+        }
     }
 
     private void Sync()

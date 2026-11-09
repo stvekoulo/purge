@@ -13,9 +13,18 @@ public sealed partial class CelebrationOverlay : UserControl
         PurgeStore.Shared.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(PurgeStore.ShowCelebration))
-                UpdateVisibility();
+                SafeDispatch(UpdateVisibility);
         };
-        Loc.LanguageChanged += UpdateVisibility;
+        Loc.LanguageChanged += () => SafeDispatch(UpdateVisibility);
+    }
+
+    private void SafeDispatch(Action action)
+    {
+        if (DispatcherQueue is { } q)
+        {
+            if (q.HasThreadAccess) action();
+            else q.TryEnqueue(() => action());
+        }
     }
 
     private void UpdateVisibility()

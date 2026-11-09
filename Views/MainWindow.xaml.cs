@@ -27,11 +27,11 @@ public sealed partial class MainWindow : Window
 
     public MainWindow()
     {
+        var store = PurgeStore.Shared;
+        store.Attach(DispatcherQueue);
         InitializeComponent();
         ConfigureWindow();
 
-        var store = PurgeStore.Shared;
-        store.Attach(DispatcherQueue);
         store.RefreshDisk();
         store.PropertyChanged += OnStoreChanged;
         Loc.LanguageChanged += SyncSidebarTexts;
@@ -157,6 +157,12 @@ public sealed partial class MainWindow : Window
 
     private void OnStoreChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (DispatcherQueue is { } q && !q.HasThreadAccess)
+        {
+            q.TryEnqueue(() => OnStoreChanged(sender, e));
+            return;
+        }
+
         if (e.PropertyName is nameof(PurgeStore.SelectedTab) or nameof(PurgeStore.OverviewPage))
             UpdateActiveTabUI();
         else if (e.PropertyName is nameof(PurgeStore.TrashBytes) or nameof(PurgeStore.TrashItemCount))
