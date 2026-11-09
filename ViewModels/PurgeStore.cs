@@ -50,8 +50,10 @@ public sealed partial class PurgeStore : ObservableObject
         History = AppData.Load<HistoryLog>("history.json");
         Settings.ExcludedPaths ??= [];
         Settings.CustomProjectRoots ??= [];
-        Settings.SelectedDrive = PathScope.Normalize(Settings.SelectedDrive) is { } selected
-            ? Path.GetPathRoot(selected)! : DriveVolumeItem.AllDrivesKey;
+        Settings.SelectedDrive = string.IsNullOrWhiteSpace(Settings.SelectedDrive)
+            || Settings.SelectedDrive.Equals(DriveVolumeItem.AllDrivesKey, StringComparison.OrdinalIgnoreCase)
+            ? DriveVolumeItem.AllDrivesKey
+            : (PathScope.Normalize(Settings.SelectedDrive) is { } selected ? (Path.GetPathRoot(selected) ?? DriveVolumeItem.AllDrivesKey) : DriveVolumeItem.AllDrivesKey);
         History.Entries ??= [];
         Loc.SetLanguage(Settings.Language);
         RefreshDisk();

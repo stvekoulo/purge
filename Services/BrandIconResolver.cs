@@ -8,14 +8,22 @@ public static class BrandIconResolver
     {
         if (string.IsNullOrWhiteSpace(iconName)) return null;
 
-        bool isDark = Theme.ThemeBrushes.IsDarkTheme();
-        if (!isDark)
+        try
         {
-            var lightPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BrandIcons", "light", $"{iconName}.png");
-            if (File.Exists(lightPath)) return lightPath;
-        }
+            bool isDark = Theme.ThemeBrushes.IsDarkTheme();
+            if (!isDark)
+            {
+                var lightPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BrandIcons", "light", $"{iconName}.png");
+                if (File.Exists(lightPath)) return lightPath;
+            }
 
-        var darkPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BrandIcons", $"{iconName}.png");
-        return File.Exists(darkPath) ? darkPath : null;
+            var darkPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BrandIcons", $"{iconName}.png");
+            return File.Exists(darkPath) ? darkPath : null;
+        }
+        catch
+        {
+            var fallback = Path.Combine(AppContext.BaseDirectory, "Assets", "BrandIcons", $"{iconName}.png");
+            return File.Exists(fallback) ? fallback : null;
+        }
     }
 }

@@ -59,42 +59,46 @@ public static class UninstallScanner
                 foreach (var subName in uninstallKey.GetSubKeyNames())
                 {
                     token.ThrowIfCancellationRequested();
-                    using var sub = uninstallKey.OpenSubKey(subName);
-                    if (sub is null) continue;
-
-                    var name = (sub.GetValue("DisplayName") as string)?.Trim();
-                    if (string.IsNullOrEmpty(name) || raw.ContainsKey(name)) continue;
-                    if (sub.GetValue("SystemComponent") is int sys && sys == 1) continue;
-                    if (!string.IsNullOrEmpty(sub.GetValue("ParentKeyName") as string)) continue;
-                    if (name.StartsWith("KB", StringComparison.OrdinalIgnoreCase)
-                        || name.Contains("Redistributable", StringComparison.OrdinalIgnoreCase)
-                        || name.Contains("Windows SDK", StringComparison.OrdinalIgnoreCase)) continue;
-
-                    var publisher = (sub.GetValue("Publisher") as string)?.Trim() ?? "";
-                    var version = (sub.GetValue("DisplayVersion") as string)?.Trim() ?? "";
-                    var installLoc = (sub.GetValue("InstallLocation") as string)?.Trim('"', ' ');
-                    var uninstallStr = (sub.GetValue("UninstallString") as string)?.Trim();
-                    var displayIcon = (sub.GetValue("DisplayIcon") as string)?.Trim();
-                    bool installedHere = string.IsNullOrEmpty(installLoc) ? allDrives : scope.Contains(installLoc);
-
-                    long appBytes = 0;
-                    if (installedHere && sub.GetValue("EstimatedSize") is int estKb && estKb > 0)
-                        appBytes = estKb * 1024L;
-                    else if (installedHere && !string.IsNullOrEmpty(installLoc) && Directory.Exists(installLoc) && !DeletionSafetyPolicy.IsProtected(installLoc))
-                        appBytes = FolderSizing.Measure(installLoc, token).Bytes;
-
-                    var leftovers = MatchLeftovers(name, publisher, localDirs, roamingDirs, excluded, token);
-                    if (appBytes <= 0 && leftovers.Count == 0) continue;
-
-                    var iconPath = AppIconService.GetAppIconPath(subName, name, displayIcon, installLoc);
-
-                    raw[name] = new InstalledAppItem
+                    try
                     {
-                        Key = subName, DisplayName = name, Publisher = publisher, DisplayVersion = version,
-                        InstallLocation = installLoc, UninstallString = uninstallStr, DisplayIcon = displayIcon,
-                        IconPath = iconPath,
-                        AppBytes = appBytes, Leftovers = leftovers, CanUninstall = installedHere,
-                    };
+                        using var sub = uninstallKey.OpenSubKey(subName);
+                        if (sub is null) continue;
+
+                        var name = (sub.GetValue("DisplayName") as string)?.Trim();
+                        if (string.IsNullOrEmpty(name) || raw.ContainsKey(name)) continue;
+                        if (sub.GetValue("SystemComponent") is int sys && sys == 1) continue;
+                        if (!string.IsNullOrEmpty(sub.GetValue("ParentKeyName") as string)) continue;
+                        if (name.StartsWith("KB", StringComparison.OrdinalIgnoreCase)
+                            || name.Contains("Redistributable", StringComparison.OrdinalIgnoreCase)
+                            || name.Contains("Windows SDK", StringComparison.OrdinalIgnoreCase)) continue;
+
+                        var publisher = (sub.GetValue("Publisher") as string)?.Trim() ?? "";
+                        var version = (sub.GetValue("DisplayVersion") as string)?.Trim() ?? "";
+                        var installLoc = (sub.GetValue("InstallLocation") as string)?.Trim('"', ' ');
+                        var uninstallStr = (sub.GetValue("UninstallString") as string)?.Trim();
+                        var displayIcon = (sub.GetValue("DisplayIcon") as string)?.Trim();
+                        bool installedHere = string.IsNullOrEmpty(installLoc) ? allDrives : scope.Contains(installLoc);
+
+                        long appBytes = 0;
+                        if (installedHere && sub.GetValue("EstimatedSize") is int estKb && estKb > 0)
+                            appBytes = estKb * 1024L;
+                        else if (installedHere && !string.IsNullOrEmpty(installLoc) && Directory.Exists(installLoc) && !DeletionSafetyPolicy.IsProtected(installLoc))
+                            appBytes = FolderSizing.Measure(installLoc, token).Bytes;
+
+                        var leftovers = MatchLeftovers(name, publisher, localDirs, roamingDirs, excluded, token);
+                        if (appBytes <= 0 && leftovers.Count == 0) continue;
+
+                        var iconPath = AppIconService.GetAppIconPath(subName, name, displayIcon, installLoc);
+
+                        raw[name] = new InstalledAppItem
+                        {
+                            Key = subName, DisplayName = name, Publisher = publisher, DisplayVersion = version,
+                            InstallLocation = installLoc, UninstallString = uninstallStr, DisplayIcon = displayIcon,
+                            IconPath = iconPath,
+                            AppBytes = appBytes, Leftovers = leftovers, CanUninstall = installedHere,
+                        };
+                    }
+                    catch { }
                 }
             }
             catch { }

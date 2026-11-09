@@ -70,7 +70,7 @@ public sealed partial class MainWindow : Window
         else if (isScreenshots)
             _ = ScreenshotCapturer.RunAsync(this);
         else
-            _ = store.ScanEverythingAsync(force: false);
+            _ = store.ScanEverythingAsync();
 #endif
     }
 

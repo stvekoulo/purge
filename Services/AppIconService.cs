@@ -40,27 +40,27 @@ public static class AppIconService
         string cachedPng = Path.Combine(CacheDir, $"{hash}.png");
         if (File.Exists(cachedPng)) return cachedPng;
 
-        // 1. Check BrandIcons catalogue
-        string? brand = FindBrandIcon(appName);
-        if (brand != null && File.Exists(brand)) return brand;
-
-        // 2. Extract from DisplayIcon registry entry
+        // 1. Extract from DisplayIcon registry entry
         if (!string.IsNullOrWhiteSpace(displayIcon))
         {
             var iconPath = CleanIconPath(displayIcon);
             if (TryExtractAndSave(iconPath, cachedPng)) return cachedPng;
         }
 
-        // 3. Extract from InstallLocation executable
+        // 2. Extract from InstallLocation executable
         if (!string.IsNullOrWhiteSpace(installLoc) && Directory.Exists(installLoc))
         {
             var exe = FindMainExe(installLoc, appName);
             if (exe != null && TryExtractAndSave(exe, cachedPng)) return cachedPng;
         }
 
-        // 4. Extract from Start Menu shortcut (.lnk)
+        // 3. Extract from Start Menu shortcut (.lnk)
         var lnk = FindStartMenuShortcut(appName);
         if (lnk != null && TryExtractAndSave(lnk, cachedPng)) return cachedPng;
+
+        // 4. Fallback: Check BrandIcons catalogue
+        string? brand = FindBrandIcon(appName);
+        if (brand != null && File.Exists(brand)) return brand;
 
         return null;
     }

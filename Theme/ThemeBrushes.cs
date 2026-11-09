@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -69,20 +69,24 @@ public static class ThemeBrushes
     [DllImport("dwmapi.dll", PreserveSig = true)]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
+    private static volatile bool _cachedIsDark = true;
+
     public static bool IsDarkTheme(FrameworkElement? element = null)
     {
-        if (element is not null && element.ActualTheme != ElementTheme.Default)
-            return element.ActualTheme == ElementTheme.Dark;
-        if (App.CurrentWindow?.Content is FrameworkElement root && root.ActualTheme != ElementTheme.Default)
-            return root.ActualTheme == ElementTheme.Dark;
         try
         {
-            return Application.Current.RequestedTheme == ApplicationTheme.Dark;
+            if (App.CurrentWindow?.DispatcherQueue?.HasThreadAccess == true)
+            {
+                if (element is not null && element.ActualTheme != ElementTheme.Default)
+                    return _cachedIsDark = (element.ActualTheme == ElementTheme.Dark);
+                if (App.CurrentWindow?.Content is FrameworkElement root && root.ActualTheme != ElementTheme.Default)
+                    return _cachedIsDark = (root.ActualTheme == ElementTheme.Dark);
+                if (Application.Current is not null)
+                    return _cachedIsDark = (Application.Current.RequestedTheme == ApplicationTheme.Dark);
+            }
         }
-        catch
-        {
-            return true;
-        }
+        catch { }
+        return _cachedIsDark;
     }
 
     public static void ApplyAppearance(string? appearance, Window? window = null)

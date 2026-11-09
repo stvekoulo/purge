@@ -8,6 +8,8 @@ $version = ([xml](Get-Content "$PSScriptRoot\PurgeWin.csproj")).Project.Property
 $distDir = "E:\DEVS\Purges\PurgeWin\dist"
 
 if (-not (Test-Path $distDir)) { New-Item -ItemType Directory -Path $distDir -Force | Out-Null }
+Stop-Process -Name Purge -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 300
 
 $buildArch = {
     param($arch, $platform, $targetDir, $outDir)
