@@ -31,6 +31,8 @@ UninstallDisplayName=Purge
 Compression=lzma2/fast
 SolidCompression=yes
 WizardStyle=modern
+CloseApplications=no
+RestartApplications=no
 #if MyArch == "x64"
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible

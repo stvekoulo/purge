@@ -15,20 +15,40 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ParentId: Integer;
   Parent: THandle;
+  ResultCode: Integer;
 begin
   Result := '';
-  if not IsPurgeUpdate then Exit;
-  ParentId := StrToIntDef(ExpandConstant('{param:PURGEPID|0}'), 0);
-  if ParentId <= 0 then begin
-    Result := 'Impossible de fermer Purge. / Unable to close Purge.';
-    Exit;
+  if IsPurgeUpdate then
+  begin
+    ParentId := StrToIntDef(ExpandConstant('{param:PURGEPID|0}'), 0);
+    if ParentId > 0 then
+    begin
+      Parent := OpenProcess($00100000, False, ParentId);
+      if Parent <> 0 then
+      begin
+        try
+          if WaitForSingleObject(Parent, 30000) <> 0 then
+            Result := 'Fermez Purge puis réessayez. / Close Purge and try again.';
+        finally
+          CloseHandle(Parent);
+        end;
+      end;
+    end;
   end;
-  Parent := OpenProcess($00100000, False, ParentId);
-  if Parent = 0 then Exit; { The application has already exited. }
-  try
-    if WaitForSingleObject(Parent, 30000) <> 0 then
-      Result := 'Fermez Purge puis réessayez. / Close Purge and try again.';
-  finally
-    CloseHandle(Parent);
+
+  // Terminate any running Purge.exe process (e.g. background system tray icon)
+  // so that locked binaries (clrjit.dll, Purge.dll, etc.) are freed before file replacement.
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Purge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(500);
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ResultCode: Integer;
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Purge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(500);
   end;
 end;
