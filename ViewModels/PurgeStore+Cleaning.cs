@@ -69,7 +69,30 @@ public sealed partial class PurgeStore
             ClearSelections();
         }
         finally { IsCleaning = false; CleaningLabel = ""; NotifyScope(); }
-        if (_scopeSession.IsCurrent(context)) await ScanEverythingAsync();
+        if (_scopeSession.IsCurrent(context))
+        {
+            if (caches.Count > 0) await ScanAppCachesAsync();
+            if (paths.Count > 0)
+            {
+                if (DevItems.Any(d => d.Paths.Any(dp => paths.Any(p => string.Equals(p.Path, dp, StringComparison.OrdinalIgnoreCase)))))
+                    await ScanDevToolsAsync();
+
+                var removed = paths.Select(p => p.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                OnUi(() =>
+                {
+                    var remaining = LargeFileItems.Where(l => !removed.Contains(l.FullPath)).ToList();
+                    if (remaining.Count != LargeFileItems.Count)
+                    {
+                        Replace(LargeFileItems, remaining);
+                        RefreshAllFilteredViews();
+                        NotifyTotals();
+                    }
+                });
+            }
+            RefreshDisk();
+            SaveScopeSnapshot();
+            SaveScanCache();
+        }
         return outcome;
     }
 

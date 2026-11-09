@@ -56,6 +56,7 @@ public sealed partial class PurgeStore : ObservableObject
         Loc.SetLanguage(Settings.Language);
         RefreshDisk();
         _scopeSession.Change(Settings.SelectedDrive, CreateScope());
+        LoadScanCache();
     }
 
     private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _pendingUi = new();
@@ -102,9 +103,16 @@ public sealed partial class PurgeStore : ObservableObject
         : LastScan == null ? Loc.T("Pas encore analysé", "Not scanned yet")
         : Loc.T("Analysé ", "Scanned ") + RelativeDate.Format(LastScan.Value);
 
+    public bool IsCacheFresh(TimeSpan? maxAge = null)
+    {
+        var age = maxAge ?? TimeSpan.FromHours(24);
+        return LastScan.HasValue && (DateTime.Now - LastScan.Value) < age && HasActiveDrives;
+    }
+
     public async Task ScanEverythingAsync(bool force = true)
     {
         if (IsScanning || IsCleaning || !HasActiveDrives) return;
+        if (!force && IsCacheFresh()) return;
         EnsureScanContext();
         var context = _scopeSession.Current;
         (Func<ScanPhase> Phase, Func<Task> Scan)[] scans =
@@ -151,7 +159,12 @@ public sealed partial class PurgeStore : ObservableObject
                 if (!_scopeSession.IsCurrent(context)) return;
                 phase(finalPhase);
                 ScanLabel = "";
-                if (finalPhase == ScanPhase.Done) LastScan = DateTime.Now;
+                if (finalPhase == ScanPhase.Done)
+                {
+                    LastScan = DateTime.Now;
+                    SaveScopeSnapshot();
+                    SaveScanCache();
+                }
                 if (finalPhase == ScanPhase.Failed)
                     ScanError = Loc.T("Analyse incomplète. Actualisez pour réessayer.", "Incomplete scan. Refresh to try again.");
                 RefreshAllFilteredViews();

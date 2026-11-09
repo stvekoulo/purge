@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -42,15 +42,7 @@ public sealed partial class DevItem : ObservableObject
         _ => Loc.T("Outil de dev", "Dev tool"),
     };
 
-    private string? ResolvedIconFile
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(Icon)) return null;
-            var file = Path.Combine(AppContext.BaseDirectory, "Assets", "BrandIcons", $"{Icon}.png");
-            return File.Exists(file) ? file : null;
-        }
-    }
+    private string? ResolvedIconFile => Services.BrandIconResolver.Resolve(Icon);
 
     public bool HasIcon => ResolvedIconFile is not null;
     public ImageSource? IconSource => ResolvedIconFile is { } f ? new BitmapImage(new Uri(f)) : null;

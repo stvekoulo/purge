@@ -22,6 +22,15 @@ public sealed partial class AppLeftoverItem : ObservableObject
 
     [ObservableProperty] private bool _isSelected;
 
+    partial void OnIsSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CardBorderBrush));
+    }
+
+    public Brush CardBorderBrush => IsSelected
+        ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 124, 58, 237))
+        : ThemeBrushes.Get("Hairline");
+
     public string SizeText => ByteFormatter.Format(Bytes);
     public string MatchBadge => IsExactMatch
         ? Loc.T("Correspondance exacte", "Exact match")
@@ -63,6 +72,15 @@ public sealed partial class InstalledAppItem : ObservableObject
 
     [ObservableProperty] private bool _isSelected;
 
+    partial void OnIsSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CardBorderBrush));
+    }
+
+    public Brush CardBorderBrush => IsSelected
+        ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 124, 58, 237))
+        : ThemeBrushes.Get("Hairline");
+
     public long LeftoverBytes => Leftovers.Sum(l => l.Bytes);
     public long TotalBytes => AppBytes + LeftoverBytes;
     public string TotalSizeText => ByteFormatter.Format(TotalBytes);
@@ -95,6 +113,15 @@ public sealed partial class OrphanLeftoverItem : ObservableObject
 
     [ObservableProperty] private bool _isSelected;
 
+    partial void OnIsSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CardBorderBrush));
+    }
+
+    public Brush CardBorderBrush => IsSelected
+        ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 124, 58, 237))
+        : ThemeBrushes.Get("Hairline");
+
     public string SizeText => ByteFormatter.Format(Bytes);
     public string Subtitle => $"{LocationKind} · {Loc.T("Modifié", "Modified")} {RelativeDate.Format(LastModified)} · {FullPath}";
     public Brush BadgeBgBrush => ThemeBrushes.Get("StatusCheckFill");
@@ -111,6 +138,15 @@ public sealed partial class CliToolItem : ObservableObject
     public string? UninstallCommand { get; init; }
 
     [ObservableProperty] private bool _isSelected;
+
+    partial void OnIsSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CardBorderBrush));
+    }
+
+    public Brush CardBorderBrush => IsSelected
+        ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 124, 58, 237))
+        : ThemeBrushes.Get("Hairline");
 
     public string SizeText => ByteFormatter.Format(Bytes);
     public string Subtitle => $"{Manager} · {Path}";

@@ -5,7 +5,47 @@ namespace PurgeWin.Views;
 
 public sealed partial class MainWindow
 {
-    private void OnScanCurrentShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    private void OnRootGridKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        var ctrl = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control);
+        if (!ctrl.HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)) return;
+
+        var shift = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Shift);
+        bool isShift = shift.HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+
+        switch (args.Key)
+        {
+            case Windows.System.VirtualKey.R:
+                args.Handled = true;
+                if (isShift)
+                    _ = PurgeStore.Shared.ScanEverythingAsync();
+                else
+                    TriggerCurrentTabScan();
+                break;
+            case Windows.System.VirtualKey.Number1:
+                args.Handled = true;
+                PurgeStore.Shared.SelectedTab = AppTab.Overview;
+                break;
+            case Windows.System.VirtualKey.Number2:
+                args.Handled = true;
+                PurgeStore.Shared.SelectedTab = AppTab.AppCaches;
+                break;
+            case Windows.System.VirtualKey.Number3:
+                args.Handled = true;
+                PurgeStore.Shared.SelectedTab = AppTab.DevTools;
+                break;
+            case Windows.System.VirtualKey.Number4:
+                args.Handled = true;
+                PurgeStore.Shared.SelectedTab = AppTab.LargeFiles;
+                break;
+            case Windows.System.VirtualKey.Number5:
+                args.Handled = true;
+                PurgeStore.Shared.SelectedTab = AppTab.Uninstaller;
+                break;
+        }
+    }
+
+    private void TriggerCurrentTabScan()
     {
         var s = PurgeStore.Shared;
         _ = s.SelectedTab switch
@@ -17,6 +57,11 @@ public sealed partial class MainWindow
             AppTab.Uninstaller => s.ScanUninstallerAsync(),
             _ => s.ScanEverythingAsync(),
         };
+    }
+
+    private void OnScanCurrentShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        TriggerCurrentTabScan();
         args.Handled = true;
     }
 

@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.8"
+  #define MyAppVersion "1.0.9"
 #endif
 #ifndef MyArch
   #define MyArch "x64"
@@ -31,7 +31,7 @@ UninstallDisplayName=Purge
 Compression=lzma2/fast
 SolidCompression=yes
 WizardStyle=modern
-CloseApplications=no
+CloseApplications=yes
 RestartApplications=no
 #if MyArch == "x64"
 ArchitecturesAllowed=x64compatible

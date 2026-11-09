@@ -7,9 +7,51 @@ namespace PurgeWin;
 public partial class App : Application
 {
     public static Window? CurrentWindow { get; private set; }
+    private static Mutex? _instanceMutex;
+    private static EventWaitHandle? _showSignal;
 
     public App()
     {
+        var cliArgs = Environment.GetCommandLineArgs();
+        bool isHeadless = cliArgs.Any(a => a.Equals("--scheduled-clean", StringComparison.OrdinalIgnoreCase)
+            || a.Equals("--uninstall-cleanup", StringComparison.OrdinalIgnoreCase));
+        bool isTesting = cliArgs.Any(a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase)
+            || a.Equals("--screenshots", StringComparison.OrdinalIgnoreCase));
+
+        if (!isHeadless && !isTesting)
+        {
+            const string mutexName = @"Local\PurgeWin_SingleInstance_Mutex";
+            const string eventName = @"Local\PurgeWin_ShowInstance_Event";
+            try
+            {
+                _instanceMutex = new Mutex(true, mutexName, out bool isFirst);
+                if (!isFirst)
+                {
+                    try
+                    {
+                        if (EventWaitHandle.TryOpenExisting(eventName, out var ev))
+                        {
+                            ev.Set();
+                            ev.Dispose();
+                        }
+                    }
+                    catch { }
+                    Environment.Exit(0);
+                    return;
+                }
+
+                _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, eventName);
+                ThreadPool.RegisterWaitForSingleObject(_showSignal, (_, _) =>
+                {
+                    CurrentWindow?.DispatcherQueue?.TryEnqueue(() =>
+                    {
+                        if (CurrentWindow is MainWindow mw) mw.BringToFront();
+                    });
+                }, null, -1, false);
+            }
+            catch { }
+        }
+
         UnhandledException += OnUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
             LogCrash("AppDomain", e.ExceptionObject as Exception);

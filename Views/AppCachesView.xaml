@@ -111,13 +111,15 @@
               <CheckBox Grid.Column="0" IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                         VerticalAlignment="Center" Margin="0,0,4,0"/>
 
-              <Border Grid.Column="1" Width="28" Height="28" CornerRadius="{StaticResource RadiusXs}"
+              <Border Grid.Column="1" Width="32" Height="32" CornerRadius="8"
+                      Background="{ThemeResource FillSecondary}"
                       VerticalAlignment="Center">
                 <Grid>
-                  <Image Source="{x:Bind IconSource}" Width="26" Height="26"
+                  <Image Source="{x:Bind IconSource}" Width="20" Height="20"
                          Visibility="{x:Bind IconVisibility}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"
                          Stretch="Uniform"/>
-                  <FontIcon Glyph="&#xE8B7;" FontSize="16" Foreground="{ThemeResource TextSecondary}"
+                  <FontIcon Glyph="&#xE8B7;" FontSize="15" Foreground="{ThemeResource TextSecondary}"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
                             Visibility="{x:Bind FallbackIconVisibility}"/>
                 </Grid>

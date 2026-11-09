@@ -70,7 +70,7 @@ public sealed partial class MainWindow : Window
         else if (isScreenshots)
             _ = ScreenshotCapturer.RunAsync(this);
         else
-            _ = store.ScanEverythingAsync();
+            _ = store.ScanEverythingAsync(force: false);
 #endif
     }
 
@@ -87,7 +87,7 @@ public sealed partial class MainWindow : Window
         if (appWindow is not null)
         {
             _appWindow = appWindow;
-            _trayIcon = new TrayIconService(hWnd, appWindow);
+            _trayIcon = new TrayIconService(hWnd, appWindow, NavigateToTab);
             appWindow.Closing += OnAppWindowClosing;
             Closed += (_, _) => _trayIcon?.Dispose();
 
@@ -128,6 +128,14 @@ public sealed partial class MainWindow : Window
 
         args.Cancel = true;
         _appWindow?.Hide();
+    }
+
+    public void BringToFront() => _trayIcon?.ShowWindow();
+
+    public void NavigateToTab(AppTab tab)
+    {
+        BringToFront();
+        PurgeStore.Shared.SelectedTab = tab;
     }
 
     private void OnThemeUpdated()

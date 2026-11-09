@@ -1,13 +1,74 @@
 using PurgeWin.Models;
+using PurgeWin.Services;
 
 namespace PurgeWin.ViewModels;
 
 public sealed partial class PurgeStore
 {
+    public sealed class ScanCacheRecord
+    {
+        public DateTime? LastScan { get; set; }
+        public string ScopeKey { get; set; } = "";
+        public List<LargeFileCacheDto> LargeFiles { get; set; } = [];
+    }
+
+    public sealed record LargeFileCacheDto(string FullPath, string Name, string FolderDisplay,
+        long Bytes, DateTime LastModified, LargeFileCategory Category, string? SpecialLabel,
+        string? SpecialExplanation, bool IsOneDriveSynced);
+
     private sealed record ScopeSnapshot(List<CacheItem> Caches, List<DevItem> Dev,
         List<LargeFileItem> Large, List<InstalledAppItem> Apps, List<OrphanLeftoverItem> Orphans,
         List<CliToolItem> Cli, List<EverythingElseFolder> Folders, ScanPhase[] Phases, DateTime? LastScan);
     private readonly Dictionary<string, ScopeSnapshot> _scopeCache = new(StringComparer.OrdinalIgnoreCase);
+
+    public void SaveScanCache()
+    {
+        try
+        {
+            if (LargeFileItems.Count == 0 && LastScan == null) return;
+            var record = new ScanCacheRecord
+            {
+                LastScan = LastScan,
+                ScopeKey = _scopeSession.Current.Key,
+                LargeFiles = LargeFileItems.Select(l => new LargeFileCacheDto(l.FullPath, l.Name,
+                    l.FolderDisplay, l.Bytes, l.LastModified, l.Category, l.SpecialLabel,
+                    l.SpecialExplanation, l.IsOneDriveSynced)).ToList()
+            };
+            AppData.Save("scan-cache.json", record);
+        }
+        catch { }
+    }
+
+    public void LoadScanCache()
+    {
+        try
+        {
+            var cache = AppData.Load<ScanCacheRecord>("scan-cache.json");
+            if (cache?.LastScan != null && (DateTime.Now - cache.LastScan.Value) < TimeSpan.FromHours(24)
+                && cache.LargeFiles.Count > 0)
+            {
+                LastScan = cache.LastScan;
+                var items = cache.LargeFiles.Select(d => new LargeFileItem
+                {
+                    FullPath = d.FullPath,
+                    Name = d.Name,
+                    FolderDisplay = d.FolderDisplay,
+                    Bytes = d.Bytes,
+                    LastModified = d.LastModified,
+                    Category = d.Category,
+                    SpecialLabel = d.SpecialLabel,
+                    SpecialExplanation = d.SpecialExplanation,
+                    IsOneDriveSynced = d.IsOneDriveSynced
+                }).ToList();
+                Replace(LargeFileItems, items);
+                LargePhase = ScanPhase.Done;
+                RefreshAllFilteredViews();
+                NotifyTotals();
+                NotifyScanState();
+            }
+        }
+        catch { }
+    }
 
     private void SaveScopeSnapshot()
     {

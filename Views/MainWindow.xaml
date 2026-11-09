@@ -6,17 +6,7 @@
     xmlns:c="using:PurgeWin.Controls"
     Title="Purge">
 
-  <Grid x:Name="RootGrid" Background="{ThemeResource SurfaceBase}">
-    <Grid.KeyboardAccelerators>
-      <KeyboardAccelerator Key="R" Modifiers="Control" Invoked="OnScanCurrentShortcut"/>
-      <KeyboardAccelerator Key="R" Modifiers="Control,Shift" Invoked="OnScanAllShortcut"/>
-      <KeyboardAccelerator Key="Number1" Modifiers="Control" Invoked="OnTab1Shortcut"/>
-      <KeyboardAccelerator Key="Number2" Modifiers="Control" Invoked="OnTab2Shortcut"/>
-      <KeyboardAccelerator Key="Number3" Modifiers="Control" Invoked="OnTab3Shortcut"/>
-      <KeyboardAccelerator Key="Number4" Modifiers="Control" Invoked="OnTab4Shortcut"/>
-      <KeyboardAccelerator Key="Number5" Modifiers="Control" Invoked="OnTab5Shortcut"/>
-    </Grid.KeyboardAccelerators>
-
+  <Grid x:Name="RootGrid" Background="{ThemeResource SurfaceBase}" KeyDown="OnRootGridKeyDown">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="244"/>
       <ColumnDefinition Width="1"/>

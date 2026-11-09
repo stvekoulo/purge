@@ -72,8 +72,8 @@ public static class AppIconService
         {
             if (clean.Contains(alias, StringComparison.OrdinalIgnoreCase))
             {
-                var file = Path.Combine(AppContext.BaseDirectory, "Assets", "BrandIcons", $"{target}.png");
-                if (File.Exists(file)) return file;
+                var file = BrandIconResolver.Resolve(target);
+                if (file != null) return file;
             }
         }
         return null;

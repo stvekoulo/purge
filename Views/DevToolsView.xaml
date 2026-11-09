@@ -86,16 +86,17 @@
 
                                 <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center"/>
 
-                                <Grid Grid.Column="1" Width="32" Height="32" VerticalAlignment="Center">
-                                    <Border CornerRadius="7" Background="{ThemeResource FillSecondary}" Visibility="{x:Bind FallbackIconVisibility}">
-                                        <FontIcon Glyph="&#xE943;" FontSize="15" Foreground="{ThemeResource TextSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <Border CornerRadius="7" Visibility="{x:Bind IconVisibility}">
-                                        <Border.Background>
-                                            <ImageBrush ImageSource="{x:Bind IconSource}" Stretch="UniformToFill"/>
-                                        </Border.Background>
-                                    </Border>
-                                </Grid>
+                                <Border Grid.Column="1" Width="32" Height="32" CornerRadius="8" Background="{ThemeResource FillSecondary}" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Image Source="{x:Bind IconSource}" Width="20" Height="20"
+                                               Visibility="{x:Bind IconVisibility}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Stretch="Uniform"/>
+                                        <FontIcon Glyph="&#xE943;" FontSize="15" Foreground="{ThemeResource TextSecondary}"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  Visibility="{x:Bind FallbackIconVisibility}"/>
+                                    </Grid>
+                                </Border>
 
                                 <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
                                     <StackPanel Orientation="Horizontal" Spacing="8">

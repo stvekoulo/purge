@@ -49,6 +49,18 @@ public static class ScreenshotCapturer
         await Task.Delay(400);
         await CaptureMultiAsync(window, dirs, "screenshot-overview-dark.png");
 
+        // 4. Light Mode App Caches & Dev Tools (to verify light mode icons & no Ctrl+R badge)
+        s.SetAppearance("light");
+        s.SelectedTab = AppTab.AppCaches;
+        await s.ScanAppCachesAsync();
+        await Task.Delay(600);
+        await CaptureMultiAsync(window, dirs, "screenshot-appcaches-light.png");
+
+        s.SelectedTab = AppTab.DevTools;
+        await s.ScanDevToolsAsync();
+        await Task.Delay(600);
+        await CaptureMultiAsync(window, dirs, "screenshot-devtools-light.png");
+
         window.Close();
     }
 

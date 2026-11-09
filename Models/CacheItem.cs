@@ -27,15 +27,7 @@ public sealed partial class CacheItem : ObservableObject
     public string SafetyText => Level.DisplayName();
     public string PathSummary => Paths.Count == 1 ? Paths[0] : $"{Paths[0]}  (+{Paths.Count - 1})";
 
-    private string? ResolvedIconFile
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(Entry.Icon)) return null;
-            var file = Path.Combine(AppContext.BaseDirectory, "Assets", "BrandIcons", $"{Entry.Icon}.png");
-            return File.Exists(file) ? file : null;
-        }
-    }
+    private string? ResolvedIconFile => Services.BrandIconResolver.Resolve(Entry.Icon);
 
     public bool HasIcon => ResolvedIconFile is not null;
 

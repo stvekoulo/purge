@@ -88,11 +88,22 @@
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                         <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                        <Setter Property="CornerRadius" Value="14"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="GridViewItem">
+                                    <ContentPresenter ContentTransitions="{TemplateBinding ContentTransitions}"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
                     </Style>
                 </GridView.ItemContainerStyle>
                 <GridView.ItemTemplate>
                     <DataTemplate x:DataType="m:InstalledAppItem">
-                        <Border Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}" BorderThickness="1" CornerRadius="12" Padding="12,12">
+                        <Border Background="{ThemeResource SurfaceElevated}" BorderBrush="{x:Bind CardBorderBrush, Mode=OneWay}" BorderThickness="1" CornerRadius="14" Padding="14,12" PointerEntered="OnCardPointerEntered" PointerExited="OnCardPointerExited">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -104,15 +115,15 @@
                                 <!-- Top Row: CheckBox and context review -->
                                 <Grid Grid.Row="0">
                                     <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" MinWidth="0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                                    <Button Click="OnLaunchUninstallClick" ToolTipService.ToolTip="{x:Bind UninstallHint}" HorizontalAlignment="Right" VerticalAlignment="Top" Background="Transparent" BorderThickness="0" Padding="4" Margin="0,-4,-4,0">
+                                    <Button Click="OnLaunchUninstallClick" ToolTipService.ToolTip="{x:Bind UninstallHint}" HorizontalAlignment="Right" VerticalAlignment="Top" Background="Transparent" BorderThickness="0" Padding="4" Margin="0,-4,-4,0" Opacity="0.5">
                                         <FontIcon Glyph="&#xE74D;" FontSize="13" Foreground="{ThemeResource TextSecondary}"/>
                                     </Button>
                                 </Grid>
 
-                                <!-- Center: Real App Icon (56x56) -->
-                                <Border Grid.Row="1" Width="56" Height="56" CornerRadius="12" Background="{ThemeResource FillSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <!-- Center: Real App Icon (58x58) -->
+                                <Border Grid.Row="1" Width="58" Height="58" CornerRadius="12" Background="{ThemeResource FillSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <Grid>
-                                        <Image Source="{x:Bind IconSource}" Width="52" Height="52" Visibility="{x:Bind IconVisibility}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Image Source="{x:Bind IconSource}" Width="50" Height="50" Visibility="{x:Bind IconVisibility}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         <FontIcon Glyph="&#xE71D;" FontSize="26" Foreground="{ThemeResource TextSecondary}" Visibility="{x:Bind FallbackIconVisibility}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Grid>
                                 </Border>

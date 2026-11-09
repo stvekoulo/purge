@@ -173,4 +173,33 @@ public sealed partial class UninstallerView : UserControl
         if (sender is Button { Tag: string p } && !string.IsNullOrEmpty(p))
             ExplorerReveal.Show(p);
     }
+
+    private void OnCardPointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is Border border)
+        {
+            bool dark = ThemeBrushes.IsDarkTheme(this);
+            border.BorderBrush = new SolidColorBrush(dark
+                ? Windows.UI.Color.FromArgb(220, 140, 95, 245)
+                : Windows.UI.Color.FromArgb(220, 124, 58, 237));
+            border.Background = ThemeBrushes.Get("SurfaceCardHover");
+        }
+    }
+
+    private void OnCardPointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is Border border)
+        {
+            if (border.DataContext is InstalledAppItem app && app.IsSelected)
+            {
+                border.BorderBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 124, 58, 237));
+                border.Background = ThemeBrushes.Get("SurfaceRaised");
+            }
+            else
+            {
+                border.BorderBrush = ThemeBrushes.Get("Hairline");
+                border.Background = ThemeBrushes.Get("SurfaceElevated");
+            }
+        }
+    }
 }
