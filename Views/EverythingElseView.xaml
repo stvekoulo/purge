@@ -2,7 +2,7 @@
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  xmlns:c="using:PurgeWin.Controls" xmlns:m="using:PurgeWin.Models">
-  <ScrollViewer x:Name="ExplorerScroll" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Visible"
+  <ScrollViewer x:Name="ExplorerScroll" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto"
                 HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="14" Padding="24,16,24,30">
       <Grid ColumnSpacing="10">
@@ -16,7 +16,8 @@
       </Grid>
       <Grid ColumnSpacing="8">
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-        <Button x:Name="ParentBtn" Content="←" Click="OnParentClick" AutomationProperties.Name="Revenir au dossier précédent"/>
+        <Button x:Name="ParentBtn" Content="←" Click="OnParentClick" AutomationProperties.Name="Revenir au dossier précédent"
+                ToolTipService.ToolTip="Dossier parent / Parent folder"/>
         <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled"
                       VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
           <StackPanel x:Name="Breadcrumbs" Orientation="Horizontal" Spacing="4"/>
@@ -26,43 +27,67 @@
         <ProgressRing x:Name="FolderBusy" Width="16" Height="16" Visibility="Collapsed" IsActive="False"/>
         <TextBlock x:Name="FolderStatus" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextSecondary}" TextWrapping="Wrap"/>
       </StackPanel>
-      <Grid ColumnSpacing="10" RowSpacing="10">
-        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <Button Click="OnBucketClick" Tag="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,10" CornerRadius="10">
-          <StackPanel Spacing="4"><TextBlock x:Name="Bucket1Title" Text="Géré dans les apps" TextWrapping="Wrap" FontSize="12"/>
-            <TextBlock x:Name="Bucket1Size" FontWeight="SemiBold" Foreground="{ThemeResource ManagedInApps}"/></StackPanel>
+      <Grid x:Name="BucketGrid" ColumnSpacing="10" RowSpacing="10" SizeChanged="OnBucketGridSizeChanged">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Button x:Name="BucketCard1" Click="OnBucketClick" Tag="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,10" CornerRadius="10">
+          <StackPanel Spacing="5">
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+              <Border Width="10" Height="10" CornerRadius="3" Background="{ThemeResource ManagedInApps}"/>
+              <TextBlock x:Name="Bucket1Title" Text="Géré dans les apps" TextTrimming="CharacterEllipsis" FontSize="11" Foreground="{ThemeResource TextSecondary}"/>
+            </StackPanel>
+            <TextBlock x:Name="Bucket1Size" FontSize="18" FontWeight="SemiBold" FontFamily="{StaticResource Numbers}" Foreground="{ThemeResource TextPrimary}"/>
+          </StackPanel>
         </Button>
-        <Button Grid.Column="1" Click="OnBucketClick" Tag="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,10" CornerRadius="10">
-          <StackPanel Spacing="4"><TextBlock x:Name="Bucket2Title" Text="Vos fichiers" TextWrapping="Wrap" FontSize="12"/>
-            <TextBlock x:Name="Bucket2Size" FontWeight="SemiBold" Foreground="{ThemeResource YourFiles}"/></StackPanel>
+        <Button x:Name="BucketCard2" Grid.Column="1" Click="OnBucketClick" Tag="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,10" CornerRadius="10">
+          <StackPanel Spacing="5">
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+              <Border Width="10" Height="10" CornerRadius="3" Background="{ThemeResource YourFiles}"/>
+              <TextBlock x:Name="Bucket2Title" Text="Vos fichiers" TextTrimming="CharacterEllipsis" FontSize="11" Foreground="{ThemeResource TextSecondary}"/>
+            </StackPanel>
+            <TextBlock x:Name="Bucket2Size" FontSize="18" FontWeight="SemiBold" FontFamily="{StaticResource Numbers}" Foreground="{ThemeResource TextPrimary}"/>
+          </StackPanel>
         </Button>
-        <Button Grid.Row="1" Click="OnBucketClick" Tag="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,10" CornerRadius="10">
-          <StackPanel Spacing="4"><TextBlock x:Name="Bucket3Title" Text="Profils et données d'apps" TextWrapping="Wrap" FontSize="12"/>
-            <TextBlock x:Name="Bucket3Size" FontWeight="SemiBold" Foreground="{ThemeResource LeftAlone}"/></StackPanel>
+        <Button x:Name="BucketCard3" Grid.Column="2" Click="OnBucketClick" Tag="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,10" CornerRadius="10">
+          <StackPanel Spacing="5">
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+              <Border Width="10" Height="10" CornerRadius="3" Background="{ThemeResource LeftAlone}"/>
+              <TextBlock x:Name="Bucket3Title" Text="Profils et données d'apps" TextTrimming="CharacterEllipsis" FontSize="11" Foreground="{ThemeResource TextSecondary}"/>
+            </StackPanel>
+            <TextBlock x:Name="Bucket3Size" FontSize="18" FontWeight="SemiBold" FontFamily="{StaticResource Numbers}" Foreground="{ThemeResource TextPrimary}"/>
+          </StackPanel>
         </Button>
-        <Button Grid.Row="1" Grid.Column="1" Click="OnBucketClick" Tag="3" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,10" CornerRadius="10">
-          <StackPanel Spacing="4"><TextBlock x:Name="Bucket4Title" Text="Géré par Windows" TextWrapping="Wrap" FontSize="12"/>
-            <TextBlock x:Name="Bucket4Size" FontWeight="SemiBold" Foreground="{ThemeResource TextSecondary}"/></StackPanel>
+        <Button x:Name="BucketCard4" Grid.Column="3" Click="OnBucketClick" Tag="3" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,10" CornerRadius="10">
+          <StackPanel Spacing="5">
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+              <Border Width="10" Height="10" CornerRadius="3" Background="{ThemeResource ManagedByWindows}"/>
+              <TextBlock x:Name="Bucket4Title" Text="Géré par Windows" TextTrimming="CharacterEllipsis" FontSize="11" Foreground="{ThemeResource TextSecondary}"/>
+            </StackPanel>
+            <TextBlock x:Name="Bucket4Size" FontSize="18" FontWeight="SemiBold" FontFamily="{StaticResource Numbers}" Foreground="{ThemeResource TextPrimary}"/>
+          </StackPanel>
         </Button>
       </Grid>
       <Grid ColumnSpacing="10">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <TextBox x:Name="FolderSearch" PlaceholderText="Rechercher un dossier ou un chemin" TextChanged="OnSearchChanged"/>
-        <ComboBox x:Name="BucketPicker" Grid.Column="1" MinWidth="140" SelectionChanged="OnBucketChanged" AutomationProperties.Name="Catégorie de dossiers"/>
+        <ComboBox x:Name="BucketPicker" Grid.Column="1" MinWidth="160" SelectionChanged="OnBucketChanged" AutomationProperties.Name="Catégorie de dossiers"/>
       </Grid>
-      <Grid>
-        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <ToggleSwitch x:Name="MapToggle" Header="Carte proportionnelle" IsOn="True" Toggled="OnMapToggled"/>
-        <ComboBox x:Name="SortPicker" Grid.Column="1" MinWidth="140" SelectionChanged="OnSortChanged" AutomationProperties.Name="Trier les dossiers"/>
-      </Grid>
-      <Border x:Name="MapCard" Style="{StaticResource PurgeCard}" Padding="8">
-        <Canvas x:Name="TreemapCanvas" Height="320" SizeChanged="OnCanvasSizeChanged"/>
+      <Border x:Name="MapCard" Style="{StaticResource PurgeCard}" Padding="8" PointerWheelChanged="OnTreemapPointerWheelChanged">
+        <Canvas x:Name="TreemapCanvas" Height="380" SizeChanged="OnCanvasSizeChanged" PointerWheelChanged="OnTreemapPointerWheelChanged"/>
       </Border>
       <Border x:Name="Inspector" Style="{StaticResource PurgeCard}" Padding="14">
         <StackPanel Spacing="6">
-          <TextBlock x:Name="SelectedNameText" FontWeight="SemiBold" TextWrapping="Wrap"/>
-          <TextBlock x:Name="SelectedSizeText" Style="{StaticResource CalloutText}"/>
+          <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock x:Name="SelectedNameText" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap"/>
+            <TextBlock Grid.Column="1" x:Name="SelectedSizeText" Style="{StaticResource HeadlineText}" FontFamily="{StaticResource Numbers}"/>
+          </Grid>
           <TextBlock x:Name="SelectedDescText" Style="{StaticResource CalloutText}" TextWrapping="Wrap"/>
           <TextBlock x:Name="SelectedAdviceText" Style="{StaticResource MetadataText}" TextWrapping="Wrap" Foreground="{ThemeResource TextSecondary}"/>
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
@@ -74,31 +99,6 @@
           </StackPanel>
         </StackPanel>
       </Border>
-      <TextBlock x:Name="FolderCount" Style="{StaticResource HeadlineText}" TextWrapping="Wrap"/>
-      <TextBlock x:Name="EmptyText" Text="Aucun résultat" Style="{StaticResource CalloutText}" Visibility="Collapsed" TextWrapping="Wrap"/>
-      <ItemsControl x:Name="FolderRows">
-        <ItemsControl.ItemTemplate><DataTemplate x:DataType="m:EverythingElseFolder">
-          <Grid Margin="0,0,0,8" ColumnSpacing="6">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-          <Button Click="OnFolderSelected" DoubleTapped="OnFolderDoubleTapped" Tag="{x:Bind}" Padding="12,10"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" CornerRadius="8" AutomationProperties.Name="{x:Bind DisplayName}">
-            <Grid ColumnSpacing="10">
-              <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-              <StackPanel Spacing="3">
-                <TextBlock Text="{x:Bind DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                <TextBlock Text="{x:Bind LocationText}" FontSize="11" Foreground="{ThemeResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
-              </StackPanel>
-              <TextBlock Grid.Column="1" Text="{x:Bind SizeText}" FontSize="12" VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-          <Button Grid.Column="1" Tag="{x:Bind}" IsEnabled="{x:Bind IsDirectory}" Click="OnNavigateFolder" Padding="10"
-                  AutomationProperties.Name="Explorer le dossier" ToolTipService.ToolTip="Explorer le dossier / Explore folder">
-            <FontIcon Glyph="&#xE76C;" FontSize="12"/>
-          </Button>
-          </Grid>
-        </DataTemplate></ItemsControl.ItemTemplate>
-      </ItemsControl>
-      <c:PurgeButton x:Name="MoreButton" Content="Afficher plus" Click="OnMore" HorizontalAlignment="Center" Visibility="Collapsed"/>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

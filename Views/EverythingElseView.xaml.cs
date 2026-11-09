@@ -20,9 +20,8 @@ public sealed partial class EverythingElseView : UserControl
     private readonly Stack<(string? Path, double Offset)> _history = new();
     private CancellationTokenSource? _load;
     private long _revision = -1;
-    private int _limit = 50;
     private bool _syncing, _busy;
-    private int _bucket, _sort;
+    private int _bucket;
 
     public EverythingElseView()
     {
@@ -71,7 +70,7 @@ public sealed partial class EverythingElseView : UserControl
         if (remember) _history.Push((_path, ExplorerScroll.VerticalOffset));
         _load?.Cancel(); _load?.Dispose();
         var load = _load = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
-        _path = path; _selected = null; _limit = 50; _bucket = 0;
+        _path = path; _selected = null; _bucket = 0;
         _busy = true; _entries = []; FolderSearch.Text = "";
         RefreshEntries(); BuildBreadcrumbs(); UpdateBusy();
         try
@@ -99,7 +98,6 @@ public sealed partial class EverythingElseView : UserControl
             if (ReferenceEquals(load, _load))
             {
                 _busy = false; UpdateBusy();
-                EmptyText.Visibility = _visible.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             }
         }
     }
@@ -108,7 +106,6 @@ public sealed partial class EverythingElseView : UserControl
     {
         _entries = entries.ToList();
         _selected = _entries.FirstOrDefault(i => i.IsDirectory && i.Bytes > 0) ?? _entries.FirstOrDefault();
-        _limit = 50;
         FolderStatus.Text = Loc.T("Lecture seule · ≈ indique une taille estimée. Explorez un dossier pour affiner.",
             "Read only · ≈ marks an estimated size. Explore a folder to refine it.");
         if (_entries.Count >= 2000) FolderStatus.Text += Loc.T(" · 2 000 premiers éléments.", " · First 2,000 items.");
@@ -130,15 +127,9 @@ public sealed partial class EverythingElseView : UserControl
         BucketPicker.ItemsSource = new[] { Loc.T("Tout", "All"), Bucket1Title.Text, Bucket2Title.Text,
             Bucket3Title.Text, Bucket4Title.Text, Loc.T("Non détaillé", "Not detailed") };
         BucketPicker.SelectedIndex = _bucket;
-        SortPicker.ItemsSource = new[] { Loc.T("Taille ↓", "Size ↓"), Loc.T("Nom A–Z", "Name A–Z") };
-        SortPicker.SelectedIndex = _sort;
-        MapToggle.Header = Loc.T("Carte proportionnelle", "Proportional map");
-        MapToggle.OnContent = Loc.T("Visible", "Shown"); MapToggle.OffContent = Loc.T("Masquée", "Hidden");
         FolderSearch.PlaceholderText = Loc.T("Rechercher un dossier ou un chemin", "Search folders or paths");
-        MoreButton.Content = Loc.T("Afficher 50 éléments de plus", "Show 50 more items");
         ExploreBtn.Content = Loc.T("Explorer le dossier", "Explore folder");
         RevealBtn.Content = Loc.T("Afficher dans Windows", "Show in Windows");
-        EmptyText.Text = Loc.T("Aucun élément à afficher. Modifiez le filtre ou actualisez l'analyse.", "No items to show. Change the filter or refresh the scan.");
         _syncing = false;
         RefreshEntries(); BuildBreadcrumbs();
     }

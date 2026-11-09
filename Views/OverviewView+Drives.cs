@@ -1,6 +1,9 @@
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using PurgeWin.Models;
 using PurgeWin.Theme;
 using PurgeWin.Utilities;
 
@@ -8,43 +11,54 @@ namespace PurgeWin.Views;
 
 public sealed partial class OverviewView
 {
-    private int _driveColumns;
-
-    private void OnDriveCardsSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        int columns = e.NewSize.Width < 460 ? 1 : 2;
-        if (_driveColumns != columns) { _driveColumns = columns; RebuildDriveButtons(); }
-    }
-
     private void RebuildDriveButtons()
     {
-        if (DriveButtonsPanel == null) return;
-        var drives = Store.Drives.Where(d => !d.IsAllDrives).ToArray();
-        int columns = Math.Max(1, _driveColumns);
-        DriveButtonsPanel.Children.Clear();
-        DriveButtonsPanel.ColumnDefinitions.Clear();
-        DriveButtonsPanel.RowDefinitions.Clear();
-        for (int i = 0; i < columns; i++) DriveButtonsPanel.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        for (int i = 0; i < drives.Length; i++)
+        if (DrivePillsPanel == null) return;
+        DrivePillsPanel.Children.Clear();
+
+        var drives = Store.Drives.ToArray();
+        foreach (var drive in drives)
         {
-            var drive = drives[i];
-            if (i % columns == 0) DriveButtonsPanel.RowDefinitions.Add(new() { Height = GridLength.Auto });
-            var content = new StackPanel { Spacing = 7 };
-            content.Children.Add(new TextBlock { Text = drive.DisplayTitle, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis });
-            content.Children.Add(new ProgressBar { Minimum = 0, Maximum = 100, Value = drive.UsedPercent, Height = 4 });
-            content.Children.Add(new TextBlock { Text = drive.CapacitySummary, FontSize = 11, TextWrapping = TextWrapping.Wrap,
-                Foreground = ThemeBrushes.Get("TextSecondary") });
-            var button = new Button { Content = content, Padding = new(12), CornerRadius = new(8),
-                HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                Background = ThemeBrushes.Get(drive.IsActive ? "FillSecondary" : "SurfaceCard"),
-                BorderBrush = ThemeBrushes.Get(drive.IsActive ? "ActionPrimary" : "BorderSubtle"),
-                BorderThickness = new(drive.IsActive ? 2 : 1), IsEnabled = !Store.IsCleaning && drive.IsAvailable };
-            AutomationProperties.SetName(button, drive.DisplayTitle + " · " + drive.CapacitySummary);
-            ToolTipService.SetToolTip(button, Loc.T("Afficher uniquement ce disque dans toutes les vues", "Show only this drive in all views"));
-            button.Click += (_, _) => Store.SetDrive(drive.Key);
-            Grid.SetColumn(button, i % columns); Grid.SetRow(button, i / columns);
-            DriveButtonsPanel.Children.Add(button);
+            bool isActive = drive.IsAllDrives
+                ? Store.IsAllDrives
+                : (!Store.IsAllDrives && string.Equals(Store.Settings.SelectedDrive, drive.Key, StringComparison.OrdinalIgnoreCase));
+
+            string label = drive.IsAllDrives
+                ? $"{drive.DisplayTitle} ({ByteFormatter.Format(drive.FreeBytes)} {Loc.T("libres", "free")})"
+                : $"{drive.DisplayTitle} · {ByteFormatter.Format(drive.UsedBytes)} / {ByteFormatter.Format(drive.TotalBytes)}";
+
+            var textBlock = new TextBlock
+            {
+                Text = label,
+                FontSize = 12,
+                FontWeight = isActive ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
+                Foreground = ThemeBrushes.Get(isActive ? "TextPrimary" : "TextSecondary"),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            var pill = new Button
+            {
+                Content = textBlock,
+                Padding = new Thickness(12, 5, 12, 5),
+                CornerRadius = new CornerRadius(14),
+                Background = ThemeBrushes.Get(isActive ? "FillSecondary" : "Transparent"),
+                BorderBrush = isActive ? ThemeBrushes.Get("BorderSubtle") : new SolidColorBrush(Colors.Transparent),
+                BorderThickness = new Thickness(1),
+                IsEnabled = !Store.IsCleaning && drive.IsAvailable
+            };
+
+            AutomationProperties.SetName(pill, label);
+            ToolTipService.SetToolTip(pill, drive.IsAllDrives
+                ? Loc.T("Analyser et afficher tous les disques", "Scan and show all drives")
+                : Loc.T("Afficher uniquement ce disque dans toutes les vues", "Show only this drive in all views"));
+
+            pill.Click += (_, _) =>
+            {
+                Store.SetDrive(drive.Key);
+                RebuildDriveButtons();
+            };
+
+            DrivePillsPanel.Children.Add(pill);
         }
     }
 }

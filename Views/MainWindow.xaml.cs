@@ -22,6 +22,8 @@ public sealed partial class MainWindow : Window
     private UninstallerView? _uninstallerView;
     private SettingsView? _settingsView;
     private AboutView? _aboutView;
+    private AppWindow? _appWindow;
+    private TrayIconService? _trayIcon;
 
     public MainWindow()
     {
@@ -84,12 +86,20 @@ public sealed partial class MainWindow : Window
 
         if (appWindow is not null)
         {
+            _appWindow = appWindow;
+            _trayIcon = new TrayIconService(hWnd, appWindow);
+            appWindow.Closing += OnAppWindowClosing;
+            Closed += (_, _) => _trayIcon?.Dispose();
+
             var icoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
             if (File.Exists(icoPath)) appWindow.SetIcon(icoPath);
             if (appWindow.TitleBar is { } tb && AppWindowTitleBar.IsCustomizationSupported())
             {
                 tb.ExtendsContentIntoTitleBar = true;
                 tb.PreferredHeightOption = TitleBarHeightOption.Standard;
+                int h = tb.Height > 0 ? tb.Height : 38;
+                TitleBarRow.Height = new GridLength(Math.Max(38, h));
+                TitleBarDragRegion.Height = Math.Max(38, h);
             }
             if (appWindow.Presenter is OverlappedPresenter presenter)
             {
@@ -106,6 +116,18 @@ public sealed partial class MainWindow : Window
                 appWindow.Move(pos);
             }
         }
+    }
+
+    private void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (_trayIcon is { IsExiting: true }) return;
+        var cmdArgs = Environment.GetCommandLineArgs();
+        if (cmdArgs.Any(a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase)
+            || a.Equals("--screenshots", StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        args.Cancel = true;
+        _appWindow?.Hide();
     }
 
     private void OnThemeUpdated()
@@ -227,51 +249,4 @@ public sealed partial class MainWindow : Window
     private void NavUninstaller_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.Uninstaller;
     private void NavSettings_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.Settings;
     private void NavAbout_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.About;
-
-    private void OnScanCurrentShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        var s = PurgeStore.Shared;
-        _ = s.SelectedTab switch
-        {
-            AppTab.Overview when s.OverviewPage == OverviewSubPage.EverythingElse => _everythingElseView?.RefreshCurrentFolderAsync() ?? s.ScanEverythingElseAsync(),
-            AppTab.AppCaches => s.ScanAppCachesAsync(),
-            AppTab.DevTools => s.ScanDevToolsAsync(),
-            AppTab.LargeFiles => s.ScanLargeFilesAsync(),
-            AppTab.Uninstaller => s.ScanUninstallerAsync(),
-            _ => s.ScanEverythingAsync(),
-        };
-        args.Handled = true;
-    }
-
-    private void OnScanAllShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args) { _ = PurgeStore.Shared.ScanEverythingAsync(); args.Handled = true; }
-    private void OnTab1Shortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args) { PurgeStore.Shared.SelectedTab = AppTab.Overview; args.Handled = true; }
-    private void OnTab2Shortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args) { PurgeStore.Shared.SelectedTab = AppTab.AppCaches; args.Handled = true; }
-    private void OnTab3Shortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args) { PurgeStore.Shared.SelectedTab = AppTab.DevTools; args.Handled = true; }
-    private void OnTab4Shortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args) { PurgeStore.Shared.SelectedTab = AppTab.LargeFiles; args.Handled = true; }
-    private void OnTab5Shortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args) { PurgeStore.Shared.SelectedTab = AppTab.Uninstaller; args.Handled = true; }
-
-    private async Task RunSelfTestAsync()
-    {
-        var s = PurgeStore.Shared;
-        await Task.Delay(300);
-        await s.ScanAppCachesAsync();
-        await s.ScanDevToolsAsync();
-        await s.ScanUninstallerAsync();
-        await s.ScanEverythingElseAsync();
-
-        foreach (var tab in Enum.GetValues<AppTab>()) { s.SelectedTab = tab; await Task.Delay(120); }
-        s.SelectedTab = AppTab.Overview;
-        s.OverviewPage = OverviewSubPage.EverythingElse;
-        await Task.Delay(150);
-        s.OverviewPage = OverviewSubPage.Summary;
-        s.SetAppearance("light");
-        await Task.Delay(200);
-        s.SetAppearance("dark");
-        await Task.Delay(200);
-        s.SetLanguage("en");
-        await Task.Delay(150);
-        s.SetLanguage("fr");
-        await Task.Delay(150);
-        Close();
-    }
 }

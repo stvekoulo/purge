@@ -33,7 +33,7 @@ public sealed partial class DriveScopeBar : UserControl
         _syncing = true;
         try
         {
-            Visibility = Store.SelectedTab is AppTab.About or AppTab.Settings ? Visibility.Collapsed : Visibility.Visible;
+            Visibility = Store.SelectedTab is AppTab.Overview or AppTab.About or AppTab.Settings ? Visibility.Collapsed : Visibility.Visible;
             if (_catalog != Store.DriveCatalogVersion)
             {
                 DrivePicker.ItemsSource = Store.Drives.ToArray();

@@ -15,7 +15,7 @@ public sealed partial class OverviewView : UserControl
         InitializeComponent();
         Store.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(PurgeStore.ScopeTitle) or nameof(PurgeStore.IsCleaning)) RebuildDriveButtons();
+            if (e.PropertyName is nameof(PurgeStore.ScopeTitle) or nameof(PurgeStore.IsAllDrives) or nameof(PurgeStore.DriveCatalogVersion) or nameof(PurgeStore.IsCleaning)) RebuildDriveButtons();
             UpdateUI();
         };
         Store.Drives.CollectionChanged += (_, _) => RebuildDriveButtons();
@@ -28,7 +28,7 @@ public sealed partial class OverviewView : UserControl
     {
         TxtPageTitle.Text = Loc.T("Vue d'ensemble", "Overview") + (Store.IsAllDrives ? "" : " · " + Store.ScopeTitle);
         TxtLastScan.Text = Store.LastScanText;
-        TxtDrivesLabel.Text = Loc.T("Disques", "Drives");
+        TxtDrivesLabel.Text = Loc.T("Disques :", "Drives:");
 
         BtnScanAll.IsBusy = Store.IsScanning;
         BtnScanAll.Content = Store.IsScanning

@@ -32,7 +32,7 @@
       </Grid.RowDefinitions>
 
       <!-- Brand Mark Header + Theme & Language Quick Toggles -->
-      <Grid Grid.Row="0" Margin="16,28,12,16">
+      <Grid Grid.Row="0" Margin="16,36,12,16">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="*"/>
@@ -236,17 +236,21 @@
     <!-- Main Detail Content Area -->
     <Grid Grid.Column="2" Background="{ThemeResource SurfaceBase}">
       <Grid.RowDefinitions>
+        <RowDefinition x:Name="TitleBarRow" Height="38"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
 
+      <!-- Custom drag region in detail header: leaves caption button room on right -->
+      <Border Grid.Row="0" x:Name="DetailTitleBarDrag" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
       <!-- Update Notification Banner -->
-      <Border x:Name="UpdateBanner" Grid.Row="0" Visibility="Collapsed"
+      <Border x:Name="UpdateBanner" Grid.Row="1" Visibility="Collapsed"
               Background="{ThemeResource FillSecondary}"
               BorderBrush="{ThemeResource ActionPrimary}"
               BorderThickness="1" CornerRadius="{StaticResource RadiusMd}"
-              Margin="24,20,24,0" Padding="14,10">
+              Margin="24,8,24,0" Padding="14,10">
         <Grid ColumnSpacing="12">
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -277,14 +281,14 @@
         </Grid>
       </Border>
 
-      <c:DriveScopeBar Grid.Row="1"/>
-      <Grid Grid.Row="2" x:Name="DetailHost" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-      <v:OnboardingOverlay Grid.RowSpan="3" x:Name="OnboardingControl" Visibility="Collapsed"/>
-      <v:CelebrationOverlay Grid.RowSpan="3" x:Name="CelebrationControl" Visibility="Collapsed"/>
+      <c:DriveScopeBar Grid.Row="2"/>
+      <Grid Grid.Row="3" x:Name="DetailHost" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+      <v:OnboardingOverlay Grid.RowSpan="4" x:Name="OnboardingControl" Visibility="Collapsed"/>
+      <v:CelebrationOverlay Grid.RowSpan="4" x:Name="CelebrationControl" Visibility="Collapsed"/>
     </Grid>
 
     <!-- Custom TitleBar Drag Region across top of window -->
-    <Border x:Name="TitleBarDragRegion" Grid.ColumnSpan="3" Height="28"
+    <Border x:Name="TitleBarDragRegion" Grid.ColumnSpan="3" Height="38"
             VerticalAlignment="Top" Background="Transparent" IsHitTestVisible="True"/>
   </Grid>
 </Window>
