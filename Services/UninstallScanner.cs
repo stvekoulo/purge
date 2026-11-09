@@ -74,6 +74,7 @@ public static class UninstallScanner
                     var version = (sub.GetValue("DisplayVersion") as string)?.Trim() ?? "";
                     var installLoc = (sub.GetValue("InstallLocation") as string)?.Trim('"', ' ');
                     var uninstallStr = (sub.GetValue("UninstallString") as string)?.Trim();
+                    var displayIcon = (sub.GetValue("DisplayIcon") as string)?.Trim();
                     bool installedHere = string.IsNullOrEmpty(installLoc) ? allDrives : scope.Contains(installLoc);
 
                     long appBytes = 0;
@@ -85,10 +86,13 @@ public static class UninstallScanner
                     var leftovers = MatchLeftovers(name, publisher, localDirs, roamingDirs, excluded, token);
                     if (appBytes <= 0 && leftovers.Count == 0) continue;
 
+                    var iconPath = AppIconService.GetAppIconPath(subName, name, displayIcon, installLoc);
+
                     raw[name] = new InstalledAppItem
                     {
                         Key = subName, DisplayName = name, Publisher = publisher, DisplayVersion = version,
-                        InstallLocation = installLoc, UninstallString = uninstallStr,
+                        InstallLocation = installLoc, UninstallString = uninstallStr, DisplayIcon = displayIcon,
+                        IconPath = iconPath,
                         AppBytes = appBytes, Leftovers = leftovers, CanUninstall = installedHere,
                     };
                 }

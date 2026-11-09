@@ -9,11 +9,12 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Grid Grid.Row="0" Padding="28,16,28,14" ColumnSpacing="12">
+        <Grid Grid.Row="0" Padding="28,16,28,12" ColumnSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -28,31 +29,107 @@
             </StackPanel>
         </Grid>
 
-        <!-- Sub-tabs & Search -->
-        <Grid Grid.Row="1" Padding="28,6,28,10" BorderBrush="{ThemeResource Hairline}" BorderThickness="0,0,0,1" ColumnSpacing="10">
+        <!-- Sub-tabs (Row 1) -->
+        <Grid Grid.Row="1" Padding="28,0,28,8">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <c:PurgeButton x:Name="TabAppsBtn" Content="Applications installées" Size="Compact" Variant="Secondary" Click="OnTabAppsClick"/>
+                <c:PurgeButton x:Name="TabLeftoversBtn" Content="Restes d'applications" Size="Compact" Variant="Ghost" Click="OnTabLeftoversClick"/>
+                <c:PurgeButton x:Name="TabCliBtn" Content="Outils CLI" Size="Compact" Variant="Ghost" Click="OnTabCliClick"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Toolbar: Sort, Summary, Search, ViewSwitcher (Row 2) -->
+        <Grid Grid.Row="2" Padding="28,6,28,10" BorderBrush="{ThemeResource Hairline}" BorderThickness="0,1,0,1" ColumnSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <ScrollViewer Grid.Column="0" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Hidden"
-                          VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <c:PurgeButton x:Name="TabAppsBtn" Content="Applications installées" Size="Compact" Variant="Secondary" Click="OnTabAppsClick"/>
-                    <c:PurgeButton x:Name="TabLeftoversBtn" Content="Restes d'applications" Size="Compact" Variant="Ghost" Click="OnTabLeftoversClick"/>
-                    <c:PurgeButton x:Name="TabCliBtn" Content="Outils CLI" Size="Compact" Variant="Ghost" Click="OnTabCliClick"/>
-                </StackPanel>
-            </ScrollViewer>
+            <!-- Left: Sort selector -->
+            <ComboBox x:Name="SortCombo" SelectionChanged="OnSortChanged" FontSize="12" CornerRadius="8" MinWidth="150" Padding="10,4">
+                <ComboBoxItem Content="Taille (décroissante)" Tag="Largest" IsSelected="True"/>
+                <ComboBoxItem Content="Taille (croissante)" Tag="Smallest"/>
+                <ComboBoxItem Content="Nom (A à Z)" Tag="NameAZ"/>
+            </ComboBox>
 
+            <!-- Center: Selection summary -->
             <TextBlock Grid.Column="1" x:Name="SelectionSummary" Style="{StaticResource PurgeCaption}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-            <TextBox Grid.Column="2" x:Name="SearchBox" PlaceholderText="Rechercher..." TextChanged="OnSearchChanged" FontSize="12" CornerRadius="8"/>
+
+            <!-- Right: Search + View switcher capsule -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBox x:Name="SearchBox" PlaceholderText="Rechercher..." TextChanged="OnSearchChanged" FontSize="12" CornerRadius="8" Width="180"/>
+
+                <Border x:Name="ViewSwitcher" Background="{ThemeResource FillSecondary}" BorderBrush="{ThemeResource BorderSubtle}" BorderThickness="1" CornerRadius="16" Padding="2">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <Button x:Name="ViewGridBtn" Click="OnViewGridClick" Width="30" Height="26" Padding="0" CornerRadius="13" Background="{ThemeResource SurfaceElevated}" BorderThickness="0" ToolTipService.ToolTip="Affichage en grille">
+                            <FontIcon Glyph="&#xF0E2;" FontSize="12" Foreground="{ThemeResource TextPrimary}"/>
+                        </Button>
+                        <Button x:Name="ViewListBtn" Click="OnViewListClick" Width="30" Height="26" Padding="0" CornerRadius="13" Background="Transparent" BorderThickness="0" ToolTipService.ToolTip="Affichage en liste">
+                            <FontIcon Glyph="&#xE8FD;" FontSize="12" Foreground="{ThemeResource TextSecondary}"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </Grid>
 
-        <!-- Content Lists -->
-        <Grid Grid.Row="2">
-            <!-- 1. Installed Apps -->
-            <ListView x:Name="AppsListView" SelectionMode="None" Padding="24,14">
+        <!-- Content Lists (Row 3) -->
+        <Grid Grid.Row="3">
+            <!-- 1. Installed Apps Grid Mode -->
+            <GridView x:Name="AppsGridView" SelectionMode="None" Padding="24,14" ItemClick="OnAppGridItemClick" IsItemClickEnabled="True">
+                <GridView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid Orientation="Horizontal" ItemWidth="176" ItemHeight="190"/>
+                    </ItemsPanelTemplate>
+                </GridView.ItemsPanel>
+                <GridView.ItemContainerStyle>
+                    <Style TargetType="GridViewItem">
+                        <Setter Property="Margin" Value="6"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </GridView.ItemContainerStyle>
+                <GridView.ItemTemplate>
+                    <DataTemplate x:DataType="m:InstalledAppItem">
+                        <Border Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}" BorderThickness="1" CornerRadius="12" Padding="12,12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Top Row: CheckBox and context review -->
+                                <Grid Grid.Row="0">
+                                    <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" MinWidth="0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                                    <Button Click="OnLaunchUninstallClick" ToolTipService.ToolTip="{x:Bind UninstallHint}" HorizontalAlignment="Right" VerticalAlignment="Top" Background="Transparent" BorderThickness="0" Padding="4" Margin="0,-4,-4,0">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="13" Foreground="{ThemeResource TextSecondary}"/>
+                                    </Button>
+                                </Grid>
+
+                                <!-- Center: Real App Icon (56x56) -->
+                                <Border Grid.Row="1" Width="56" Height="56" CornerRadius="12" Background="{ThemeResource FillSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Image Source="{x:Bind IconSource}" Width="52" Height="52" Visibility="{x:Bind IconVisibility}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <FontIcon Glyph="&#xE71D;" FontSize="26" Foreground="{ThemeResource TextSecondary}" Visibility="{x:Bind FallbackIconVisibility}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+
+                                <!-- App Display Name -->
+                                <TextBlock Grid.Row="2" Text="{x:Bind DisplayName}" Style="{StaticResource PurgeBody}" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,8,0,2" ToolTipService.ToolTip="{x:Bind DisplayName}"/>
+
+                                <!-- App Total Size -->
+                                <TextBlock Grid.Row="3" Text="{x:Bind TotalSizeText}" Style="{StaticResource PurgeMono}" FontSize="12" Foreground="{ThemeResource TextSecondary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+
+            <!-- 2. Installed Apps List Mode -->
+            <ListView x:Name="AppsListView" SelectionMode="None" Padding="24,14" Visibility="Collapsed">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -73,8 +150,12 @@
 
                                 <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center"/>
 
-                                <Border Grid.Column="1" Width="32" Height="32" CornerRadius="7" Background="{ThemeResource FillSecondary}" VerticalAlignment="Center">
-                                    <FontIcon Glyph="&#xE71D;" FontSize="15" Foreground="{ThemeResource TextSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <!-- Real App Icon (36x36) -->
+                                <Border Grid.Column="1" Width="36" Height="36" CornerRadius="8" Background="{ThemeResource FillSecondary}" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Image Source="{x:Bind IconSource}" Width="32" Height="32" Visibility="{x:Bind IconVisibility}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <FontIcon Glyph="&#xE71D;" FontSize="16" Foreground="{ThemeResource TextSecondary}" Visibility="{x:Bind FallbackIconVisibility}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
                                 </Border>
 
                                 <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
@@ -99,7 +180,7 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <!-- 2. Orphaned Leftovers -->
+            <!-- 3. Orphaned Leftovers -->
             <ListView x:Name="LeftoversListView" SelectionMode="None" Padding="24,14" Visibility="Collapsed">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
@@ -120,7 +201,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center"/>
-                                <Border Grid.Column="1" Width="32" Height="32" CornerRadius="7" Background="{ThemeResource FillSecondary}" VerticalAlignment="Center">
+                                <Border Grid.Column="1" Width="36" Height="36" CornerRadius="8" Background="{ThemeResource FillSecondary}" VerticalAlignment="Center">
                                     <FontIcon Glyph="&#xE74D;" FontSize="15" Foreground="{ThemeResource TextSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
@@ -139,7 +220,7 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <!-- 3. CLI Tools -->
+            <!-- 4. CLI Tools -->
             <ListView x:Name="CliListView" SelectionMode="None" Padding="24,14" Visibility="Collapsed">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
@@ -160,7 +241,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center"/>
-                                <Border Grid.Column="1" Width="32" Height="32" CornerRadius="7" Background="{ThemeResource FillSecondary}" VerticalAlignment="Center">
+                                <Border Grid.Column="1" Width="36" Height="36" CornerRadius="8" Background="{ThemeResource FillSecondary}" VerticalAlignment="Center">
                                     <FontIcon Glyph="&#xE756;" FontSize="15" Foreground="{ThemeResource TextSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">

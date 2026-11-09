@@ -1,11 +1,14 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using PurgeWin.Theme;
 using PurgeWin.Utilities;
 
 namespace PurgeWin.Models;
 
 public enum UninstallerSubTab { InstalledApps, Leftovers, CliTools }
+public enum AppSortOption { Largest, Smallest, NameAZ }
 
 /// One associated leftover folder for an installed app (AppData\Local,
 /// AppData\Roaming, ProgramData, Temp). Exact matches arrive checked; looser
@@ -34,6 +37,23 @@ public sealed partial class InstalledAppItem : ObservableObject
     public required string DisplayVersion { get; init; }
     public string? InstallLocation { get; init; }
     public string? UninstallString { get; init; }
+    public string? DisplayIcon { get; init; }
+    public string? IconPath { get; set; }
+    private ImageSource? _cachedIconSource;
+    public ImageSource? IconSource
+    {
+        get
+        {
+            if (_cachedIconSource == null && !string.IsNullOrEmpty(IconPath) && System.IO.File.Exists(IconPath))
+            {
+                try { _cachedIconSource = new BitmapImage(new Uri(IconPath)); } catch { }
+            }
+            return _cachedIconSource;
+        }
+    }
+    public bool HasIcon => !string.IsNullOrEmpty(IconPath) && System.IO.File.Exists(IconPath);
+    public Visibility IconVisibility => HasIcon ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility FallbackIconVisibility => HasIcon ? Visibility.Collapsed : Visibility.Visible;
     public bool CanUninstall { get; init; } = true;
     public string UninstallHint => CanUninstall ? Loc.T("Ouvrir le désinstalleur de l'application", "Open the application's uninstaller")
         : Loc.T("Choisissez le disque d'installation, ou Tous les disques, pour désinstaller l'application.",

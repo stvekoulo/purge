@@ -1,5 +1,7 @@
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using PurgeWin.Controls;
 using PurgeWin.Models;
 using PurgeWin.Theme;
@@ -15,6 +17,7 @@ public sealed partial class UninstallerView : UserControl
     public UninstallerView()
     {
         InitializeComponent();
+        AppsGridView.ItemsSource = Store.FilteredInstalledApps;
         AppsListView.ItemsSource = Store.FilteredInstalledApps;
         LeftoversListView.ItemsSource = Store.FilteredOrphanLeftovers;
         CliListView.ItemsSource = Store.FilteredCliTools;
@@ -62,6 +65,10 @@ public sealed partial class UninstallerView : UserControl
         SearchBox.PlaceholderText = Loc.T("Rechercher...", "Search...");
         SelectionSummary.Text = Store.SelectedUninstallSummaryText;
 
+        bool isApps = Store.UninstallSubTab == UninstallerSubTab.InstalledApps;
+        SortCombo.Visibility = isApps ? Visibility.Visible : Visibility.Collapsed;
+        ViewSwitcher.Visibility = isApps ? Visibility.Visible : Visibility.Collapsed;
+
         int activeCount = Store.UninstallSubTab switch
         {
             UninstallerSubTab.InstalledApps => Store.FilteredInstalledApps.Count,
@@ -69,11 +76,27 @@ public sealed partial class UninstallerView : UserControl
             _ => Store.FilteredCliTools.Count,
         };
 
-        AppsListView.Visibility = Store.UninstallSubTab == UninstallerSubTab.InstalledApps && activeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        LeftoversListView.Visibility = Store.UninstallSubTab == UninstallerSubTab.Leftovers && activeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        CliListView.Visibility = Store.UninstallSubTab == UninstallerSubTab.CliTools && activeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyState.Visibility = activeCount == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (isApps)
+        {
+            AppsGridView.Visibility = Store.IsUninstallGridView && activeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+            AppsListView.Visibility = !Store.IsUninstallGridView && activeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+            LeftoversListView.Visibility = Visibility.Collapsed;
+            CliListView.Visibility = Visibility.Collapsed;
 
+            ViewGridBtn.Background = Store.IsUninstallGridView ? ThemeBrushes.Get("SurfaceRaised") : new SolidColorBrush(Colors.Transparent);
+            ViewListBtn.Background = !Store.IsUninstallGridView ? ThemeBrushes.Get("SurfaceRaised") : new SolidColorBrush(Colors.Transparent);
+            if (ViewGridBtn.Content is FontIcon gi) gi.Foreground = ThemeBrushes.Get(Store.IsUninstallGridView ? "TextPrimary" : "TextSecondary");
+            if (ViewListBtn.Content is FontIcon li) li.Foreground = ThemeBrushes.Get(!Store.IsUninstallGridView ? "TextPrimary" : "TextSecondary");
+        }
+        else
+        {
+            AppsGridView.Visibility = Visibility.Collapsed;
+            AppsListView.Visibility = Visibility.Collapsed;
+            LeftoversListView.Visibility = Store.UninstallSubTab == UninstallerSubTab.Leftovers && activeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+            CliListView.Visibility = Store.UninstallSubTab == UninstallerSubTab.CliTools && activeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        EmptyState.Visibility = activeCount == 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyTitle.Text = Loc.T("Aucun élément à afficher", "No items to display");
         EmptySubtitle.Text = Loc.T(
             "Lancez une analyse pour inspecter vos applications, restes orphelins et outils CLI.",
@@ -84,6 +107,16 @@ public sealed partial class UninstallerView : UserControl
 
     private async void OnCleanSelectedClick(object sender, RoutedEventArgs e)
     {
+        if (Store.UninstallSubTab == UninstallerSubTab.InstalledApps)
+        {
+            var picked = Store.InstalledApps.Where(a => a.IsSelected).ToList();
+            if (picked.Count == 1)
+            {
+                await UninstallReviewDialog.ShowAsync(XamlRoot, picked[0], Store);
+                return;
+            }
+        }
+
         var candidates = Store.UninstallSubTab switch
         {
             UninstallerSubTab.InstalledApps => Store.InstalledApps.Where(a => a.IsSelected && a.LeftoverBytes > 0)
@@ -102,16 +135,37 @@ public sealed partial class UninstallerView : UserControl
     private void OnTabLeftoversClick(object sender, RoutedEventArgs e) { Store.UninstallSubTab = UninstallerSubTab.Leftovers; SyncUi(); }
     private void OnTabCliClick(object sender, RoutedEventArgs e) { Store.UninstallSubTab = UninstallerSubTab.CliTools; SyncUi(); }
 
+    private void OnViewGridClick(object sender, RoutedEventArgs e) { Store.IsUninstallGridView = true; SyncUi(); }
+    private void OnViewListClick(object sender, RoutedEventArgs e) { Store.IsUninstallGridView = false; SyncUi(); }
+
+    private void OnSortChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (SortCombo?.SelectedItem is ComboBoxItem item && Enum.TryParse<AppSortOption>(item.Tag?.ToString(), out var sort))
+        {
+            Store.UninstallSortOption = sort;
+            Store.ApplyUninstallFilter();
+        }
+    }
+
+    private void OnAppGridItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is InstalledAppItem app)
+        {
+            app.IsSelected = !app.IsSelected;
+            Store.NotifyUninstallSelection();
+        }
+    }
+
     private void OnSearchChanged(object sender, TextChangedEventArgs e)
     {
         Store.UninstallSearchQuery = SearchBox.Text ?? "";
         Store.ApplyUninstallFilter();
     }
 
-    private void OnLaunchUninstallClick(object sender, RoutedEventArgs e)
+    private async void OnLaunchUninstallClick(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { DataContext: InstalledAppItem app })
-            Store.LaunchAppUninstaller(app);
+        if (sender is FrameworkElement { DataContext: InstalledAppItem app })
+            await UninstallReviewDialog.ShowAsync(XamlRoot, app, Store);
     }
 
     private void OnRevealClick(object sender, RoutedEventArgs e)

@@ -25,6 +25,8 @@ public sealed partial class PurgeStore
 
     [ObservableProperty] private UninstallerSubTab _uninstallSubTab = UninstallerSubTab.InstalledApps;
     [ObservableProperty] private string _uninstallSearchQuery = "";
+    [ObservableProperty] private AppSortOption _uninstallSortOption = AppSortOption.Largest;
+    [ObservableProperty] private bool _isUninstallGridView = true;
 
     private const long LargeFileScannerThreshold = 5L * 1024 * 1024;
 
@@ -173,9 +175,15 @@ public sealed partial class PurgeStore
     public void ApplyUninstallFilter()
     {
         var q = UninstallSearchQuery.Trim();
+        var apps = InstalledApps.Where(a => string.IsNullOrEmpty(q) || a.DisplayName.Contains(q, StringComparison.OrdinalIgnoreCase));
+        apps = UninstallSortOption switch
+        {
+            AppSortOption.Smallest => apps.OrderBy(a => a.TotalBytes),
+            AppSortOption.NameAZ => apps.OrderBy(a => a.DisplayName, StringComparer.CurrentCultureIgnoreCase),
+            _ => apps.OrderByDescending(a => a.TotalBytes)
+        };
         FilteredInstalledApps.Clear();
-        foreach (var a in InstalledApps.Where(a => string.IsNullOrEmpty(q) || a.DisplayName.Contains(q, StringComparison.OrdinalIgnoreCase)))
-            FilteredInstalledApps.Add(a);
+        foreach (var a in apps) FilteredInstalledApps.Add(a);
 
         FilteredOrphanLeftovers.Clear();
         foreach (var o in OrphanLeftovers.Where(o => string.IsNullOrEmpty(q) || o.FolderName.Contains(q, StringComparison.OrdinalIgnoreCase)))

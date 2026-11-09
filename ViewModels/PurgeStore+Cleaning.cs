@@ -95,7 +95,7 @@ public sealed partial class PurgeStore
         return ok;
     }
 
-    private void RecordOutcome(CleanOutcome outcome, string trigger)
+    public void RecordOutcome(CleanOutcome outcome, string trigger)
     {
         _scopeCache.Clear();
         History.Entries.Insert(0, new() { Date = DateTime.Now, Trigger = trigger, FreedBytes = outcome.FreedBytes,
