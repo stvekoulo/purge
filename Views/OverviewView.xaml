@@ -57,10 +57,7 @@
             <FontIcon Glyph="&#xEDA2;" FontSize="14" Foreground="{ThemeResource TextSecondary}"/>
             <TextBlock x:Name="TxtDrivesLabel" Text="Disques :" Style="{StaticResource MetadataText}" FontWeight="SemiBold" Foreground="{ThemeResource TextSecondary}" VerticalAlignment="Center"/>
           </StackPanel>
-          <ScrollViewer Grid.Column="1" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Auto"
-                        VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
-            <StackPanel x:Name="DriveButtonsPanel" Orientation="Horizontal" Spacing="6"/>
-          </ScrollViewer>
+          <Grid Grid.Column="1" x:Name="DriveButtonsPanel" ColumnSpacing="10" RowSpacing="10" SizeChanged="OnDriveCardsSizeChanged"/>
         </Grid>
       </Border>
 

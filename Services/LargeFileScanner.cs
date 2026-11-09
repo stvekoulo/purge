@@ -42,10 +42,11 @@ public static class LargeFileScanner
         Action<LargeFileItem>? onItem, ISet<string> excluded, IReadOnlyList<string> activeDrives, CancellationToken token)
     {
         var results = new List<LargeFileItem>();
+        var scope = new PathScope(activeDrives, excluded);
         await Task.Run(() =>
         {
             bool OnActiveDrive(string p) =>
-                activeDrives.Count == 0 || activeDrives.Any(d => p.StartsWith(d, StringComparison.OrdinalIgnoreCase));
+                scope.CanDelete(p);
 
             var roots = GetScanRoots(activeDrives);
             var oneDriveRoot = Environment.GetEnvironmentVariable("OneDrive");
@@ -53,15 +54,16 @@ public static class LargeFileScanner
 
             foreach (var (rootPath, label, maxDepth) in roots)
             {
-                if (!Directory.Exists(rootPath) || excluded.Contains(rootPath)) continue;
+                if (!Directory.Exists(rootPath) || !scope.Allows(rootPath)) continue;
                 WalkFolder(rootPath, label, oneDriveRoot, excluded, 0, maxDepth, seenFiles, item =>
                 {
+                    if (!scope.CanDelete(item.FullPath)) return;
                     lock (results) results.Add(item);
                     onItem?.Invoke(item);
                 }, token);
             }
 
-            foreach (var aiItem in DuplicateAndAiScanner.ScanAiModels(excluded, token))
+            foreach (var aiItem in DuplicateAndAiScanner.ScanAiModels(excluded, token, scope))
             {
                 if (!OnActiveDrive(aiItem.FullPath) || !seenFiles.Add(aiItem.FullPath)) continue;
                 lock (results) results.Add(aiItem);
@@ -105,7 +107,7 @@ public static class LargeFileScanner
         }
 
         return list.Where(r => !string.IsNullOrEmpty(r.Path) &&
-                (activeDrives.Count == 0 || activeDrives.Any(d => r.Path.StartsWith(d, StringComparison.OrdinalIgnoreCase))))
+                activeDrives.Any(d => PathScope.IsWithin(r.Path, d)))
             .DistinctBy(r => r.Path.TrimEnd('\\'), StringComparer.OrdinalIgnoreCase)
             .ToList();
     }

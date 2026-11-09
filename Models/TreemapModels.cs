@@ -3,28 +3,6 @@ using Windows.Foundation;
 
 namespace PurgeWin.Models;
 
-public enum EverythingElseBucket
-{
-    ManagedInApps,
-    YourFiles,
-    LeftAlone,
-    ManagedByWindows,
-}
-
-public sealed record EverythingElseFolder(
-    string Id,
-    string Name,
-    string FullPath,
-    string Description,
-    string ActionHint,
-    EverythingElseBucket Bucket,
-    long Bytes)
-{
-    public string DisplayName => Name;
-    public string ActionAdvice => ActionHint;
-    public string SizeText => ByteFormatter.Format(Bytes);
-}
-
 public sealed record TreemapItem(string Id, double Weight);
 
 public sealed record TreemapTile(string Id, Rect Rect, double Weight)

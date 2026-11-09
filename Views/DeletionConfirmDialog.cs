@@ -120,7 +120,30 @@ public static class DeletionConfirmDialog
             DefaultButton = ContentDialogButton.Primary,
         };
 
+        var store = PurgeWin.ViewModels.PurgeStore.Shared;
+        var empty = new CheckBox { IsChecked = store.AutoEmptyRecycleBin,
+            Content = Loc.T("Vider aussi la Corbeille après nettoyage", "Also empty Recycle Bin after cleaning") };
+        rootPanel.Children.Add(empty);
+        rootPanel.Children.Add(new TextBlock { FontSize = 11, TextWrapping = TextWrapping.Wrap,
+            Text = Loc.T("Si coché : suppression définitive de toute la Corbeille du périmètre, anciens éléments compris.",
+                "When checked: permanently empties the entire Recycle Bin in this scope, including older items."),
+            Foreground = ThemeBrushes.Get("StatusDangerText") });
+        object initialTitle = dlg.Title;
+        void UpdateAction()
+        {
+            bool permanent = empty.IsChecked == true;
+            dlg.DefaultButton = permanent ? ContentDialogButton.Close : ContentDialogButton.Primary;
+            dlg.PrimaryButtonText = permanent ? Loc.T("Nettoyer et vider la Corbeille", "Clean and empty Recycle Bin")
+                : Loc.T($"Envoyer à la Corbeille ({ByteFormatter.Format(totalBytes)})", $"Move to Recycle Bin ({ByteFormatter.Format(totalBytes)})");
+            dlg.Title = permanent ? Loc.T("Nettoyer et vider la Corbeille ?", "Clean and empty Recycle Bin?") : initialTitle;
+            if (rootPanel.Children[0] is TextBlock summary) summary.Text = permanent
+                ? Loc.T("Le nettoyage sera suivi d'un vidage définitif de toute la Corbeille du périmètre.", "Cleaning will be followed by permanently emptying the entire Recycle Bin in this scope.")
+                : Loc.T("Les éléments seront envoyés dans la Corbeille Windows et pourront être restaurés.", "Items will be moved to the Windows Recycle Bin and can be restored.");
+        }
+        empty.Checked += (_, _) => UpdateAction(); empty.Unchecked += (_, _) => UpdateAction(); UpdateAction();
         var result = await dlg.ShowAsync();
-        return result == ContentDialogResult.Primary;
+        if (result != ContentDialogResult.Primary) return false;
+        store.SetAutoEmptyRecycleBin(empty.IsChecked == true);
+        return true;
     }
 }

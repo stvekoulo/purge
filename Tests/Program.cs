@@ -1,5 +1,23 @@
 using PurgeWin.Services;
 
+if (args.Contains("--restore-fixture") || args.Contains("--restore-zero-fixture"))
+{
+    var folder = Path.GetFullPath(args[1]);
+    Directory.CreateDirectory(folder);
+    var path = Path.Combine(folder, "PurgeRestoreTest_" + Guid.NewGuid().ToString("N"));
+    string fixtureContent = args.Contains("--restore-zero-fixture") ? "" : "Disposable Purge restore fixture";
+    await File.WriteAllTextAsync(path, fixtureContent);
+    var error = RecycleBin.MoveToRecycleBin(path);
+    if (error != null || File.Exists(path)) throw new Exception("Fixture was not recycled: " + error);
+    if (RecycleBin.Count(Path.GetPathRoot(path)!) < 1) throw new Exception("Recycled fixture was not counted.");
+    var restored = await RecycleBin.RestoreAsync([Path.GetPathRoot(path)!], [path]);
+    for (int i = 0; i < 30 && !File.Exists(path); i++) await Task.Delay(100);
+    bool ok = restored.Requested == 1 && File.Exists(path) && await File.ReadAllTextAsync(path) == fixtureContent;
+    Console.WriteLine($"Native restore of disposable fixture only: {(ok ? "PASS" : "FAIL")}");
+    if (File.Exists(path)) File.Delete(path);
+    return ok ? 0 : 1;
+}
+
 if (args.Contains("--live-download"))
 {
     var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
@@ -130,5 +148,7 @@ var plan = UpdateInstaller.BuildStartInfo(@"C:\Downloads\Purge Setup.exe", @"C:\
 Check("Installer targets existing folder with correct scope", plan.ArgumentList.Contains(@"/DIR=C:\Program Files\Purge") && plan.ArgumentList.Contains("/ALLUSERS"));
 Check("Installer waits for parent and requests relaunch", plan.ArgumentList.Contains("/PURGEPID=123") && plan.ArgumentList.Contains("/PURGEUPDATE=1"));
 Check("Update never reboots Windows or force-closes applications", plan.ArgumentList.Contains("/NORESTART") && plan.ArgumentList.Contains("/NOCLOSEAPPLICATIONS"));
+await ScopeTests.Run(Check);
+await FolderAndTrashTests.Run(Check);
 Console.WriteLine($"Failures: {failed}");
 return failed == 0 ? 0 : 1;

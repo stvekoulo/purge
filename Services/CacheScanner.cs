@@ -8,9 +8,10 @@ namespace PurgeWin.Services;
 public static class CacheScanner
 {
     public static async Task<List<CacheItem>> ScanAsync(
-        Action<CacheItem>? onItem, ISet<string> excluded, CancellationToken token)
+        Action<CacheItem>? onItem, ISet<string> excluded, CancellationToken token, IReadOnlyList<string>? activeDrives = null)
     {
         var results = new List<CacheItem>();
+        var scope = new PathScope(activeDrives ?? PathScope.AvailableRoots(), excluded);
         await Task.Run(() =>
         {
             Parallel.ForEach(CacheCatalog.Entries, new ParallelOptions
@@ -19,7 +20,7 @@ public static class CacheScanner
                 CancellationToken = token,
             }, entry =>
             {
-                var item = Measure(entry, excluded, token);
+                var item = Measure(entry, scope, token);
                 if (item is null) return;
                 lock (results) results.Add(item);
                 onItem?.Invoke(item);
@@ -28,14 +29,14 @@ public static class CacheScanner
         return results.OrderByDescending(i => i.Bytes).ToList();
     }
 
-    private static CacheItem? Measure(CatalogEntry entry, ISet<string> excluded, CancellationToken token)
+    private static CacheItem? Measure(CatalogEntry entry, PathScope scope, CancellationToken token)
     {
         var paths = entry.Paths.SelectMany(PathExpander.Expand)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             // A Folder-mode match that is a protected root is never offered;
             // Contents roots (like %TEMP%) stay, only their children move.
             .Where(p => entry.CleanMode == CleanMode.Contents || !DeletionSafetyPolicy.IsProtected(p))
-            .Where(p => !excluded.Contains(p))
+            .Where(p => entry.CleanMode == CleanMode.Contents ? scope.Allows(p) : scope.CanDelete(p))
             .ToList();
         if (paths.Count == 0) return null;
 
@@ -48,6 +49,8 @@ public static class CacheScanner
             {
                 foreach (var child in FolderSizing.AgedChildren(path, entry.MinAgeHours))
                 {
+                    token.ThrowIfCancellationRequested();
+                    if (!scope.CanDelete(child.FullName)) continue;
                     bytes += FolderSizing.MeasureEntry(child);
                     if (child.LastWriteTime > newest) newest = child.LastWriteTime;
                 }

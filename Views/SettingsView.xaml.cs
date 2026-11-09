@@ -11,7 +11,7 @@ namespace PurgeWin.Views;
 public sealed partial class SettingsView : UserControl
 {
     public static event Action? ReplayOnboardingRequested;
-    private bool _loading;
+    private bool _loading = true;
 
     public SettingsView()
     {
@@ -38,6 +38,7 @@ public sealed partial class SettingsView : UserControl
             30 => 1, 90 => 2, 180 => 3, _ => 0
         };
         TglAutoUpdate.IsOn = settings.AutoCheckUpdates;
+        ChkAutoEmptyTrash.IsChecked = settings.EmptyRecycleBinAfterCleaning;
         _loading = false;
 
         SyncTexts();
@@ -146,6 +147,9 @@ public sealed partial class SettingsView : UserControl
         RefreshComboSelection(CmbStale);
         TxtAutoUpdateTitle.Text = Loc.T("Vérifier les mises à jour au démarrage", "Check for updates on startup");
         TxtAutoUpdateSub.Text = Loc.T("Recherche discrètement si une nouvelle version est disponible sur GitHub", "Silently checks if a newer version is available on GitHub");
+        ChkAutoEmptyTrash.Content = Loc.T("Vider la Corbeille après nettoyage", "Empty Recycle Bin after cleaning");
+        TxtAutoEmptyHint.Text = Loc.T("Désactivé par défaut. Après un nettoyage manuel ou planifié, supprime définitivement toute la Corbeille des disques concernés, anciens éléments compris.",
+            "Off by default. After manual or scheduled cleaning, permanently empties the entire Recycle Bin on the affected drives, including older items.");
         TxtCustomRootsTitle.Text = Loc.T("Dossiers de projets personnalisés", "Custom Project Folders");
         TxtCustomRootsSub.Text = Loc.T("Dossiers supplémentaires inspectés par Outils de dev", "Extra folders scanned by Dev Tools");
         BtnAddProjectFolder.Content = Loc.T("+ Ajouter", "+ Add Folder");
@@ -205,6 +209,7 @@ public sealed partial class SettingsView : UserControl
         if (_loading || CmbStale is null) return;
         PurgeStore.Shared.Settings.StaleProjectDays = CmbStale.SelectedIndex switch { 1 => 30, 2 => 90, 3 => 180, _ => 0 };
         PurgeStore.Shared.SaveSettings();
+        PurgeStore.Shared.InvalidateAnalysis();
     }
 
     private void OnAutoUpdateToggled(object sender, RoutedEventArgs e)
@@ -212,6 +217,11 @@ public sealed partial class SettingsView : UserControl
         if (_loading || TglAutoUpdate is null) return;
         PurgeStore.Shared.Settings.AutoCheckUpdates = TglAutoUpdate.IsOn;
         PurgeStore.Shared.SaveSettings();
+    }
+
+    private void OnAutoEmptyChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_loading && ChkAutoEmptyTrash != null) PurgeStore.Shared.SetAutoEmptyRecycleBin(ChkAutoEmptyTrash.IsChecked == true);
     }
 
     private async void OnAddProjectFolderClick(object sender, RoutedEventArgs e)
@@ -225,6 +235,7 @@ public sealed partial class SettingsView : UserControl
         {
             PurgeStore.Shared.Settings.CustomProjectRoots.Add(folder.Path);
             PurgeStore.Shared.SaveSettings();
+            PurgeStore.Shared.InvalidateAnalysis();
             RefreshFolderList(CustomRootsPanel, PurgeStore.Shared.Settings.CustomProjectRoots, OnRemoveCustomRootClick);
         }
     }
@@ -235,6 +246,7 @@ public sealed partial class SettingsView : UserControl
         {
             PurgeStore.Shared.Settings.CustomProjectRoots.RemoveAll(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase));
             PurgeStore.Shared.SaveSettings();
+            PurgeStore.Shared.InvalidateAnalysis();
             RefreshFolderList(CustomRootsPanel, PurgeStore.Shared.Settings.CustomProjectRoots, OnRemoveCustomRootClick);
         }
     }
@@ -245,6 +257,7 @@ public sealed partial class SettingsView : UserControl
         {
             PurgeStore.Shared.Settings.ExcludedPaths.RemoveAll(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase));
             PurgeStore.Shared.SaveSettings();
+            PurgeStore.Shared.InvalidateAnalysis();
             RefreshExclusions();
         }
     }

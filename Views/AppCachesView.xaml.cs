@@ -38,7 +38,7 @@ public sealed partial class AppCachesView : UserControl
         BtnScan.Content = store.CachePhase == ScanPhase.Scanning
             ? Loc.T("Analyse en cours...", "Scanning...")
             : Loc.T("Analyser", "Scan");
-        BtnScan.IsEnabled = !store.IsCleaning;
+        BtnScan.IsEnabled = !store.IsCleaning && !store.IsScanning && store.HasActiveDrives;
 
         BtnCleanSelected.IsBusy = store.IsCleaning;
         if (store.IsCleaning)

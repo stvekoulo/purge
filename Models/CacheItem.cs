@@ -53,6 +53,8 @@ public sealed record CleanOutcome(
     long FreedBytes,
     int MovedCount,
     IReadOnlyList<string> MovedPaths,
-    IReadOnlyList<CleanFailure> Failures);
+    IReadOnlyList<CleanFailure> Failures,
+    bool RecycleBinEmptied = false,
+    bool RecycleBinEmptyRequested = false);
 
 public sealed record CleanFailure(string Path, string Reason);

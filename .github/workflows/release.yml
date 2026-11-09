@@ -48,7 +48,9 @@ jobs:
       - name: Test published startup on the runner architecture
         if: matrix.arch == 'x64'
         shell: pwsh
-        run: .\scripts\Test-Startup.ps1 -Executable "artifacts\${{ matrix.rid }}\Purge.exe"
+        run: |
+          $version = ([xml](Get-Content PurgeWin.csproj)).Project.PropertyGroup.Version | Select-Object -First 1
+          .\scripts\Test-Startup.ps1 -Executable "artifacts\${{ matrix.rid }}\Purge.exe" -ExpectedVersion "$version.0"
 
       - name: Build Inno Setup Installer (Purge-Setup-win-${{ matrix.arch }}.exe)
         shell: pwsh

@@ -61,24 +61,32 @@ public sealed partial class PurgeStore
     };
 
     public string CacheSubtitle => CacheItems.Count == 0
-        ? LastScanText
+        ? EmptyScanText(CachePhase)
         : Loc.T($"{CacheItems.Count} éléments · {ByteFormatter.Format(CacheBytes)} récupérables",
                 $"{CacheItems.Count} items · {ByteFormatter.Format(CacheBytes)} reclaimable");
 
     public string DevSubtitle => DevItems.Count == 0
-        ? LastScanText
+        ? EmptyScanText(DevPhase)
         : Loc.T($"{DevItems.Count} éléments · {ByteFormatter.Format(DevBytes)} récupérables",
                 $"{DevItems.Count} items · {ByteFormatter.Format(DevBytes)} reclaimable");
 
     public string LargeSubtitle => LargeFileItems.Count == 0
-        ? LastScanText
+        ? EmptyScanText(LargePhase)
         : Loc.T($"{LargeFileItems.Count} fichiers · {ByteFormatter.Format(LargeFileBytes)} au total",
                 $"{LargeFileItems.Count} files · {ByteFormatter.Format(LargeFileBytes)} total");
 
     public string UninstallSubtitle => (InstalledApps.Count + OrphanLeftovers.Count + CliTools.Count) == 0
-        ? LastScanText
+        ? EmptyScanText(UninstallPhase)
         : Loc.T($"{InstalledApps.Count} apps · {OrphanLeftovers.Count} restes · {CliTools.Count} outils CLI",
                 $"{InstalledApps.Count} apps · {OrphanLeftovers.Count} leftovers · {CliTools.Count} CLI tools");
+
+    private static string EmptyScanText(ScanPhase phase) => phase switch
+    {
+        ScanPhase.Scanning => Loc.T("Analyse de ce périmètre en cours…", "Scanning this scope…"),
+        ScanPhase.Done => Loc.T("Aucun élément détecté sur ce périmètre", "No items found in this scope"),
+        ScanPhase.Failed => Loc.T("Analyse incomplète — actualisez pour réessayer", "Incomplete scan — refresh to retry"),
+        _ => Loc.T("Pas encore analysé sur ce périmètre", "This scope has not been scanned yet")
+    };
 
     public string SelectedSummaryText => FormatSelected(SelectedCount, SelectedBytes);
     public string SelectedDevSummaryText => FormatSelected(SelectedDevCount, SelectedDevBytes);

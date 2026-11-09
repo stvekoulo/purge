@@ -13,6 +13,14 @@ public static class AppData
     {
         get
         {
+#if PURGE_UX_TEST
+            var testRoot = Environment.GetEnvironmentVariable("PURGE_TEST_DATA_ROOT");
+            if (!string.IsNullOrWhiteSpace(testRoot) && Path.IsPathFullyQualified(testRoot))
+            {
+                Directory.CreateDirectory(testRoot!);
+                return testRoot!;
+            }
+#endif
             var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Purge");
             Directory.CreateDirectory(dir);
             return dir;
@@ -59,6 +67,7 @@ public sealed class AppSettings
     /// Minimum days untouched for project build folders (0 = all, 30, 90, 180, 365).
     public int StaleProjectDays { get; set; } = 0;
     public bool AutoCheckUpdates { get; set; } = true;
+    public bool EmptyRecycleBinAfterCleaning { get; set; }
     public bool HasCompletedOnboarding { get; set; }
 }
 
@@ -69,6 +78,8 @@ public sealed class HistoryEntry
     public string Trigger { get; set; } = "manual"; // manual | safe | scheduled
     public long FreedBytes { get; set; }
     public int ItemCount { get; set; }
+    public bool RecycleBinEmptied { get; set; }
+    public bool RecycleBinEmptyRequested { get; set; }
     public List<string> Moved { get; set; } = [];
     public List<string> Skipped { get; set; } = [];
 
@@ -89,6 +100,10 @@ public sealed class HistoryEntry
                 "scheduled" => Loc.T("Nettoyage planifié", "Scheduled clean"),
                 _ => Loc.T("Nettoyage manuel", "Manual clean")
             };
+            if (RecycleBinEmptied) return Loc.T($"{ItemCount} éléments nettoyés · Corbeille vidée définitivement · {mode}",
+                $"{ItemCount} items cleaned · Recycle Bin permanently emptied · {mode}");
+            if (RecycleBinEmptyRequested) return Loc.T($"{ItemCount} éléments nettoyés · Vidage partiel de la Corbeille · {mode}",
+                $"{ItemCount} items cleaned · Recycle Bin partially emptied · {mode}");
             return Loc.T(
                 $"{ItemCount} élément{(ItemCount > 1 ? "s" : "")} envoyé{(ItemCount > 1 ? "s" : "")} à la Corbeille · {mode}",
                 $"{ItemCount} item{(ItemCount > 1 ? "s" : "")} moved to Recycle Bin · {mode}");

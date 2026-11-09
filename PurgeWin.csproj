@@ -21,18 +21,22 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
-    <Version>1.0.4</Version>
-    <FileVersion>1.0.4.0</FileVersion>
-    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <Version>1.0.5</Version>
+    <FileVersion>1.0.5.0</FileVersion>
+    <AssemblyVersion>1.0.5.0</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UpdatePreview)' == 'true'">
     <DefineConstants>$(DefineConstants);PURGE_UPDATE_PREVIEW</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(UxTest)' == 'true'">
+    <DefineConstants>$(DefineConstants);PURGE_UX_TEST</DefineConstants>
+  </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="Tests\**\*.cs" />
     <Compile Include="Tests\UpdatePreview.cs" Condition="'$(UpdatePreview)' == 'true'" />
+    <Compile Include="Tests\ScopeIntegrationProbe.cs" Condition="'$(UxTest)' == 'true'" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.*" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.*" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.*" />

@@ -97,14 +97,15 @@ public static class DevScanner
         IReadOnlyList<string> customRoots, IReadOnlyList<string> activeDrives, CancellationToken token)
     {
         var list = new List<DevItem>();
+        var scope = new PathScope(activeDrives, excluded);
         await Task.Run(() =>
         {
             bool OnActiveDrive(string p) =>
-                activeDrives.Count == 0 || activeDrives.Any(d => p.StartsWith(d, StringComparison.OrdinalIgnoreCase));
+                scope.CanDelete(p);
 
             void Emit(DevItem item)
             {
-                if (!item.Paths.Any(OnActiveDrive)) return;
+                if (!item.Paths.All(OnActiveDrive)) return;
                 lock (list) list.Add(item);
                 onItem?.Invoke(item);
             }
@@ -134,21 +135,21 @@ public static class DevScanner
                 });
             }
 
-            ScanAndroidAvds(Emit, excluded, token);
+            ScanAndroidAvds(Emit, excluded, token, scope);
             ScanProjects(Emit, excluded, staleDays, customRoots, activeDrives, token);
-            ScanOrphanWorktrees(Emit, excluded, token);
+            ScanOrphanWorktrees(Emit, excluded, token, scope);
         }, token);
         return list.OrderByDescending(i => i.Bytes).ToList();
     }
 
-    private static void ScanAndroidAvds(Action<DevItem> emit, ISet<string> excluded, CancellationToken token)
+    private static void ScanAndroidAvds(Action<DevItem> emit, ISet<string> excluded, CancellationToken token, PathScope scope)
     {
         var avdRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".android", "avd");
         if (!Directory.Exists(avdRoot)) return;
         foreach (var dir in Directory.EnumerateDirectories(avdRoot, "*.avd"))
         {
             token.ThrowIfCancellationRequested();
-            if (excluded.Contains(dir) || File.Exists(Path.Combine(dir, "hardware-qemu.ini.lock"))) continue;
+            if (!scope.CanDelete(dir) || File.Exists(Path.Combine(dir, "hardware-qemu.ini.lock"))) continue;
             var (bytes, mod) = FolderSizing.Measure(dir, token);
             if (bytes < 1024 * 1024) continue;
             var name = Path.GetFileNameWithoutExtension(dir).Replace('_', ' ');
@@ -190,16 +191,17 @@ public static class DevScanner
         var cutoff = staleDays <= 0 ? DateTime.MaxValue : DateTime.Now.AddDays(-staleDays);
         var currentDir = AppContext.BaseDirectory.TrimEnd('\\');
 
-        foreach (var root in roots.Where(Directory.Exists))
+        var scope = new PathScope(activeDrives, excluded);
+        foreach (var root in roots.Where(r => Directory.Exists(r) && scope.Allows(r) && !PathExpander.IsReparsePoint(r)))
         {
             WalkProjectDirs(root, 0, 3, projectDir =>
             {
                 token.ThrowIfCancellationRequested();
-                if (currentDir.StartsWith(projectDir, StringComparison.OrdinalIgnoreCase)) return;
+                if (!scope.Allows(projectDir) || PathScope.IsWithin(currentDir, projectDir)) return;
                 foreach (var rule in ProjectRules)
                 {
                     var artifactPath = Path.Combine(projectDir, rule.Folder);
-                    if (!Directory.Exists(artifactPath) || excluded.Contains(artifactPath) || PathExpander.IsReparsePoint(artifactPath))
+                    if (!Directory.Exists(artifactPath) || !scope.CanDelete(artifactPath) || PathExpander.IsReparsePoint(artifactPath))
                         continue;
                     if (!rule.RootMarkers.Any(m => File.Exists(Path.Combine(projectDir, m))))
                         continue;
@@ -244,7 +246,7 @@ public static class DevScanner
         catch { }
     }
 
-    private static void ScanOrphanWorktrees(Action<DevItem> emit, ISet<string> excluded, CancellationToken token)
+    private static void ScanOrphanWorktrees(Action<DevItem> emit, ISet<string> excluded, CancellationToken token, PathScope scope)
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         string[] roots = [Path.Combine(home, ".cursor", "worktrees"), Path.Combine(home, ".codex", "worktrees")];
@@ -255,7 +257,7 @@ public static class DevScanner
                 foreach (var dir in Directory.EnumerateDirectories(root))
                 {
                     token.ThrowIfCancellationRequested();
-                    if (excluded.Contains(dir)) continue;
+                    if (!scope.CanDelete(dir)) continue;
                     var (bytes, mod) = FolderSizing.Measure(dir, token);
                     if (bytes < 512 * 1024) continue;
                     emit(new DevItem

@@ -36,7 +36,7 @@ public sealed partial class UninstallerView : UserControl
         ScanBtn.Content = Store.UninstallPhase == ScanPhase.Scanning
             ? Loc.T("Analyse en cours...", "Scanning...")
             : Loc.T("Analyser", "Scan");
-        ScanBtn.IsEnabled = !Store.IsCleaning;
+        ScanBtn.IsEnabled = !Store.IsCleaning && !Store.IsScanning && Store.HasActiveDrives;
 
         CleanSelectedBtn.IsBusy = Store.IsCleaning;
         if (Store.IsCleaning)

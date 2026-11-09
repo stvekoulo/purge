@@ -8,7 +8,7 @@ namespace PurgeWin.Services;
 /// 2) Groups byte-identical files (size -> first/last 16 KB -> SHA-256) and suggests a keeper.
 public static class DuplicateAndAiScanner
 {
-    public static List<LargeFileItem> ScanAiModels(ISet<string> excluded, CancellationToken token)
+    public static List<LargeFileItem> ScanAiModels(ISet<string> excluded, CancellationToken token, PathScope? scope = null)
     {
         var list = new List<LargeFileItem>();
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -16,12 +16,12 @@ public static class DuplicateAndAiScanner
 
         var hfRoot = Environment.GetEnvironmentVariable("HF_HUB_CACHE")
             ?? Path.Combine(home, ".cache", "huggingface", "hub");
-        if (Directory.Exists(hfRoot))
+        if (Directory.Exists(hfRoot) && (scope == null || scope.Allows(hfRoot)))
         {
             foreach (var dir in SafeDirs(hfRoot, "models--*"))
             {
                 token.ThrowIfCancellationRequested();
-                if (excluded.Contains(dir)) continue;
+                if (excluded.Contains(dir) || scope?.CanDelete(dir) == false) continue;
                 var (bytes, mod) = FolderSizing.Measure(dir, token);
                 if (bytes < LargeFileScanner.MinimumBytes) continue;
                 var modelName = Path.GetFileName(dir).Replace("models--", "").Replace("--", "/");
@@ -36,7 +36,7 @@ public static class DuplicateAndAiScanner
         }
 
         var ollamaBlobs = Path.Combine(home, ".ollama", "models", "blobs");
-        if (Directory.Exists(ollamaBlobs) && !excluded.Contains(ollamaBlobs))
+        if (Directory.Exists(ollamaBlobs) && !excluded.Contains(ollamaBlobs) && scope?.CanDelete(ollamaBlobs) != false)
         {
             var (bytes, mod) = FolderSizing.Measure(ollamaBlobs, token);
             if (bytes >= LargeFileScanner.MinimumBytes)
@@ -59,7 +59,7 @@ public static class DuplicateAndAiScanner
             Path.Combine(home, "jan", "models"),
         ];
 
-        foreach (var store in weightStores.Where(Directory.Exists))
+        foreach (var store in weightStores.Where(p => Directory.Exists(p) && scope?.Allows(p) != false))
         {
             try
             {
@@ -69,7 +69,7 @@ public static class DuplicateAndAiScanner
                 }))
                 {
                     token.ThrowIfCancellationRequested();
-                    if (f.Length < 50L * 1024 * 1024 || excluded.Contains(f.FullName)) continue;
+                    if (f.Length < 50L * 1024 * 1024 || excluded.Contains(f.FullName) || scope?.CanDelete(f.FullName) == false) continue;
                     list.Add(new LargeFileItem
                     {
                         FullPath = f.FullName, Name = f.Name, FolderDisplay = $"Modèle IA ({Path.GetFileName(store)})",

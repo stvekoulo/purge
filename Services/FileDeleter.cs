@@ -7,13 +7,13 @@ namespace PurgeWin.Services;
 /// protected-root and reparse-point checks right before moving to Recycle Bin.
 public static class FileDeleter
 {
-    public static Task<CleanOutcome> CleanAsync(IEnumerable<CacheItem> items, IProgress<string>? progress = null) =>
-        Task.Run(() => CleanCaches(items.ToList(), progress));
+    public static Task<CleanOutcome> CleanAsync(IEnumerable<CacheItem> items, IProgress<string>? progress = null, PathScope? scope = null) =>
+        Task.Run(() => CleanCaches(items.ToList(), progress, scope));
 
-    public static Task<CleanOutcome> CleanPathsAsync(IEnumerable<(string Title, string Path)> targets, IProgress<string>? progress = null) =>
-        Task.Run(() => CleanDirectPaths(targets.ToList(), progress));
+    public static Task<CleanOutcome> CleanPathsAsync(IEnumerable<(string Title, string Path)> targets, IProgress<string>? progress = null, PathScope? scope = null) =>
+        Task.Run(() => CleanDirectPaths(targets.ToList(), progress, scope));
 
-    private static CleanOutcome CleanCaches(List<CacheItem> items, IProgress<string>? progress)
+    private static CleanOutcome CleanCaches(List<CacheItem> items, IProgress<string>? progress, PathScope? scope)
     {
         var moved = new List<string>();
         var failures = new List<CleanFailure>();
@@ -24,6 +24,11 @@ public static class FileDeleter
             progress?.Report(item.Title);
             foreach (var target in Targets(item))
             {
+                if (scope?.CanDelete(target.FullName) == false)
+                {
+                    failures.Add(new(target.FullName, "Hors du disque sélectionné ou chemin exclu / Outside selected disk or excluded"));
+                    continue;
+                }
                 var decision = DeletionSafetyPolicy.Evaluate(target.FullName, item.Entry);
                 if (decision == DeletionDecision.Missing) continue;
                 if (decision != DeletionDecision.Allowed)
@@ -38,7 +43,7 @@ public static class FileDeleter
         return new CleanOutcome(freed, moved.Count, moved, failures);
     }
 
-    private static CleanOutcome CleanDirectPaths(List<(string Title, string Path)> targets, IProgress<string>? progress)
+    private static CleanOutcome CleanDirectPaths(List<(string Title, string Path)> targets, IProgress<string>? progress, PathScope? scope)
     {
         var moved = new List<string>();
         var failures = new List<CleanFailure>();
@@ -52,6 +57,11 @@ public static class FileDeleter
             catch { continue; }
 
             if (!File.Exists(full) && !Directory.Exists(full)) continue;
+            if (scope?.CanDelete(full) == false)
+            {
+                failures.Add(new(full, "Hors du disque sélectionné ou chemin exclu / Outside selected disk or excluded"));
+                continue;
+            }
             if (DeletionSafetyPolicy.IsProtected(full) || full.Count(c => c == '\\') < 2)
             {
                 failures.Add(new CleanFailure(full, "Ignoré par sécurité : emplacement protégé"));

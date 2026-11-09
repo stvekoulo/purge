@@ -34,6 +34,10 @@ public sealed partial class InstalledAppItem : ObservableObject
     public required string DisplayVersion { get; init; }
     public string? InstallLocation { get; init; }
     public string? UninstallString { get; init; }
+    public bool CanUninstall { get; init; } = true;
+    public string UninstallHint => CanUninstall ? Loc.T("Ouvrir le désinstalleur de l'application", "Open the application's uninstaller")
+        : Loc.T("Choisissez le disque d'installation, ou Tous les disques, pour désinstaller l'application.",
+            "Choose the installation drive, or All drives, to uninstall this application.");
     public required long AppBytes { get; init; }
     public required List<AppLeftoverItem> Leftovers { get; init; }
 

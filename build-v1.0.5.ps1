@@ -42,7 +42,7 @@ $buildArch = {
         }
     }
     if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant() -eq $arch) {
-        & "$PSScriptRoot\scripts\Test-Startup.ps1" -Executable "$outDir\Purge.exe"
+        & "$PSScriptRoot\scripts\Test-Startup.ps1" -Executable "$outDir\Purge.exe" -ExpectedVersion "$version.0"
     }
     
     # Compile installer

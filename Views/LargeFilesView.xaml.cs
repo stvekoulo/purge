@@ -32,7 +32,7 @@ public sealed partial class LargeFilesView : UserControl
         ScanBtn.Content = Store.LargePhase == ScanPhase.Scanning
             ? Loc.T("Analyse en cours...", "Scanning...")
             : Loc.T("Analyser", "Scan");
-        ScanBtn.IsEnabled = !Store.IsCleaning;
+        ScanBtn.IsEnabled = !Store.IsCleaning && !Store.IsScanning && Store.HasActiveDrives;
 
         KeepOneBtn.Content = Loc.T("Garder un exemplaire de chaque", "Keep One of Each");
         KeepOneBtn.Visibility = Store.LargeCategory == LargeFileCategory.Duplicate ? Visibility.Visible : Visibility.Collapsed;

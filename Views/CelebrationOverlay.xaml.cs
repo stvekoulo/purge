@@ -21,7 +21,11 @@ public sealed partial class CelebrationOverlay : UserControl
     private void UpdateVisibility()
     {
         var store = PurgeStore.Shared;
-        TxtSubtitle.Text = Loc.T("libérés et placés dans la Corbeille", "freed and moved to the Recycle Bin");
+        TxtSubtitle.Text = store.LastCleanOutcome?.RecycleBinEmptied == true
+            ? Loc.T("nettoyés · Corbeille vidée définitivement", "cleaned · Recycle Bin permanently emptied")
+            : store.LastCleanOutcome?.RecycleBinEmptyRequested == true
+                ? Loc.T("nettoyés · Vérifiez le résultat du vidage", "cleaned · Check the Recycle Bin result")
+            : Loc.T("nettoyés et placés dans la Corbeille", "cleaned and moved to the Recycle Bin");
         BtnDone.Content = Loc.T("Terminé", "Done");
         TxtTagline.Text = SizeComparisonCatalog.TimeTagline();
 

@@ -5,31 +5,35 @@ using PurgeWin.Utilities;
 
 namespace PurgeWin.ViewModels;
 
-/// Multi-drive discovery, active drive switching, language & theme switching, and path exclusions.
 public sealed partial class PurgeStore
 {
-    public IReadOnlyList<string> ActiveDriveRoots
-    {
-        get
-        {
-            var realDrives = Drives.Where(d => !d.IsAllDrives).Select(d => d.Key).ToList();
-            if (Settings.SelectedDrive == DriveVolumeItem.AllDrivesKey
-                || !realDrives.Contains(Settings.SelectedDrive, StringComparer.OrdinalIgnoreCase))
-            {
-                return realDrives;
-            }
-            return [Settings.SelectedDrive];
-        }
-    }
+    public IReadOnlyList<string> ActiveDriveRoots => Drives.Where(d => !d.IsAllDrives && d.IsAvailable
+        && (IsAllDrives || d.Key.Equals(Settings.SelectedDrive, StringComparison.OrdinalIgnoreCase))).Select(d => d.Key).ToArray();
+    public bool IsAllDrives => Settings.SelectedDrive == DriveVolumeItem.AllDrivesKey;
+    public bool HasActiveDrives => ActiveDriveRoots.Count > 0;
+    public string ScopeTitle => Drives.FirstOrDefault(d => d.Key == Settings.SelectedDrive)?.DisplayTitle
+        ?? Settings.SelectedDrive.TrimEnd('\\');
+    public string ScopeStatus => !HasActiveDrives ? Loc.T("Disque indisponible. Reconnectez-le puis actualisez.", "Drive unavailable. Reconnect it and refresh.")
+        : IsCleaning ? Loc.T("Nettoyage en cours — le disque reste verrouillé.", "Cleaning — drive selection is locked.")
+        : IsScanning ? Loc.T($"Analyse de {ScopeTitle} · {ScanLabel}…", $"Scanning {ScopeTitle} · {ScanLabel}…")
+        : new[] { CachePhase, DevPhase, LargePhase, UninstallPhase, EverythingElsePhase }.Contains(ScanPhase.Failed)
+            ? Loc.T("Certaines analyses ont échoué. Actualisez pour réessayer.", "Some scans failed. Refresh to try again.")
+        : !string.IsNullOrEmpty(ScanError) ? ScanError
+        : Loc.T($"{LastScanText} · Toutes les vues suivent ce choix.", $"{LastScanText} · All views follow this selection.");
+    public int DriveCatalogVersion { get; private set; }
+    public ScanContext CurrentScanContext => _scopeSession.Current;
+    public long ScopeRevision => _scopeSession.Current.Generation;
+    private PathScope CreateScope() => new(ActiveDriveRoots, Settings.ExcludedPaths ?? []);
 
-    public void SetLanguage(string langCode)
+    public void SetLanguage(string language)
     {
-        Settings.Language = langCode;
+        Settings.Language = language;
         SaveSettings();
-        Loc.SetLanguage(langCode);
-        RefreshDrives();
+        Loc.SetLanguage(language);
+        RefreshDisk();
         RefreshAllFilteredViews();
         NotifyTotals();
+        NotifyScope();
     }
 
     public void SetAppearance(string appearance)
@@ -40,93 +44,126 @@ public sealed partial class PurgeStore
         RefreshAllFilteredViews();
     }
 
-    public void RefreshAllFilteredViews()
+    public void RefreshAllFilteredViews() => OnUi(() =>
     {
-        OnUi(() =>
-        {
-            ApplyFilter();
-            ApplyDevFilter();
-            ApplyLargeFilter();
-            ApplyUninstallFilter();
-        });
-    }
+        ApplyFilter(); ApplyDevFilter(); ApplyLargeFilter(); ApplyUninstallFilter();
+    });
 
-    public void SetDrive(string driveKey)
+    public void SetDrive(string key)
     {
-        Settings.SelectedDrive = driveKey;
-        SaveSettings();
+        if (IsCleaning || string.Equals(key, Settings.SelectedDrive, StringComparison.OrdinalIgnoreCase)) return;
+        if (!Drives.Any(d => d.Key.Equals(key, StringComparison.OrdinalIgnoreCase))) return;
+        SaveScopeSnapshot();
+        ClearSelections();
+        Settings.SelectedDrive = key;
+        _scopeSession.Change(key, CreateScope());
+        RestoreScopeSnapshot(key);
         RefreshDisk();
+        SaveSettings();
+        NotifyScope();
+        _ = ScanEverythingAsync(force: false);
     }
 
     public void RefreshDrives() => RefreshDisk();
 
     public void RefreshDisk()
     {
-        var readyDrives = DriveInfo.GetDrives()
-            .Where(d => d.IsReady && d.DriveType is DriveType.Fixed or DriveType.Removable)
-            .ToList();
-
-        long allTotal = 0, allFree = 0;
         var items = new List<DriveVolumeItem>();
-        foreach (var d in readyDrives)
+        foreach (var drive in DriveInfo.GetDrives())
         {
-            long t = 0, f = 0;
-            string label = "";
-            try { t = d.TotalSize; f = d.AvailableFreeSpace; label = d.VolumeLabel; } catch { }
-            allTotal += t;
-            allFree += f;
-            items.Add(new DriveVolumeItem
+            try
             {
-                Key = d.RootDirectory.FullName,
-                Name = d.Name,
-                VolumeLabel = label,
-                TotalBytes = t,
-                FreeBytes = f,
-                IsAllDrives = false,
-                IsActive = string.Equals(Settings.SelectedDrive, d.RootDirectory.FullName, StringComparison.OrdinalIgnoreCase),
-            });
+                if (!drive.IsReady || drive.DriveType is not (DriveType.Fixed or DriveType.Removable)) continue;
+                items.Add(new() { Key = drive.RootDirectory.FullName, Name = drive.Name,
+                    VolumeLabel = drive.VolumeLabel, TotalBytes = drive.TotalSize, FreeBytes = drive.AvailableFreeSpace,
+                    IsAllDrives = false, IsActive = drive.Name.Equals(Settings.SelectedDrive, StringComparison.OrdinalIgnoreCase) });
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
-
-        bool isAll = Settings.SelectedDrive == DriveVolumeItem.AllDrivesKey || !items.Any(i => i.IsActive);
-        if (isAll) Settings.SelectedDrive = DriveVolumeItem.AllDrivesKey;
-
-        items.Insert(0, new DriveVolumeItem
+        if (!IsAllDrives && !items.Any(d => d.IsActive))
+            items.Add(new() { Key = Settings.SelectedDrive, Name = Settings.SelectedDrive, VolumeLabel = Loc.T("Indisponible", "Unavailable"),
+                TotalBytes = 0, FreeBytes = 0, IsAllDrives = false, IsActive = true, IsAvailable = false });
+        items.Insert(0, new() { Key = DriveVolumeItem.AllDrivesKey, Name = Loc.T("Tous les disques", "All drives"),
+            VolumeLabel = "", TotalBytes = items.Sum(d => d.TotalBytes), FreeBytes = items.Sum(d => d.FreeBytes),
+            IsAllDrives = true, IsActive = IsAllDrives });
+        Replace(Drives, items);
+        var active = items.First(d => d.IsActive);
+        DiskTotal = active.TotalBytes;
+        DiskFree = active.FreeBytes;
+        OnPropertyChanged(nameof(DiskUsed));
+        var roots = ActiveDriveRoots;
+        if (_scopeSession.Current.Generation > 0 && !_scopeSession.Current.Scope.Roots.SequenceEqual(roots, StringComparer.OrdinalIgnoreCase))
         {
-            Key = DriveVolumeItem.AllDrivesKey,
-            Name = Loc.T("Tous les disques", "All drives"),
-            VolumeLabel = $"{readyDrives.Count}",
-            TotalBytes = allTotal,
-            FreeBytes = allFree,
-            IsAllDrives = true,
-            IsActive = isAll,
-        });
-
-        OnUi(() =>
+            _scopeCache.Clear();
+            _scopeSession.Change(Settings.SelectedDrive, CreateScope());
+            RestoreScopeSnapshot(Settings.SelectedDrive);
+            _ = ScanEverythingAsync(force: false);
+        }
+        DriveCatalogVersion++;
+        OnPropertyChanged(nameof(DriveCatalogVersion));
+        NotifyScope();
+        var context = _scopeSession.Current;
+        _ = Task.Run(() => (Bytes: roots.Sum(root => RecycleBin.Size(root)), Count: roots.Sum(root => RecycleBin.Count(root)))).ContinueWith(task => OnUi(() =>
         {
-            Drives.Clear();
-            foreach (var it in items) Drives.Add(it);
-            var active = items.FirstOrDefault(i => i.IsActive) ?? items[0];
-            DiskTotal = active.TotalBytes;
-            DiskFree = active.FreeBytes;
-            OnPropertyChanged(nameof(DiskUsed));
-        });
+            if (task.IsCompletedSuccessfully && ReferenceEquals(context, _scopeSession.Current))
+            { TrashBytes = task.Result.Bytes; TrashItemCount = task.Result.Count; }
+        }));
+    }
 
-        _ = Task.Run(RecycleBin.Size).ContinueWith(t => OnUi(() => TrashBytes = t.Result));
+    public async Task RefreshCurrentScopeAsync()
+    {
+        if (IsCleaning) return;
+        _scopeCache.Remove(Settings.SelectedDrive);
+        _scopeSession.Change(Settings.SelectedDrive, CreateScope());
+        RestoreScopeSnapshot(Settings.SelectedDrive);
+        RefreshDisk();
+        await ScanEverythingAsync();
+    }
+
+    public void CancelScan()
+    {
+        _scopeSession.Cancel();
+        if (CachePhase == ScanPhase.Scanning) CachePhase = ScanPhase.NotScanned;
+        if (DevPhase == ScanPhase.Scanning) DevPhase = ScanPhase.NotScanned;
+        if (LargePhase == ScanPhase.Scanning) LargePhase = ScanPhase.NotScanned;
+        if (UninstallPhase == ScanPhase.Scanning) UninstallPhase = ScanPhase.NotScanned;
+        if (EverythingElsePhase == ScanPhase.Scanning) EverythingElsePhase = ScanPhase.NotScanned;
+        ScanError = Loc.T("Analyse arrêtée. Actualisez pour continuer.", "Scan stopped. Refresh to continue.");
+        ScanLabel = "";
+        NotifyScanState();
+    }
+
+    private void EnsureScanContext()
+    {
+        if (_scopeSession.Current.Token.IsCancellationRequested)
+            _scopeSession.Change(Settings.SelectedDrive, CreateScope());
+    }
+
+    public void InvalidateAnalysis()
+    {
+        if (IsCleaning) return;
+        _scopeCache.Clear();
+        _scopeSession.Change(Settings.SelectedDrive, CreateScope());
+        RestoreScopeSnapshot(Settings.SelectedDrive);
+        NotifyScope();
+    }
+
+    private void NotifyScope()
+    {
+        OnPropertyChanged(nameof(ScopeTitle)); OnPropertyChanged(nameof(ScopeStatus));
+        OnPropertyChanged(nameof(HasActiveDrives)); OnPropertyChanged(nameof(IsAllDrives));
+        OnPropertyChanged(nameof(ScopeRevision));
     }
 
     public void SaveSettings() => AppData.Save("settings.json", Settings);
-
     public void ExcludePath(string path)
     {
-        if (!Settings.ExcludedPaths.Contains(path, StringComparer.OrdinalIgnoreCase))
-        {
-            Settings.ExcludedPaths.Add(path);
-            SaveSettings();
-        }
-        foreach (var c in CacheItems.Where(i => i.Paths.Contains(path, StringComparer.OrdinalIgnoreCase)).ToList()) CacheItems.Remove(c);
-        foreach (var d in DevItems.Where(i => i.Paths.Contains(path, StringComparer.OrdinalIgnoreCase)).ToList()) DevItems.Remove(d);
-        foreach (var l in LargeFileItems.Where(i => string.Equals(i.FullPath, path, StringComparison.OrdinalIgnoreCase)).ToList()) LargeFileItems.Remove(l);
-        RefreshAllFilteredViews();
-        NotifyTotals();
+        var full = PathScope.Normalize(path);
+        if (full == null || IsCleaning) return;
+        if (!Settings.ExcludedPaths.Contains(full, StringComparer.OrdinalIgnoreCase)) Settings.ExcludedPaths.Add(full);
+        SaveSettings();
+        _scopeCache.Clear();
+        _ = RefreshCurrentScopeAsync();
     }
 }

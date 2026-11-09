@@ -205,6 +205,17 @@
               Background="{ThemeResource FillSecondary}" BorderThickness="0"
               CornerRadius="{StaticResource RadiusLg}"
               ToolTipService.ToolTip="Ouvrir la Corbeille Windows / Open Windows Recycle Bin">
+        <Button.Flyout>
+          <MenuFlyout x:Name="TrashMenu" Opening="OnTrashMenuOpening">
+            <MenuFlyoutItem x:Name="TrashScopeLabel" Text="Corbeille du périmètre" IsEnabled="False"/>
+            <MenuFlyoutSeparator/>
+            <MenuFlyoutItem x:Name="OpenTrashItem" Text="Ouvrir dans Windows" Click="OnOpenTrashInWindows"/>
+            <MenuFlyoutItem x:Name="RestoreTrashItem" Text="Restaurer les éléments…" Click="OnRestoreTrash"/>
+            <MenuFlyoutItem x:Name="EmptyTrashItem" Text="Vider la Corbeille…" Click="OnEmptyTrash"/>
+            <MenuFlyoutSeparator/>
+            <ToggleMenuFlyoutItem x:Name="AutoEmptyTrashItem" Text="Vider après nettoyage" Click="OnAutoEmptyTrash"/>
+          </MenuFlyout>
+        </Button.Flyout>
         <Grid ColumnSpacing="8">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -225,6 +236,7 @@
     <!-- Main Detail Content Area -->
     <Grid Grid.Column="2" Background="{ThemeResource SurfaceBase}">
       <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
@@ -265,9 +277,10 @@
         </Grid>
       </Border>
 
-      <Grid Grid.Row="1" x:Name="DetailHost" Margin="0,16,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-      <v:OnboardingOverlay Grid.RowSpan="2" x:Name="OnboardingControl" Visibility="Collapsed"/>
-      <v:CelebrationOverlay Grid.RowSpan="2" x:Name="CelebrationControl" Visibility="Collapsed"/>
+      <c:DriveScopeBar Grid.Row="1"/>
+      <Grid Grid.Row="2" x:Name="DetailHost" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+      <v:OnboardingOverlay Grid.RowSpan="3" x:Name="OnboardingControl" Visibility="Collapsed"/>
+      <v:CelebrationOverlay Grid.RowSpan="3" x:Name="CelebrationControl" Visibility="Collapsed"/>
     </Grid>
 
     <!-- Custom TitleBar Drag Region across top of window -->

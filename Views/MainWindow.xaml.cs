@@ -13,6 +13,7 @@ namespace PurgeWin.Views;
 
 public sealed partial class MainWindow : Window
 {
+    private bool _ready;
     private OverviewView? _overviewView;
     private EverythingElseView? _everythingElseView;
     private AppCachesView? _appCachesView;
@@ -43,6 +44,15 @@ public sealed partial class MainWindow : Window
         UpdateTrashSummary();
         UpdateBadges();
         InitializeUpdateDetection();
+        _ready = true;
+
+#if PURGE_UX_TEST
+        if (Environment.GetCommandLineArgs().Contains("--scope-probe"))
+        {
+            _ = ScopeIntegrationProbe.RunAsync(this);
+            return;
+        }
+#endif
 
 #if PURGE_UPDATE_PREVIEW
         _ = UpdateService.Shared.CheckAsync();
@@ -127,7 +137,7 @@ public sealed partial class MainWindow : Window
     {
         if (e.PropertyName is nameof(PurgeStore.SelectedTab) or nameof(PurgeStore.OverviewPage))
             UpdateActiveTabUI();
-        else if (e.PropertyName == nameof(PurgeStore.TrashBytes))
+        else if (e.PropertyName is nameof(PurgeStore.TrashBytes) or nameof(PurgeStore.TrashItemCount))
             UpdateTrashSummary();
         else if (e.PropertyName is nameof(PurgeStore.CacheBytes) or nameof(PurgeStore.DevBytes)
                  or nameof(PurgeStore.LargeFileBytes) or nameof(PurgeStore.LeftoverBytes) or nameof(PurgeStore.InstalledAppBytes))
@@ -143,8 +153,9 @@ public sealed partial class MainWindow : Window
     {
         var bytes = PurgeStore.Shared.TrashBytes;
         TxtTrashSummary.Text = bytes > 0
-            ? Loc.T($"{ByteFormatter.Format(bytes)} dans la Corbeille", $"{ByteFormatter.Format(bytes)} in Recycle Bin")
-            : Loc.T("La Corbeille est vide", "Recycle Bin is empty");
+            ? Loc.T($"Corbeille · {ByteFormatter.Format(bytes)}", $"Recycle Bin · {ByteFormatter.Format(bytes)}")
+            : PurgeStore.Shared.TrashItemCount > 0 ? Loc.T($"Corbeille · {PurgeStore.Shared.TrashItemCount} éléments", $"Recycle Bin · {PurgeStore.Shared.TrashItemCount} items")
+            : Loc.T("Corbeille · vide", "Recycle Bin · empty");
     }
 
     private void UpdateBadges()
@@ -185,6 +196,7 @@ public sealed partial class MainWindow : Window
         SetNavButtonActive(NavUninstaller, tab == AppTab.Uninstaller);
         SetNavButtonActive(NavSettings, tab == AppTab.Settings);
         SetNavButtonActive(NavAbout, tab == AppTab.About);
+        if (_ready && tab is not (AppTab.Settings or AppTab.About)) _ = store.ScanEverythingAsync(force: false);
     }
 
     private void SetNavButtonActive(Button btn, bool isActive)
@@ -205,11 +217,7 @@ public sealed partial class MainWindow : Window
 
     private void BtnOpenRecycleBin_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", "shell:RecycleBinFolder") { UseShellExecute = true });
-        }
-        catch { }
+        // The native flyout exposes open, restore and empty actions.
     }
 
     private void NavOverview_Click(object sender, RoutedEventArgs e) { PurgeStore.Shared.OverviewPage = OverviewSubPage.Summary; PurgeStore.Shared.SelectedTab = AppTab.Overview; }
@@ -225,6 +233,7 @@ public sealed partial class MainWindow : Window
         var s = PurgeStore.Shared;
         _ = s.SelectedTab switch
         {
+            AppTab.Overview when s.OverviewPage == OverviewSubPage.EverythingElse => _everythingElseView?.RefreshCurrentFolderAsync() ?? s.ScanEverythingElseAsync(),
             AppTab.AppCaches => s.ScanAppCachesAsync(),
             AppTab.DevTools => s.ScanDevToolsAsync(),
             AppTab.LargeFiles => s.ScanLargeFilesAsync(),

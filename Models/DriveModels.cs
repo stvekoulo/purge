@@ -14,6 +14,9 @@ public sealed partial class DriveVolumeItem : ObservableObject
     public required long TotalBytes { get; init; }
     public required long FreeBytes { get; init; }
     public required bool IsAllDrives { get; init; }
+    public bool IsAvailable { get; init; } = true;
+    public double UsedPercent => UsedFraction * 100;
+    public string PickerTitle => IsAllDrives ? DisplayTitle : $"{DisplayTitle} · {ByteFormatter.Format(FreeBytes)} {Loc.T("libres", "free")}";
 
     [ObservableProperty] private bool _isActive;
 

@@ -13,52 +13,28 @@ public sealed partial class OverviewView : UserControl
     public OverviewView()
     {
         InitializeComponent();
-        Store.PropertyChanged += (_, _) => UpdateUI();
+        Store.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(PurgeStore.ScopeTitle) or nameof(PurgeStore.IsCleaning)) RebuildDriveButtons();
+            UpdateUI();
+        };
         Store.Drives.CollectionChanged += (_, _) => RebuildDriveButtons();
         Loc.LanguageChanged += () => { RebuildDriveButtons(); UpdateUI(); };
         Theme.ThemeBrushes.ThemeChanged += () => { RebuildDriveButtons(); UpdateUI(); };
         Loaded += (_, _) => { RebuildDriveButtons(); UpdateUI(); };
     }
 
-    private void RebuildDriveButtons()
-    {
-        if (DriveButtonsPanel is null) return;
-        DriveButtonsPanel.Children.Clear();
-        foreach (var d in Store.Drives)
-        {
-            var btn = new PurgeButton
-            {
-                Content = d.IsAllDrives
-                    ? $"{d.DisplayTitle} ({ByteFormatter.Format(d.FreeBytes)} {Loc.T("libres", "free")})"
-                    : $"{d.DisplayTitle} · {ByteFormatter.Format(d.FreeBytes)} / {ByteFormatter.Format(d.TotalBytes)}",
-                Size = PurgeButtonSize.Compact,
-                Variant = d.IsActive ? PurgeButtonVariant.Secondary : PurgeButtonVariant.Ghost,
-                Tag = d.Key,
-            };
-            btn.Click += (s, _) =>
-            {
-                if (s is PurgeButton { Tag: string key })
-                {
-                    Store.SetDrive(key);
-                    RebuildDriveButtons();
-                    UpdateUI();
-                }
-            };
-            DriveButtonsPanel.Children.Add(btn);
-        }
-    }
-
     private void UpdateUI()
     {
-        TxtPageTitle.Text = Loc.T("Vue d'ensemble", "Overview");
+        TxtPageTitle.Text = Loc.T("Vue d'ensemble", "Overview") + (Store.IsAllDrives ? "" : " · " + Store.ScopeTitle);
         TxtLastScan.Text = Store.LastScanText;
-        TxtDrivesLabel.Text = Loc.T("Disques :", "Drives:");
+        TxtDrivesLabel.Text = Loc.T("Disques", "Drives");
 
         BtnScanAll.IsBusy = Store.IsScanning;
         BtnScanAll.Content = Store.IsScanning
             ? Loc.T("Analyse en cours...", "Scanning...")
             : Loc.T("Tout analyser", "Scan Everything");
-        BtnScanAll.IsEnabled = !Store.IsCleaning;
+        BtnScanAll.IsEnabled = !Store.IsCleaning && !Store.IsScanning && Store.HasActiveDrives;
 
         BtnCleanSafe.IsBusy = Store.IsCleaning;
         if (Store.IsCleaning)
@@ -77,18 +53,23 @@ public sealed partial class OverviewView : UserControl
                 ? Loc.T($"Nettoyer ce qui est sûr ({ByteFormatter.Format(Store.SafeBytes)})", $"Clean Safe Items ({ByteFormatter.Format(Store.SafeBytes)})")
                 : Loc.T("Nettoyer les éléments sûrs", "Clean Safe Items");
         }
-        BtnCleanSafe.IsEnabled = Store.SafeBytes > 0 && !Store.IsScanning;
+        BtnCleanSafe.IsEnabled = Store.SafeBytes > 0 && !Store.IsScanning && !Store.IsCleaning && Store.HasActiveDrives;
+        if (!Store.IsCleaning && Store.AutoEmptyRecycleBin)
+            BtnCleanSafe.Content = Loc.T("Nettoyer + vider la Corbeille", "Clean + empty Recycle Bin");
 
         TxtCachesTitle.Text = Loc.T("Caches d'applications", "App Caches");
         TxtDevTitle.Text = Loc.T("Outils de développement", "Dev Tools");
         TxtLargeTitle.Text = Loc.T("Fichiers volumineux", "Large Files");
         TxtUninstallTitle.Text = Loc.T("Applications & Restes orphelins", "Installed Apps & Leftovers");
-        TxtEverythingTitle.Text = Loc.T("Tout le reste", "Everything else");
+        TxtEverythingTitle.Text = Loc.T("Explorer l'espace disque", "Explore disk space");
         TxtEverythingSubtitle.Text = Loc.T(
-            "Windows, bibliothèques d'applications et dossiers personnels (cliquez pour voir la carte)",
-            "Windows, app libraries, and personal folders (click to inspect treemap)");
+            "Parcourir, rechercher et comparer les dossiers du périmètre",
+            "Browse, search and compare folders in this scope");
 
-        if (Store.DiskTotal > 0)
+        TxtDiskUsed.Text = Loc.T($"{ByteFormatter.Format(Store.DiskUsed)} utilisés", $"{ByteFormatter.Format(Store.DiskUsed)} used");
+        TxtDiskTotal.Text = Loc.T($"sur {ByteFormatter.Format(Store.DiskTotal)}", $"of {ByteFormatter.Format(Store.DiskTotal)}");
+        TxtDiskFree.Text = Loc.T($"{ByteFormatter.Format(Store.DiskFree)} libres", $"{ByteFormatter.Format(Store.DiskFree)} free");
+        if (Store.DiskTotal >= 0)
         {
             TxtDiskUsed.Text = Loc.T($"{ByteFormatter.Format(Store.DiskUsed)} utilisés", $"{ByteFormatter.Format(Store.DiskUsed)} used");
             TxtDiskTotal.Text = Loc.T($"sur {ByteFormatter.Format(Store.DiskTotal)}", $"of {ByteFormatter.Format(Store.DiskTotal)}");
@@ -117,7 +98,7 @@ public sealed partial class OverviewView : UserControl
             TxtDevPercent.Text = ByteFormatter.Percent(Store.DevBytes, Store.DiskTotal);
             TxtLargePercent.Text = ByteFormatter.Percent(Store.LargeFileBytes, Store.DiskTotal);
             TxtUninstallPercent.Text = ByteFormatter.Percent(Store.InstalledAppBytes + Store.LeftoverBytes, Store.DiskTotal);
-            TxtRestOfDiskSize.Text = ByteFormatter.Format(restBytes);
+            TxtRestOfDiskSize.Text = ByteFormatter.Format(Store.DiskUsed);
         }
 
         TxtCachesSubtitle.Text = Store.CacheSubtitle;

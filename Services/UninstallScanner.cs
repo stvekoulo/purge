@@ -19,25 +19,26 @@ public static class UninstallScanner
     };
 
     public static async Task<(List<InstalledAppItem> Apps, List<OrphanLeftoverItem> Orphans, List<CliToolItem> CliTools)> ScanAllAsync(
-        ISet<string> excluded, CancellationToken token)
+        ISet<string> excluded, CancellationToken token, IReadOnlyList<string>? activeDrives = null, bool allDrives = true)
     {
         return await Task.Run(() =>
         {
-            var apps = ScanInstalledApps(excluded, token);
+            var scope = new PathScope(activeDrives ?? PathScope.AvailableRoots(), excluded);
+            var apps = ScanInstalledApps(excluded, token, scope, allDrives);
             var orphans = ScanOrphanLeftovers(apps, excluded, token);
             var cli = ScanCliTools(excluded, token);
-            return (apps, orphans, cli);
+            return (apps, orphans.Where(o => scope.CanDelete(o.FullPath)).ToList(), cli.Where(c => scope.CanDelete(c.Path)).ToList());
         }, token);
     }
 
-    private static List<InstalledAppItem> ScanInstalledApps(ISet<string> excluded, CancellationToken token)
+    private static List<InstalledAppItem> ScanInstalledApps(ISet<string> excluded, CancellationToken token, PathScope scope, bool allDrives)
     {
         var raw = new Dictionary<string, InstalledAppItem>(StringComparer.OrdinalIgnoreCase);
         var localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var roamingApp = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-        var localDirs = SafeTopDirs(localApp);
-        var roamingDirs = SafeTopDirs(roamingApp);
+        var localDirs = SafeTopDirs(localApp).Where(d => scope.CanDelete(d.FullName)).ToList();
+        var roamingDirs = SafeTopDirs(roamingApp).Where(d => scope.CanDelete(d.FullName)).ToList();
 
         (RegistryHive Hive, RegistryView View, string SubKey)[] roots =
         [
@@ -73,11 +74,12 @@ public static class UninstallScanner
                     var version = (sub.GetValue("DisplayVersion") as string)?.Trim() ?? "";
                     var installLoc = (sub.GetValue("InstallLocation") as string)?.Trim('"', ' ');
                     var uninstallStr = (sub.GetValue("UninstallString") as string)?.Trim();
+                    bool installedHere = string.IsNullOrEmpty(installLoc) ? allDrives : scope.Contains(installLoc);
 
                     long appBytes = 0;
-                    if (sub.GetValue("EstimatedSize") is int estKb && estKb > 0)
+                    if (installedHere && sub.GetValue("EstimatedSize") is int estKb && estKb > 0)
                         appBytes = estKb * 1024L;
-                    else if (!string.IsNullOrEmpty(installLoc) && Directory.Exists(installLoc) && !DeletionSafetyPolicy.IsProtected(installLoc))
+                    else if (installedHere && !string.IsNullOrEmpty(installLoc) && Directory.Exists(installLoc) && !DeletionSafetyPolicy.IsProtected(installLoc))
                         appBytes = FolderSizing.Measure(installLoc, token).Bytes;
 
                     var leftovers = MatchLeftovers(name, publisher, localDirs, roamingDirs, excluded, token);
@@ -87,7 +89,7 @@ public static class UninstallScanner
                     {
                         Key = subName, DisplayName = name, Publisher = publisher, DisplayVersion = version,
                         InstallLocation = installLoc, UninstallString = uninstallStr,
-                        AppBytes = appBytes, Leftovers = leftovers,
+                        AppBytes = appBytes, Leftovers = leftovers, CanUninstall = installedHere,
                     };
                 }
             }

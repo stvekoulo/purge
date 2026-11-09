@@ -71,12 +71,20 @@ public static class SystemIntegration
         var settings = AppData.Load<AppSettings>("settings.json");
         var history = AppData.Load<HistoryLog>("history.json");
         var excluded = settings.ExcludedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var roots = PathScope.AvailableRoots().Where(root => settings.SelectedDrive == "ALL"
+            || root.Equals(settings.SelectedDrive, StringComparison.OrdinalIgnoreCase)).ToArray();
+        var scope = new PathScope(roots, excluded);
 
-        var items = await CacheScanner.ScanAsync(null, excluded, CancellationToken.None);
+        var items = await CacheScanner.ScanAsync(null, excluded, CancellationToken.None, roots);
         var safeItems = items.Where(i => i.IsSafe).ToList();
         if (safeItems.Count == 0) return;
 
-        var outcome = await FileDeleter.CleanAsync(safeItems);
+        var outcome = await FileDeleter.CleanAsync(safeItems, scope: scope);
+        if (settings.EmptyRecycleBinAfterCleaning && outcome.MovedCount > 0)
+        {
+            var empty = await RecycleBin.EmptyAsync(roots);
+            outcome = outcome with { RecycleBinEmptied = empty.Failures.Count == 0, RecycleBinEmptyRequested = true };
+        }
         if (outcome.MovedCount > 0)
         {
             history.Entries.Insert(0, new HistoryEntry
@@ -85,6 +93,8 @@ public static class SystemIntegration
                 Trigger = "scheduled",
                 FreedBytes = outcome.FreedBytes,
                 ItemCount = outcome.MovedCount,
+                RecycleBinEmptied = outcome.RecycleBinEmptied,
+                RecycleBinEmptyRequested = outcome.RecycleBinEmptyRequested,
                 Moved = outcome.MovedPaths.ToList(),
                 Skipped = outcome.Failures.Select(f => $"{f.Path}: {f.Reason}").ToList(),
             });

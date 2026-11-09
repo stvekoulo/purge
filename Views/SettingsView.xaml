@@ -94,6 +94,14 @@
         </Border>
       </StackPanel>
 
+      <Border Style="{StaticResource Card}" Padding="16,14">
+        <StackPanel Spacing="6">
+          <CheckBox x:Name="ChkAutoEmptyTrash" Content="Vider la Corbeille après nettoyage" Checked="OnAutoEmptyChanged" Unchecked="OnAutoEmptyChanged"/>
+          <TextBlock x:Name="TxtAutoEmptyHint" Style="{StaticResource CalloutText}" TextWrapping="Wrap"
+                     Foreground="{ThemeResource StatusDangerText}"/>
+        </StackPanel>
+      </Border>
+
       <!-- Section: Automatisation & Projets -->
       <StackPanel Spacing="8">
         <TextBlock x:Name="TxtSecAutomation" Text="Automatisation &amp; Projets" Style="{StaticResource SectionTitleText}"/>

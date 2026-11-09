@@ -1,11 +1,15 @@
 param(
     [Parameter(Mandatory)][string]$Executable,
     [ValidateRange(5, 120)][int]$TimeoutSeconds = 60,
-    [switch]$ExpectStartupFailure
+    [switch]$ExpectStartupFailure,
+    [string]$ExpectedVersion
 )
 
 $ErrorActionPreference = 'Stop'
 $exe = (Resolve-Path -LiteralPath $Executable).Path
+if ($ExpectedVersion -and (Get-Item -LiteralPath $exe).VersionInfo.FileVersion -ne $ExpectedVersion) {
+    throw "Artifact version does not match the requested release ($ExpectedVersion)."
+}
 # Launch the exact artifact, rather than an installed shortcut with the same name.
 $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -PassThru
 try {

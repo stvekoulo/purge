@@ -8,5 +8,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Services\Update*.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\Services\PathScope.cs" Link="Services\PathScope.cs" />
+    <Compile Include="..\Services\ScopeSession.cs" Link="Services\ScopeSession.cs" />
+    <Compile Include="..\Services\PathExpander.cs" Link="Services\PathExpander.cs" />
+    <Compile Include="..\Services\FolderExplorer.cs" Link="Services\FolderExplorer.cs" />
+    <Compile Include="..\Services\EverythingElseScanner.cs" Link="Services\EverythingElseScanner.cs" />
+    <Compile Include="..\Services\RecycleBin*.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\Models\FolderEntry.cs" Link="Models\FolderEntry.cs" />
+    <Compile Include="..\Utilities\ByteFormatter.cs" Link="Utilities\ByteFormatter.cs" />
+    <Compile Include="..\Utilities\BulkObservableCollection.cs" Link="Utilities\BulkObservableCollection.cs" />
   </ItemGroup>
 </Project>

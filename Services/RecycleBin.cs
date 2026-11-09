@@ -4,7 +4,7 @@ namespace PurgeWin.Services;
 
 /// Moves files to the Recycle Bin through the shell, never deleting for good.
 /// Supports x64, ARM64 (natural packing) and x86 (1-byte packing per shellapi.h).
-public static class RecycleBin
+public static partial class RecycleBin
 {
     private const uint FO_DELETE = 0x0003;
     private const ushort FOF_SILENT = 0x0004;
@@ -101,17 +101,28 @@ public static class RecycleBin
     }
 
     /// Bytes already in the Recycle Bin across all drives (sidebar summary).
-    public static long Size()
+    public static long Size(string? rootPath = null)
     {
         if (IntPtr.Size == 8)
         {
             var info = new SHQUERYRBINFO64 { cbSize = Marshal.SizeOf<SHQUERYRBINFO64>() };
-            return SHQueryRecycleBin64(null, ref info) == 0 ? info.i64Size : 0;
+            return SHQueryRecycleBin64(rootPath, ref info) == 0 ? info.i64Size : 0;
         }
         else
         {
             var info = new SHQUERYRBINFO32 { cbSize = Marshal.SizeOf<SHQUERYRBINFO32>() };
-            return SHQueryRecycleBin32(null, ref info) == 0 ? info.i64Size : 0;
+            return SHQueryRecycleBin32(rootPath, ref info) == 0 ? info.i64Size : 0;
         }
+    }
+
+    public static long Count(string rootPath)
+    {
+        if (IntPtr.Size == 8)
+        {
+            var info = new SHQUERYRBINFO64 { cbSize = Marshal.SizeOf<SHQUERYRBINFO64>() };
+            return SHQueryRecycleBin64(rootPath, ref info) == 0 ? info.i64NumItems : 0;
+        }
+        var small = new SHQUERYRBINFO32 { cbSize = Marshal.SizeOf<SHQUERYRBINFO32>() };
+        return SHQueryRecycleBin32(rootPath, ref small) == 0 ? small.i64NumItems : 0;
     }
 }

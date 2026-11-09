@@ -9,57 +9,59 @@ namespace PurgeWin.ViewModels;
 
 public enum AppTab { Overview, AppCaches, DevTools, LargeFiles, Uninstaller, Settings, About }
 public enum OverviewSubPage { Summary, EverythingElse }
-public enum ScanPhase { NotScanned, Scanning, Done }
+public enum ScanPhase { NotScanned, Scanning, Done, Failed }
 
-/// Port of PurgeStore (the app's one source of truth), split by concern into
-/// partial files (< 300 lines each): scanning here, drives/language in
-/// PurgeStore+Drives.cs, filtering in PurgeStore+Filter.cs, cleaning in PurgeStore+Cleaning.cs.
 public sealed partial class PurgeStore : ObservableObject
 {
     public static PurgeStore Shared { get; } = new();
-
     private DispatcherQueue? _ui;
-    private CancellationTokenSource? _scanCts;
-
+    private readonly ScopeSession _scopeSession = new();
     public AppSettings Settings { get; }
     public HistoryLog History { get; }
-
-    public ObservableCollection<DriveVolumeItem> Drives { get; } = [];
-    public ObservableCollection<CacheItem> CacheItems { get; } = [];
-    public ObservableCollection<DevItem> DevItems { get; } = [];
-    public ObservableCollection<LargeFileItem> LargeFileItems { get; } = [];
-    public ObservableCollection<InstalledAppItem> InstalledApps { get; } = [];
-    public ObservableCollection<OrphanLeftoverItem> OrphanLeftovers { get; } = [];
-    public ObservableCollection<CliToolItem> CliTools { get; } = [];
-    public ObservableCollection<EverythingElseFolder> EverythingElseFolders { get; } = [];
+    public ObservableCollection<DriveVolumeItem> Drives { get; } = new BulkObservableCollection<DriveVolumeItem>();
+    public ObservableCollection<CacheItem> CacheItems { get; } = new BulkObservableCollection<CacheItem>();
+    public ObservableCollection<DevItem> DevItems { get; } = new BulkObservableCollection<DevItem>();
+    public ObservableCollection<LargeFileItem> LargeFileItems { get; } = new BulkObservableCollection<LargeFileItem>();
+    public ObservableCollection<InstalledAppItem> InstalledApps { get; } = new BulkObservableCollection<InstalledAppItem>();
+    public ObservableCollection<OrphanLeftoverItem> OrphanLeftovers { get; } = new BulkObservableCollection<OrphanLeftoverItem>();
+    public ObservableCollection<CliToolItem> CliTools { get; } = new BulkObservableCollection<CliToolItem>();
+    public ObservableCollection<EverythingElseFolder> EverythingElseFolders { get; } = new BulkObservableCollection<EverythingElseFolder>();
 
     [ObservableProperty] private AppTab _selectedTab = AppTab.Overview;
-    [ObservableProperty] private OverviewSubPage _overviewPage = OverviewSubPage.Summary;
-    [ObservableProperty] private ScanPhase _cachePhase = ScanPhase.NotScanned;
-    [ObservableProperty] private ScanPhase _devPhase = ScanPhase.NotScanned;
-    [ObservableProperty] private ScanPhase _largePhase = ScanPhase.NotScanned;
-    [ObservableProperty] private ScanPhase _uninstallPhase = ScanPhase.NotScanned;
-    [ObservableProperty] private ScanPhase _everythingElsePhase = ScanPhase.NotScanned;
+    [ObservableProperty] private OverviewSubPage _overviewPage;
+    [ObservableProperty] private ScanPhase _cachePhase;
+    [ObservableProperty] private ScanPhase _devPhase;
+    [ObservableProperty] private ScanPhase _largePhase;
+    [ObservableProperty] private ScanPhase _uninstallPhase;
+    [ObservableProperty] private ScanPhase _everythingElsePhase;
     [ObservableProperty] private DateTime? _lastScan;
     [ObservableProperty] private long _diskTotal;
     [ObservableProperty] private long _diskFree;
     [ObservableProperty] private long _trashBytes;
+    [ObservableProperty] private long _trashItemCount;
     [ObservableProperty] private bool _isCleaning;
     [ObservableProperty] private string _cleaningLabel = "";
+    [ObservableProperty] private string _scanLabel = "";
+    [ObservableProperty] private string _scanError = "";
 
     private PurgeStore()
     {
         Settings = AppData.Load<AppSettings>("settings.json");
         History = AppData.Load<HistoryLog>("history.json");
+        Settings.ExcludedPaths ??= [];
+        Settings.CustomProjectRoots ??= [];
+        Settings.SelectedDrive = PathScope.Normalize(Settings.SelectedDrive) is { } selected
+            ? Path.GetPathRoot(selected)! : DriveVolumeItem.AllDrivesKey;
+        History.Entries ??= [];
         Loc.SetLanguage(Settings.Language);
-        RefreshDrives();
+        RefreshDisk();
+        _scopeSession.Change(Settings.SelectedDrive, CreateScope());
     }
 
     public void Attach(DispatcherQueue queue) => _ui = queue;
-
     private void OnUi(Action action)
     {
-        if (_ui is null || _ui.HasThreadAccess) action();
+        if (_ui == null || _ui.HasThreadAccess) action();
         else _ui.TryEnqueue(() => action());
     }
 
@@ -71,158 +73,116 @@ public sealed partial class PurgeStore : ObservableObject
     public long LeftoverBytes => OrphanLeftovers.Sum(i => i.Bytes) + CliTools.Sum(i => i.Bytes);
     public long TotalReclaimableBytes => CacheBytes + DevBytes + LargeFileBytes + LeftoverBytes;
     public long SafeBytes => CacheItems.Where(i => i.IsSafe).Sum(i => i.Bytes)
-                           + DevItems.Where(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache).Sum(i => i.Bytes);
+        + DevItems.Where(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache).Sum(i => i.Bytes);
     public int SafeCount => CacheItems.Count(i => i.IsSafe)
-                          + DevItems.Count(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache);
-
-    public bool IsScanning =>
-        CachePhase == ScanPhase.Scanning || DevPhase == ScanPhase.Scanning ||
-        LargePhase == ScanPhase.Scanning || UninstallPhase == ScanPhase.Scanning;
-
-    public string LastScanText => LastScan is null
-        ? Loc.T("Pas encore analysé", "Not scanned yet")
+        + DevItems.Count(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache);
+    public bool IsScanning => new[] { CachePhase, DevPhase, LargePhase, UninstallPhase, EverythingElsePhase }
+        .Contains(ScanPhase.Scanning);
+    public string LastScanText => IsScanning ? Loc.T("Analyse en cours…", "Scanning…")
+        : LastScan == null ? Loc.T("Pas encore analysé", "Not scanned yet")
         : Loc.T("Analysé ", "Scanned ") + RelativeDate.Format(LastScan.Value);
 
-    /// Sequential Scan Everything across all categories.
-    public async Task ScanEverythingAsync()
+    public async Task ScanEverythingAsync(bool force = true)
     {
-        if (IsScanning) return;
-        await ScanAppCachesAsync();
-        await ScanDevToolsAsync();
-        await ScanLargeFilesAsync();
-        await ScanUninstallerAsync();
-        await ScanEverythingElseAsync();
+        if (IsScanning || IsCleaning || !HasActiveDrives) return;
+        EnsureScanContext();
+        var context = _scopeSession.Current;
+        (Func<ScanPhase> Phase, Func<Task> Scan)[] scans =
+        [
+            (() => CachePhase, ScanAppCachesAsync), (() => DevPhase, ScanDevToolsAsync),
+            (() => LargePhase, ScanLargeFilesAsync), (() => UninstallPhase, ScanUninstallerAsync),
+            (() => EverythingElsePhase, ScanEverythingElseAsync)
+        ];
+        foreach (var scan in scans)
+        {
+            if (!_scopeSession.IsCurrent(context)) return;
+            if (force || scan.Phase() != ScanPhase.Done) await scan.Scan();
+        }
     }
 
-    public async Task ScanAppCachesAsync()
+    private async Task RunScanAsync<T>(string label, Action<ScanPhase> phase,
+        Func<ScanContext, Task<T>> scan, Action<T> apply)
     {
-        if (CachePhase == ScanPhase.Scanning) return;
-        _scanCts = new CancellationTokenSource();
-        CachePhase = ScanPhase.Scanning;
-        OnPropertyChanged(nameof(IsScanning));
-        var excluded = Settings.ExcludedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var activeDrives = ActiveDriveRoots;
+        if (IsScanning || IsCleaning || !HasActiveDrives) return;
+        EnsureScanContext();
+        var context = _scopeSession.Current;
+        ScanError = "";
+        ScanLabel = label;
+        phase(ScanPhase.Scanning);
+        NotifyScanState();
+        ScanPhase finalPhase = ScanPhase.NotScanned;
         try
         {
-            var found = await CacheScanner.ScanAsync(null, excluded, _scanCts.Token);
-            var filtered = found.Where(c => c.Paths.Any(p =>
-                activeDrives.Count == 0 || activeDrives.Any(d => p.StartsWith(d, StringComparison.OrdinalIgnoreCase)))).ToList();
-            OnUi(() =>
-            {
-                CacheItems.Clear();
-                foreach (var item in filtered)
-                {
-                    item.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(CacheItem.IsSelected)) NotifySelection(); };
-                    CacheItems.Add(item);
-                }
-                ApplyFilter();
-            });
+            var result = await scan(context);
+            context.Token.ThrowIfCancellationRequested();
+            OnUi(() => { if (_scopeSession.IsCurrent(context)) apply(result); });
+            finalPhase = ScanPhase.Done;
         }
         catch (OperationCanceledException) { }
-        LastScan = DateTime.Now;
-        CachePhase = ScanPhase.Done;
+        catch (Exception ex)
+        {
+            App.LogCrash($"Scan: {label}", ex);
+            finalPhase = ScanPhase.Failed;
+        }
+        finally
+        {
+            OnUi(() =>
+            {
+                if (!_scopeSession.IsCurrent(context)) return;
+                phase(finalPhase);
+                ScanLabel = "";
+                if (finalPhase == ScanPhase.Done) LastScan = DateTime.Now;
+                if (finalPhase == ScanPhase.Failed)
+                    ScanError = Loc.T("Analyse incomplète. Actualisez pour réessayer.", "Incomplete scan. Refresh to try again.");
+                RefreshAllFilteredViews();
+                NotifyTotals();
+                NotifyScanState();
+            });
+        }
+    }
+
+    public Task ScanAppCachesAsync() => RunScanAsync(Loc.T("Caches d'apps", "App caches"), p => CachePhase = p,
+        c => CacheScanner.ScanAsync(null, c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase), c.Token, c.Scope.Roots),
+        items => Replace(CacheItems, items, item => item.PropertyChanged += (_, e) =>
+        { if (e.PropertyName == nameof(CacheItem.IsSelected)) NotifySelection(); }));
+
+    public Task ScanDevToolsAsync() => RunScanAsync(Loc.T("Outils de dev", "Dev tools"), p => DevPhase = p,
+        c => DevScanner.ScanAsync(null, c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase),
+            Settings.StaleProjectDays, Settings.CustomProjectRoots.ToArray(), c.Scope.Roots, c.Token),
+        items => Replace(DevItems, items, item => item.PropertyChanged += (_, e) =>
+        { if (e.PropertyName == nameof(DevItem.IsSelected)) NotifyDevSelection(); }));
+
+    public Task ScanLargeFilesAsync() => RunScanAsync(Loc.T("Fichiers volumineux", "Large files"), p => LargePhase = p,
+        c => LargeFileScanner.ScanAsync(null, c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase), c.Scope.Roots, c.Token),
+        items => Replace(LargeFileItems, items, item => item.PropertyChanged += (_, e) =>
+        { if (e.PropertyName == nameof(LargeFileItem.IsSelected)) NotifyLargeSelection(); }));
+
+    public Task ScanUninstallerAsync() => RunScanAsync(Loc.T("Applications et restes", "Apps and leftovers"), p => UninstallPhase = p,
+        c => UninstallScanner.ScanAllAsync(c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase), c.Token, c.Scope.Roots,
+            c.Key == DriveVolumeItem.AllDrivesKey),
+        result =>
+        {
+            Replace(InstalledApps, result.Apps, item => item.PropertyChanged += (_, _) => NotifyUninstallSelection());
+            Replace(OrphanLeftovers, result.Orphans, item => item.PropertyChanged += (_, _) => NotifyUninstallSelection());
+            Replace(CliTools, result.CliTools, item => item.PropertyChanged += (_, _) => NotifyUninstallSelection());
+        });
+
+    public Task ScanEverythingElseAsync() => RunScanAsync(Loc.T("Carte des dossiers", "Folder map"), p => EverythingElsePhase = p,
+        c => EverythingElseScanner.MeasureAsync(DiskUsed, 0, TrashBytes, c.Scope.Roots, c.Token, c.Scope.Excluded),
+        items => Replace(EverythingElseFolders, items));
+
+    private static void Replace<T>(ObservableCollection<T> collection, IEnumerable<T> items, Action<T>? attach = null)
+    {
+        var snapshot = items.ToArray();
+        foreach (var item in snapshot) attach?.Invoke(item);
+        if (collection is BulkObservableCollection<T> bulk) bulk.ReplaceAll(snapshot);
+        else { collection.Clear(); foreach (var item in snapshot) collection.Add(item); }
+    }
+
+    private void NotifyScanState()
+    {
         OnPropertyChanged(nameof(IsScanning));
         OnPropertyChanged(nameof(LastScanText));
-        RefreshDisk();
-        NotifyTotals();
-    }
-
-    public async Task ScanDevToolsAsync()
-    {
-        if (DevPhase == ScanPhase.Scanning) return;
-        DevPhase = ScanPhase.Scanning;
-        OnPropertyChanged(nameof(IsScanning));
-        var excluded = Settings.ExcludedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        try
-        {
-            var found = await DevScanner.ScanAsync(null, excluded, Settings.StaleProjectDays, Settings.CustomProjectRoots, ActiveDriveRoots, CancellationToken.None);
-            OnUi(() =>
-            {
-                DevItems.Clear();
-                foreach (var item in found)
-                {
-                    item.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(DevItem.IsSelected)) NotifyDevSelection(); };
-                    DevItems.Add(item);
-                }
-                ApplyDevFilter();
-            });
-        }
-        catch { }
-        DevPhase = ScanPhase.Done;
-        LastScan = DateTime.Now;
-        OnPropertyChanged(nameof(IsScanning));
-        NotifyTotals();
-    }
-
-    public async Task ScanLargeFilesAsync()
-    {
-        if (LargePhase == ScanPhase.Scanning) return;
-        LargePhase = ScanPhase.Scanning;
-        OnPropertyChanged(nameof(IsScanning));
-        var excluded = Settings.ExcludedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        try
-        {
-            var found = await LargeFileScanner.ScanAsync(null, excluded, ActiveDriveRoots, CancellationToken.None);
-            OnUi(() =>
-            {
-                LargeFileItems.Clear();
-                foreach (var item in found)
-                {
-                    item.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(LargeFileItem.IsSelected)) NotifyLargeSelection(); };
-                    LargeFileItems.Add(item);
-                }
-                ApplyLargeFilter();
-            });
-        }
-        catch { }
-        LargePhase = ScanPhase.Done;
-        LastScan = DateTime.Now;
-        OnPropertyChanged(nameof(IsScanning));
-        NotifyTotals();
-    }
-
-    public async Task ScanUninstallerAsync()
-    {
-        if (UninstallPhase == ScanPhase.Scanning) return;
-        UninstallPhase = ScanPhase.Scanning;
-        OnPropertyChanged(nameof(IsScanning));
-        var excluded = Settings.ExcludedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        try
-        {
-            var (apps, orphans, cli) = await UninstallScanner.ScanAllAsync(excluded, CancellationToken.None);
-            OnUi(() =>
-            {
-                InstalledApps.Clear();
-                foreach (var a in apps) { a.PropertyChanged += (_, _) => NotifyUninstallSelection(); InstalledApps.Add(a); }
-                OrphanLeftovers.Clear();
-                foreach (var o in orphans) { o.PropertyChanged += (_, _) => NotifyUninstallSelection(); OrphanLeftovers.Add(o); }
-                CliTools.Clear();
-                foreach (var c in cli) { c.PropertyChanged += (_, _) => NotifyUninstallSelection(); CliTools.Add(c); }
-                ApplyUninstallFilter();
-            });
-        }
-        catch { }
-        UninstallPhase = ScanPhase.Done;
-        LastScan = DateTime.Now;
-        OnPropertyChanged(nameof(IsScanning));
-        NotifyTotals();
-    }
-
-    public async Task ScanEverythingElseAsync()
-    {
-        if (EverythingElsePhase == ScanPhase.Scanning) return;
-        EverythingElsePhase = ScanPhase.Scanning;
-        try
-        {
-            var folders = await EverythingElseScanner.MeasureAsync(DiskUsed, TotalReclaimableBytes + InstalledAppBytes, TrashBytes, ActiveDriveRoots);
-            OnUi(() =>
-            {
-                EverythingElseFolders.Clear();
-                foreach (var f in folders) EverythingElseFolders.Add(f);
-            });
-        }
-        catch { }
-        EverythingElsePhase = ScanPhase.Done;
-        NotifyTotals();
+        OnPropertyChanged(nameof(ScopeStatus));
     }
 }

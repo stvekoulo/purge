@@ -2,6 +2,7 @@ namespace PurgeWin.Utilities
 {
     public static class Loc
     {
+        public static bool IsEn => false;
         public static string T(string fr, string en) => fr;
     }
 }
