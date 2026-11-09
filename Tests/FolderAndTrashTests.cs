@@ -19,6 +19,7 @@ internal static class FolderAndTrashTests
             var folders = await FolderExplorer.ReadAsync(root, scope, default);
             check("Explorer omits excluded folders", folders.All(i => i.Name != "Keep"));
             check("Explorer measures visible files", folders.Single(i => i.Name == "Visible").Bytes == 100);
+            check("Ordinary file ancestors remain eligible", !PathExpander.HasReparsePointAncestor(Path.Combine(root, "Visible", "test.bin")));
             check("Deep samples are explicitly estimates", folders.Single(i => i.Name == "Deep").IsEstimate);
             var files = await FolderExplorer.ReadAsync(Path.Combine(root, "Visible"), scope, default);
             check("Folder navigation exposes exact file sizes", files.Single().Bytes == 100 && !files.Single().IsDirectory && !files.Single().IsEstimate);

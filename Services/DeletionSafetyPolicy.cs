@@ -26,7 +26,8 @@ public static class DeletionSafetyPolicy
 
         if (!File.Exists(full) && !Directory.Exists(full)) return DeletionDecision.Missing;
         if (IsProtected(full)) return DeletionDecision.ProtectedLocation;
-        if (PathExpander.IsReparsePoint(full)) return DeletionDecision.ReparsePoint;
+        if (PathExpander.IsReparsePoint(full) || PathExpander.HasReparsePointAncestor(full))
+            return DeletionDecision.ReparsePoint;
         if (full.Count(c => c == '\\') < 3) return DeletionDecision.ProtectedLocation;
 
         var roots = entry.Paths.SelectMany(PathExpander.Expand)

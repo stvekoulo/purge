@@ -72,7 +72,7 @@ public static class FileDeleter
                 failures.Add(new CleanFailure(full, "Ignoré par sécurité : emplacement protégé"));
                 continue;
             }
-            if (PathExpander.IsReparsePoint(full))
+            if (PathExpander.IsReparsePoint(full) || PathExpander.HasReparsePointAncestor(full))
             {
                 failures.Add(new CleanFailure(full, "Ignoré par sécurité : lien ou jonction"));
                 continue;
