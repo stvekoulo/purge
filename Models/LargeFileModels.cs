@@ -27,19 +27,43 @@ public enum LargeFileCategory
 public sealed partial class LargeFileItem : ObservableObject
 {
     public required string FullPath { get; init; }
-    public required string Name { get; init; }
-    public required string FolderDisplay { get; init; }
+    private string _nameFr = "";
+    private string _folderFr = "";
+    private string? _specialLabelFr;
+    private string? _specialExplanationFr;
+    public required string Name { get => Loc.T(_nameFr, NameEn ?? _nameFr); init => _nameFr = value; }
+    public string NameFr => _nameFr;
+    public string? NameEn { get; init; }
+    public required string FolderDisplay { get => Loc.T(_folderFr, FolderDisplayEn ?? _folderFr); init => _folderFr = value; }
+    public string FolderDisplayFr => _folderFr;
+    public string? FolderDisplayEn { get; init; }
     public required long Bytes { get; init; }
     public required DateTime LastModified { get; init; }
     public required LargeFileCategory Category { get; init; }
-    public string? SpecialLabel { get; init; }
-    public string? SpecialExplanation { get; init; }
+    public string? SpecialLabel { get => _specialLabelFr is null ? null : Loc.T(_specialLabelFr, SpecialLabelEn ?? _specialLabelFr); init => _specialLabelFr = value; }
+    public string? SpecialLabelFr => _specialLabelFr;
+    public string? SpecialLabelEn { get; init; }
+    public string? SpecialExplanation { get => _specialExplanationFr is null ? null : Loc.T(_specialExplanationFr, SpecialExplanationEn ?? _specialExplanationFr); init => _specialExplanationFr = value; }
+    public string? SpecialExplanationFr => _specialExplanationFr;
+    public string? SpecialExplanationEn { get; init; }
     public bool IsOneDriveSynced { get; init; }
 
     [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private string? _duplicateGroupId;
     [ObservableProperty] private bool _isDuplicateKeeper;
     [ObservableProperty] private int _duplicateGroupCount;
+
+    partial void OnDuplicateGroupIdChanged(string? value) => RefreshDuplicateBadge();
+    partial void OnIsDuplicateKeeperChanged(bool value) => RefreshDuplicateBadge();
+    partial void OnDuplicateGroupCountChanged(int value) => RefreshDuplicateBadge();
+
+    private void RefreshDuplicateBadge()
+    {
+        OnPropertyChanged(nameof(IsDuplicate));
+        OnPropertyChanged(nameof(BadgeText));
+        OnPropertyChanged(nameof(BadgeBgBrush));
+        OnPropertyChanged(nameof(BadgeFgBrush));
+    }
 
     public bool IsDuplicate => !string.IsNullOrEmpty(DuplicateGroupId);
     public string SizeText => ByteFormatter.Format(Bytes);
@@ -69,6 +93,17 @@ public sealed partial class LargeFileItem : ObservableObject
         IsOneDriveSynced ? "StatusSafeText" : "TextSecondary");
 
     public Visibility CloudActionVisibility => IsOneDriveSynced ? Visibility.Visible : Visibility.Collapsed;
+
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(Name));
+        OnPropertyChanged(nameof(FolderDisplay));
+        OnPropertyChanged(nameof(SpecialLabel));
+        OnPropertyChanged(nameof(SpecialExplanation));
+        OnPropertyChanged(nameof(AgeText));
+        OnPropertyChanged(nameof(Subtitle));
+        OnPropertyChanged(nameof(BadgeText));
+    }
 
     public string Glyph => Category switch
     {

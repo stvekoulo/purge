@@ -67,6 +67,11 @@ public sealed partial class UninstallerView : UserControl
 
         SearchBox.PlaceholderText = Loc.T("Rechercher...", "Search...");
         SelectionSummary.Text = Store.SelectedUninstallSummaryText;
+        SortLargestItem.Content = Loc.T("Taille (décroissante)", "Size (largest first)");
+        SortSmallestItem.Content = Loc.T("Taille (croissante)", "Size (smallest first)");
+        SortNameAZItem.Content = Loc.T("Nom (A à Z)", "Name (A to Z)");
+        ToolTipService.SetToolTip(ViewGridBtn, Loc.T("Affichage en grille", "Grid view"));
+        ToolTipService.SetToolTip(ViewListBtn, Loc.T("Affichage en liste", "List view"));
 
         bool isApps = Store.UninstallSubTab == UninstallerSubTab.InstalledApps;
         SortCombo.Visibility = isApps ? Visibility.Visible : Visibility.Collapsed;

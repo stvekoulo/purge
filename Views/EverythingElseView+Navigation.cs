@@ -14,7 +14,7 @@ public sealed partial class EverythingElseView
     {
         string search = FolderSearch?.Text?.Trim() ?? "";
         var query = _entries.Where(i => _bucket == 0 || (int)i.Bucket == _bucket - 1)
-            .Where(i => search.Length == 0 || i.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+            .Where(i => search.Length == 0 || i.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase)
                 || i.FullPath.Contains(search, StringComparison.OrdinalIgnoreCase));
         _visible = query.OrderByDescending(i => i.Bytes).ToList();
         if (_selected != null && !_visible.Any(i => i.Id == _selected.Id)) _selected = _visible.FirstOrDefault();

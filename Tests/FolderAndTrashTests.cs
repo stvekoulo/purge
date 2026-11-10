@@ -1,11 +1,26 @@
 using PurgeWin.Models;
 using PurgeWin.Services;
 using PurgeWin.Utilities;
+using System.Text.Json;
 
 internal static class FolderAndTrashTests
 {
     public static async Task Run(Action<string, bool> check)
     {
+        var catalogJson = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "windows-cache-catalog.json"));
+        var catalog = JsonSerializer.Deserialize<List<CatalogEntry>>(catalogJson) ?? [];
+        check("Cache catalog ships FR and EN titles and explanations", catalog.Count > 0 &&
+            catalog.All(e => !string.IsNullOrWhiteSpace(e.DisplayNameFr)
+                && !string.IsNullOrWhiteSpace(e.DisplayNameEn)
+                && !string.IsNullOrWhiteSpace(e.ExplanationFr)
+                && !string.IsNullOrWhiteSpace(e.ExplanationEn)));
+        var updaterEntry = catalog.Single(e => e.Key == "electron-updaters");
+        Loc.IsEn = true;
+        check("English language displays English app updater text", updaterEntry.DisplayName == "Downloaded app updates"
+            && updaterEntry.Explanation.Contains("updates", StringComparison.OrdinalIgnoreCase));
+        Loc.IsEn = false;
+        check("French language is restored without a rescan", updaterEntry.DisplayName == "Mises à jour d'applications téléchargées");
+
         var root = Path.Combine(AppContext.BaseDirectory, "fixtures", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "Visible"));
         Directory.CreateDirectory(Path.Combine(root, "Keep"));
@@ -32,6 +47,23 @@ internal static class FolderAndTrashTests
             catch (OperationCanceledException) { check("Explorer honours cancellation", true); }
         }
         finally { Directory.Delete(root, true); }
+
+        var duplicateFixture = Path.Combine(AppContext.BaseDirectory, "duplicate-fixtures", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(duplicateFixture);
+        try
+        {
+            var keeper = Path.Combine(duplicateFixture, "keeper.bin");
+            var candidate = Path.Combine(duplicateFixture, "candidate.bin");
+            await File.WriteAllBytesAsync(keeper, [1, 2, 3, 4]);
+            await File.WriteAllBytesAsync(candidate, [1, 2, 3, 4]);
+            check("Duplicate verifier accepts matching files", DuplicateFileVerifier.AreIdentical(candidate, keeper));
+            await File.WriteAllBytesAsync(candidate, [1, 2, 3, 5]);
+            check("Duplicate verifier rejects changed content of same size", !DuplicateFileVerifier.AreIdentical(candidate, keeper));
+            File.Delete(keeper);
+            check("Duplicate verifier rejects missing keeper", !DuplicateFileVerifier.AreIdentical(candidate, keeper));
+            check("Unknown Git worktree cannot be considered safe", GitWorktreeInspector.Inspect(duplicateFixture) == GitWorktreeState.Unknown);
+        }
+        finally { Directory.Delete(duplicateFixture, true); }
 
         var bulk = new BulkObservableCollection<int>();
         int events = 0;

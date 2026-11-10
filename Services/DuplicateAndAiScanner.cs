@@ -29,8 +29,9 @@ public static class DuplicateAndAiScanner
                 {
                     FullPath = dir, Name = modelName, FolderDisplay = "Hugging Face Hub",
                     Bytes = bytes, LastModified = mod, Category = LargeFileCategory.AiModel,
-                    SpecialLabel = "Modèle Hugging Face",
+                    SpecialLabel = "Modèle Hugging Face", SpecialLabelEn = "Hugging Face model",
                     SpecialExplanation = "Poids de modèle IA local stocké dans le cache Hugging Face Hub.",
+                    SpecialExplanationEn = "Local AI model weights stored in the Hugging Face Hub cache.",
                 });
             }
         }
@@ -43,10 +44,12 @@ public static class DuplicateAndAiScanner
             {
                 list.Add(new LargeFileItem
                 {
-                    FullPath = ollamaBlobs, Name = "Blobs de modèles Ollama", FolderDisplay = "Ollama (~/.ollama/models)",
+                    FullPath = ollamaBlobs, Name = "Blobs de modèles Ollama", NameEn = "Ollama model blobs",
+                    FolderDisplay = "Ollama (~/.ollama/models)",
                     Bytes = bytes, LastModified = mod, Category = LargeFileCategory.AiModel,
                     SpecialLabel = "Store Ollama",
                     SpecialExplanation = "Poids de modèles téléchargés par Ollama.",
+                    SpecialExplanationEn = "Model weights downloaded by Ollama.",
                 });
             }
         }
@@ -73,11 +76,13 @@ public static class DuplicateAndAiScanner
                     list.Add(new LargeFileItem
                     {
                         FullPath = f.FullName, Name = f.Name, FolderDisplay = $"Modèle IA ({Path.GetFileName(store)})",
+                        FolderDisplayEn = $"AI model ({Path.GetFileName(store)})",
                         Bytes = f.Length, LastModified = f.LastWriteTime, Category = LargeFileCategory.AiModel,
-                        SpecialLabel = "Modèle IA local",
+                        SpecialLabel = "Modèle IA local", SpecialLabelEn = "Local AI model",
                     });
                 }
             }
+            catch (OperationCanceledException) { throw; }
             catch { }
         }
         return list;

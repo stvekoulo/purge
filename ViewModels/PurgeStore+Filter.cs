@@ -206,7 +206,7 @@ public sealed partial class PurgeStore
 
     public void SelectAllDev(bool select)
     {
-        foreach (var item in FilteredDevItems) item.IsSelected = select;
+        foreach (var item in FilteredDevItems) item.IsSelected = select && item.CanSelect;
         NotifyDevSelection();
     }
 

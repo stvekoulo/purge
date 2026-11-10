@@ -30,9 +30,14 @@ public static class FolderExplorer
                 bool folder = entry is DirectoryInfo;
                 var size = folder ? Sample(entry.FullName, scope, token) : (((FileInfo)entry).Length, false);
                 result.Add(new(entry.FullName, entry.Name, entry.FullName,
-                    folder ? Loc.T("Dossier · lecture seule", "Folder · read only") : Loc.T("Fichier · lecture seule", "File · read only"),
-                    Loc.T("Explorez le dossier ou affichez-le dans l'Explorateur Windows.", "Explore the folder or reveal it in File Explorer."),
-                    Classify(entry.FullName), size.Item1) { IsDirectory = folder, IsEstimate = size.Item2 });
+                    folder ? "Dossier · lecture seule" : "Fichier · lecture seule",
+                    "Explorez le dossier ou affichez-le dans l'Explorateur Windows.",
+                    Classify(entry.FullName), size.Item1)
+                {
+                    DescriptionEn = folder ? "Folder · read only" : "File · read only",
+                    ActionHintEn = "Explore the folder or reveal it in File Explorer.",
+                    IsDirectory = folder, IsEstimate = size.Item2
+                });
             }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }

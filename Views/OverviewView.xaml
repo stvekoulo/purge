@@ -101,6 +101,8 @@
             <Rectangle Grid.Column="6" Fill="{ThemeResource ChartFreeSpace}"/>
           </Grid>
         </Border>
+        <TextBlock x:Name="TxtDiskBarHint" Text="Espace utilisé / libre"
+                   FontSize="10" Foreground="{ThemeResource TextTertiary}" TextWrapping="Wrap"/>
       </StackPanel>
 
       <!-- Category Breakdown Card (5 Purge Categories) -->

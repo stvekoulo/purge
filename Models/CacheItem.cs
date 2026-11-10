@@ -27,6 +27,13 @@ public sealed partial class CacheItem : ObservableObject
     public string SafetyText => Level.DisplayName();
     public string PathSummary => Paths.Count == 1 ? Paths[0] : $"{Paths[0]}  (+{Paths.Count - 1})";
 
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(Explanation));
+        OnPropertyChanged(nameof(SafetyText));
+    }
+
     private string? ResolvedIconFile => Services.BrandIconResolver.Resolve(Entry.Icon);
 
     public bool HasIcon => ResolvedIconFile is not null;

@@ -10,8 +10,10 @@ public static class FileDeleter
     public static Task<CleanOutcome> CleanAsync(IEnumerable<CacheItem> items, IProgress<string>? progress = null, PathScope? scope = null) =>
         Task.Run(() => CleanCaches(items.ToList(), progress, scope));
 
-    public static Task<CleanOutcome> CleanPathsAsync(IEnumerable<(string Title, string Path)> targets, IProgress<string>? progress = null, PathScope? scope = null) =>
-        Task.Run(() => CleanDirectPaths(targets.ToList(), progress, scope));
+    public static Task<CleanOutcome> CleanPathsAsync(IEnumerable<(string Title, string Path)> targets, IProgress<string>? progress = null,
+        PathScope? scope = null, IReadOnlyDictionary<string, string>? duplicateKeepers = null,
+        IReadOnlySet<string>? gitWorktrees = null) =>
+        Task.Run(() => CleanDirectPaths(targets.ToList(), progress, scope, duplicateKeepers, gitWorktrees));
 
     private static CleanOutcome CleanCaches(List<CacheItem> items, IProgress<string>? progress, PathScope? scope)
     {
@@ -43,7 +45,8 @@ public static class FileDeleter
         return new CleanOutcome(freed, moved.Count, moved, failures);
     }
 
-    private static CleanOutcome CleanDirectPaths(List<(string Title, string Path)> targets, IProgress<string>? progress, PathScope? scope)
+    private static CleanOutcome CleanDirectPaths(List<(string Title, string Path)> targets, IProgress<string>? progress,
+        PathScope? scope, IReadOnlyDictionary<string, string>? duplicateKeepers, IReadOnlySet<string>? gitWorktrees)
     {
         var moved = new List<string>();
         var failures = new List<CleanFailure>();
@@ -75,6 +78,17 @@ public static class FileDeleter
             if (PathExpander.IsReparsePoint(full) || PathExpander.HasReparsePointAncestor(full))
             {
                 failures.Add(new CleanFailure(full, "Ignoré par sécurité : lien ou jonction"));
+                continue;
+            }
+            if (duplicateKeepers?.TryGetValue(full, out var keeper) == true
+                && (string.IsNullOrEmpty(keeper) || !DuplicateFileVerifier.AreIdentical(full, keeper)))
+            {
+                failures.Add(new CleanFailure(full, "Doublon non confirmé : copie à conserver absente ou modifiée / Duplicate not verified: keeper missing or changed"));
+                continue;
+            }
+            if (gitWorktrees?.Contains(full) == true && GitWorktreeInspector.Inspect(full) != GitWorktreeState.Clean)
+            {
+                failures.Add(new CleanFailure(full, "Worktree Git modifié ou non vérifiable / Modified or unverifiable Git worktree"));
                 continue;
             }
 

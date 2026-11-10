@@ -30,6 +30,11 @@ public sealed partial class PurgeStore
         Settings.Language = language;
         SaveSettings();
         Loc.SetLanguage(language);
+        foreach (var item in CacheItems) item.RefreshLocalizedText();
+        foreach (var item in DevItems) item.RefreshLocalizedText();
+        foreach (var item in LargeFileItems) item.RefreshLocalizedText();
+        foreach (var item in InstalledApps) item.RefreshLocalizedText();
+        foreach (var item in OrphanLeftovers) item.RefreshLocalizedText();
         RefreshDisk();
         RefreshAllFilteredViews();
         NotifyTotals();

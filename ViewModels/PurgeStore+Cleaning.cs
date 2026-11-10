@@ -18,11 +18,30 @@ public sealed partial class PurgeStore
         DevItems.Where(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache)
             .SelectMany(i => i.Paths.Select(path => (i.Title, path))).ToList(), "safe");
 
-    public Task<CleanOutcome?> CleanSelectedDevAsync() => RunCleanAsync([], DevItems.Where(i => i.IsSelected)
-        .SelectMany(i => i.Paths.Select(path => (i.Title, path))).ToList(), "manual");
+    public Task<CleanOutcome?> CleanSelectedDevAsync()
+    {
+        var selected = DevItems.Where(i => i.IsSelected).ToList();
+        var worktrees = selected.Where(i => i.Section == DevSectionKind.OrphanWorktree)
+            .SelectMany(i => i.Paths).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return RunCleanAsync([], selected.SelectMany(i => i.Paths.Select(path => (i.Title, path))).ToList(),
+            "manual", gitWorktrees: worktrees);
+    }
 
-    public Task<CleanOutcome?> CleanSelectedLargeFilesAsync() => RunCleanAsync([], LargeFileItems.Where(i => i.IsSelected)
-        .Select(i => (i.Name, i.FullPath)).ToList(), "manual");
+    public Task<CleanOutcome?> CleanSelectedLargeFilesAsync()
+    {
+        var selected = LargeFileItems.Where(i => i.IsSelected).ToList();
+        var selectedPaths = selected.Select(i => i.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var duplicateKeepers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in selected.Where(i => i.IsDuplicate))
+        {
+            var keeper = LargeFileItems.FirstOrDefault(i => i.DuplicateGroupId == item.DuplicateGroupId && i.IsDuplicateKeeper);
+            // If the keeper is selected, missing, or was itself selected,
+            // refuse the whole affected duplicate group rather than lose all copies.
+            duplicateKeepers[item.FullPath] = keeper is null || selectedPaths.Contains(keeper.FullPath)
+                ? "" : keeper.FullPath;
+        }
+        return RunCleanAsync([], selected.Select(i => (i.Name, i.FullPath)).ToList(), "manual", duplicateKeepers);
+    }
 
     public Task<CleanOutcome?> CleanSelectedUninstallAsync()
     {
@@ -36,7 +55,9 @@ public sealed partial class PurgeStore
         return RunCleanAsync([], targets, "manual");
     }
 
-    private async Task<CleanOutcome?> RunCleanAsync(List<CacheItem> caches, List<(string Title, string Path)> paths, string trigger)
+    private async Task<CleanOutcome?> RunCleanAsync(List<CacheItem> caches, List<(string Title, string Path)> paths,
+        string trigger, IReadOnlyDictionary<string, string>? duplicateKeepers = null,
+        IReadOnlySet<string>? gitWorktrees = null)
     {
         if (!CanClean || caches.Count + paths.Count == 0) return null;
         var scope = CreateScope();
@@ -50,7 +71,8 @@ public sealed partial class PurgeStore
         try
         {
             var cached = caches.Count == 0 ? new CleanOutcome(0, 0, [], []) : await FileDeleter.CleanAsync(caches, progress, scope);
-            var direct = paths.Count == 0 ? new CleanOutcome(0, 0, [], []) : await FileDeleter.CleanPathsAsync(paths, progress, scope);
+            var direct = paths.Count == 0 ? new CleanOutcome(0, 0, [], [])
+                : await FileDeleter.CleanPathsAsync(paths, progress, scope, duplicateKeepers, gitWorktrees);
             outcome = new(cached.FreedBytes + direct.FreedBytes, cached.MovedCount + direct.MovedCount,
                 cached.MovedPaths.Concat(direct.MovedPaths).ToList(), cached.Failures.Concat(direct.Failures).ToList());
             if (Settings.EmptyRecycleBinAfterCleaning && outcome.MovedCount > 0)
@@ -121,11 +143,14 @@ public sealed partial class PurgeStore
 
     public bool EvictOneDriveFile(LargeFileItem item)
     {
-        if (!CanClean || !CreateScope().CanDelete(item.FullPath)) return false;
+        if (!CanClean || !item.IsOneDriveSynced || !CreateScope().CanDelete(item.FullPath)) return false;
         var ok = LargeFileScanner.EvictOneDriveLocalCopy(item.FullPath);
         if (ok)
         {
-            _scopeCache.Clear(); LargeFileItems.Remove(item); ApplyLargeFilter(); RefreshDisk(); NotifyTotals();
+            // attrib +U -P requests dehydration; it does not prove that
+            // Windows has already freed the local bytes. Keep the entry in
+            // the result list until the next scan confirms its cloud state.
+            _scopeCache.Clear(); RefreshDisk(); NotifyTotals();
         }
         return ok;
     }

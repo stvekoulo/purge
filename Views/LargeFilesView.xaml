@@ -109,11 +109,11 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <Border Grid.Column="0" CornerRadius="4" Padding="6,2" Background="{x:Bind BadgeBgBrush}" VerticalAlignment="Center">
-                                            <TextBlock Text="{x:Bind BadgeText}" FontSize="10" FontWeight="SemiBold" Foreground="{x:Bind BadgeFgBrush}"/>
+                                            <TextBlock Text="{x:Bind BadgeText, Mode=OneWay}" FontSize="10" FontWeight="SemiBold" Foreground="{x:Bind BadgeFgBrush}"/>
                                         </Border>
-                                        <TextBlock Grid.Column="1" Text="{x:Bind Name}" Style="{StaticResource PurgeBody}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="1" Text="{x:Bind Name, Mode=OneWay}" Style="{StaticResource PurgeBody}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                     </Grid>
-                                    <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource PurgeCaption}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{x:Bind Subtitle, Mode=OneWay}" Style="{StaticResource PurgeCaption}" TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
