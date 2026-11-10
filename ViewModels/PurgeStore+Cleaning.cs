@@ -82,10 +82,9 @@ public sealed partial class PurgeStore
                 var emptied = await RecycleBin.EmptyAsync(scope.Roots);
                 if (emptied.Failures.Count > 0)
                 {
-                    TrashActionMessage = Loc.T("Le nettoyage est terminé, mais la Corbeille n'a pas pu être entièrement vidée.",
+                    SetTrashActionMessage("Le nettoyage est terminé, mais la Corbeille n'a pas pu être entièrement vidée.",
                         "Cleaning finished, but the Recycle Bin could not be emptied completely.");
-                    OnPropertyChanged(nameof(TrashActionMessage));
-                    outcome = outcome with { Failures = outcome.Failures.Concat(emptied.Failures.Select(f => new CleanFailure("Corbeille / Recycle Bin", f))).ToList() };
+                    outcome = outcome with { Failures = outcome.Failures.Concat(emptied.Failures.Select(f => new CleanFailure(Loc.T("Corbeille", "Recycle Bin"), f))).ToList() };
                 }
                 else outcome = outcome with { RecycleBinEmptied = true };
                 RefreshDisk();

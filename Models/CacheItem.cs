@@ -32,6 +32,7 @@ public sealed partial class CacheItem : ObservableObject
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(Explanation));
         OnPropertyChanged(nameof(SafetyText));
+        OnPropertyChanged(nameof(SizeText));
     }
 
     private string? ResolvedIconFile => Services.BrandIconResolver.Resolve(Entry.Icon);

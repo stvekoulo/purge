@@ -2,6 +2,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using PurgeWin.Services;
@@ -148,6 +149,12 @@ public sealed partial class MainWindow : Window
     private void SyncSidebarTexts()
     {
         TxtLangBadge.Text = Loc.IsEn ? "EN" : "FR";
+        ToolTipService.SetToolTip(BtnThemeToggle, Loc.T("Changer le thème clair ou sombre", "Switch between light and dark themes"));
+        ToolTipService.SetToolTip(BtnLangToggle, Loc.IsEn ? "Switch to French" : "Passer en anglais");
+        ToolTipService.SetToolTip(BtnOpenRecycleBin, Loc.T("Gérer la Corbeille Windows", "Manage Windows Recycle Bin"));
+        AutomationProperties.SetName(BtnThemeToggle, Loc.T("Changer de thème", "Change theme"));
+        AutomationProperties.SetName(BtnLangToggle, Loc.IsEn ? "Switch to French" : "Passer en anglais");
+        AutomationProperties.SetName(BtnOpenRecycleBin, Loc.T("Gérer la Corbeille Windows", "Manage Windows Recycle Bin"));
         TxtNavOverview.Text = Loc.T("Vue d'ensemble", "Overview");
         TxtSecClean.Text = Loc.T("Nettoyer", "Clean");
         TxtNavCaches.Text = Loc.T("Caches d'apps", "App Caches");

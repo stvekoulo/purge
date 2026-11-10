@@ -51,6 +51,8 @@ public sealed partial class MainWindow
             ? Visibility.Visible : Visibility.Collapsed;
         UpdateDownloadProgress.IsIndeterminate = state.Stage == UpdateStage.Verifying;
         UpdateDownloadProgress.Value = state.Percent;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(UpdateDownloadProgress,
+            Loc.T("Progression du téléchargement", "Download progress"));
         Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(BtnBannerDismiss, Loc.T("Masquer la notification", "Dismiss notification"));
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(BtnBannerDismiss, Loc.T("Masquer la notification de mise à jour", "Dismiss update notification"));
     }

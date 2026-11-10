@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Automation;
 using PurgeWin.Models;
 using PurgeWin.Services;
 using PurgeWin.Theme;
@@ -20,7 +21,7 @@ public sealed partial class EverythingElseView : UserControl
     private readonly Stack<(string? Path, double Offset)> _history = new();
     private CancellationTokenSource? _load;
     private long _revision = -1;
-    private bool _syncing, _busy;
+    private bool _syncing, _busy, _loadFailed;
     private int _bucket;
 
     public EverythingElseView()
@@ -71,6 +72,7 @@ public sealed partial class EverythingElseView : UserControl
         _load?.Cancel(); _load?.Dispose();
         var load = _load = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
         _path = path; _selected = null; _bucket = 0;
+        _loadFailed = false;
         _busy = true; _entries = []; FolderSearch.Text = "";
         RefreshEntries(); BuildBreadcrumbs(); UpdateBusy();
         try
@@ -89,6 +91,7 @@ public sealed partial class EverythingElseView : UserControl
         {
             if (!load.IsCancellationRequested)
             {
+                _loadFailed = true;
                 FolderStatus.Text = Loc.T("Dossier inaccessible. Revenez en arrière ou actualisez.", "Folder unavailable. Go back or refresh.");
                 App.LogCrash("Folder explorer", ex);
             }
@@ -104,6 +107,7 @@ public sealed partial class EverythingElseView : UserControl
 
     private void SetEntries(IEnumerable<EverythingElseFolder> entries)
     {
+        _loadFailed = false;
         _entries = entries.ToList();
         _selected = _entries.FirstOrDefault(i => i.IsDirectory && i.Bytes > 0) ?? _entries.FirstOrDefault();
         FolderStatus.Text = Loc.T("Lecture seule · ≈ indique une taille estimée. Explorez un dossier pour affiner.",
@@ -130,6 +134,19 @@ public sealed partial class EverythingElseView : UserControl
         FolderSearch.PlaceholderText = Loc.T("Rechercher un dossier ou un chemin", "Search folders or paths");
         ExploreBtn.Content = Loc.T("Explorer le dossier", "Explore folder");
         RevealBtn.Content = Loc.T("Afficher dans Windows", "Show in Windows");
+        AutomationProperties.SetName(ParentBtn, Loc.T("Revenir au dossier précédent", "Go to parent folder"));
+        ToolTipService.SetToolTip(ParentBtn, Loc.T("Dossier parent", "Parent folder"));
+        AutomationProperties.SetName(BucketPicker, Loc.T("Catégorie de dossiers", "Folder category"));
+        AutomationProperties.SetName(CopyPathBtn, Loc.T("Copier le chemin", "Copy path"));
+        if (_loadFailed)
+            FolderStatus.Text = Loc.T("Dossier inaccessible. Revenez en arrière ou actualisez.", "Folder unavailable. Go back or refresh.");
+        else if (_busy)
+            FolderStatus.Text = Loc.T("Lecture des dossiers… Vous pouvez toujours faire défiler ou revenir en arrière.",
+                "Reading folders… You can still scroll or go back.");
+        else if (!_busy)
+            FolderStatus.Text = Loc.T("Lecture seule · ≈ indique une taille estimée. Explorez un dossier pour affiner.",
+                "Read only · ≈ marks an estimated size. Explore a folder to refine it.")
+                + (_entries.Count >= 2000 ? Loc.T(" · 2 000 premiers éléments.", " · First 2,000 items.") : "");
         _syncing = false;
         RefreshEntries(); BuildBreadcrumbs();
     }

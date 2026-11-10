@@ -1,4 +1,5 @@
 using PurgeWin.Models;
+using PurgeWin.Utilities;
 
 namespace PurgeWin.Services;
 
@@ -28,7 +29,7 @@ public static class FileDeleter
             {
                 if (scope?.CanDelete(target.FullName) == false)
                 {
-                    failures.Add(new(target.FullName, "Hors du disque sélectionné ou chemin exclu / Outside selected disk or excluded"));
+                    failures.Add(new(target.FullName, Loc.T("Hors du disque sélectionné ou chemin exclu", "Outside selected disk or excluded")));
                     continue;
                 }
                 var decision = DeletionSafetyPolicy.Evaluate(target.FullName, item.Entry);
@@ -59,36 +60,36 @@ public static class FileDeleter
             try { full = Path.GetFullPath(rawPath).TrimEnd('\\'); }
             catch
             {
-                failures.Add(new CleanFailure(rawPath, "Chemin invalide / Invalid path"));
+                failures.Add(new CleanFailure(rawPath, Loc.T("Chemin invalide", "Invalid path")));
                 continue;
             }
 
             if (!File.Exists(full) && !Directory.Exists(full)) continue;
             if (scope?.CanDelete(full) == false)
             {
-                failures.Add(new(full, "Hors du disque sélectionné ou chemin exclu / Outside selected disk or excluded"));
+                failures.Add(new(full, Loc.T("Hors du disque sélectionné ou chemin exclu", "Outside selected disk or excluded")));
                 continue;
             }
             if (DeletionSafetyPolicy.IsProtected(full) || DeletionSafetyPolicy.IsSystemPath(full)
                 || full.Count(c => c == '\\') < 2)
             {
-                failures.Add(new CleanFailure(full, "Ignoré par sécurité : emplacement protégé"));
+                failures.Add(new CleanFailure(full, Loc.T("Ignoré par sécurité : emplacement protégé", "Skipped for safety: protected location")));
                 continue;
             }
             if (PathExpander.IsReparsePoint(full) || PathExpander.HasReparsePointAncestor(full))
             {
-                failures.Add(new CleanFailure(full, "Ignoré par sécurité : lien ou jonction"));
+                failures.Add(new CleanFailure(full, Loc.T("Ignoré par sécurité : lien ou jonction", "Skipped for safety: symlink or junction")));
                 continue;
             }
             if (duplicateKeepers?.TryGetValue(full, out var keeper) == true
                 && (string.IsNullOrEmpty(keeper) || !DuplicateFileVerifier.AreIdentical(full, keeper)))
             {
-                failures.Add(new CleanFailure(full, "Doublon non confirmé : copie à conserver absente ou modifiée / Duplicate not verified: keeper missing or changed"));
+                failures.Add(new CleanFailure(full, Loc.T("Doublon non confirmé : copie à conserver absente ou modifiée", "Duplicate not verified: keeper missing or changed")));
                 continue;
             }
             if (gitWorktrees?.Contains(full) == true && GitWorktreeInspector.Inspect(full) != GitWorktreeState.Clean)
             {
-                failures.Add(new CleanFailure(full, "Worktree Git modifié ou non vérifiable / Modified or unverifiable Git worktree"));
+                failures.Add(new CleanFailure(full, Loc.T("Worktree Git modifié ou non vérifiable", "Modified or unverifiable Git worktree")));
                 continue;
             }
 

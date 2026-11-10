@@ -120,7 +120,8 @@ public sealed partial class PurgeStore
         OrphanLeftovers.Clear(); CliTools.Clear(); EverythingElseFolders.Clear();
         CachePhase = DevPhase = LargePhase = UninstallPhase = EverythingElsePhase = ScanPhase.NotScanned;
         LastScan = null;
-        ScanLabel = ScanError = "";
+        ScanLabel = "";
+        SetScanNotice(ScanNotice.None);
         if (HasActiveDrives && _scopeCache.TryGetValue(key, out var saved))
         {
             static ScanPhase Done(ScanPhase phase) => phase == ScanPhase.Scanning ? ScanPhase.NotScanned : phase;

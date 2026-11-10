@@ -51,13 +51,13 @@
         <Button Grid.Column="2" x:Name="BtnThemeToggle" Click="BtnThemeToggle_Click"
                 CornerRadius="12" Padding="7,2" Height="24" MinWidth="0" Margin="0,0,4,0"
                 Background="{ThemeResource FillSecondary}" BorderThickness="0"
-                ToolTipService.ToolTip="Thème Clair / Sombre (Light / Dark)">
+                ToolTipService.ToolTip="Changer de thème">
           <FontIcon x:Name="IconThemeToggle" Glyph="&#xE706;" FontSize="11"/>
         </Button>
         <Button Grid.Column="3" x:Name="BtnLangToggle" Click="BtnLangToggle_Click"
                 CornerRadius="12" Padding="8,2" Height="24" MinWidth="0"
                 Background="{ThemeResource FillSecondary}" BorderThickness="0"
-                ToolTipService.ToolTip="Français / English">
+                ToolTipService.ToolTip="Changer de langue">
           <TextBlock x:Name="TxtLangBadge" Text="FR" FontSize="11" FontWeight="SemiBold"/>
         </Button>
       </Grid>
@@ -194,7 +194,7 @@
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
               Background="{ThemeResource FillSecondary}" BorderThickness="0"
               CornerRadius="{StaticResource RadiusLg}"
-              ToolTipService.ToolTip="Ouvrir la Corbeille Windows / Open Windows Recycle Bin">
+              ToolTipService.ToolTip="Gérer la Corbeille Windows">
         <Button.Flyout>
           <MenuFlyout x:Name="TrashMenu" Opening="OnTrashMenuOpening">
             <MenuFlyoutItem x:Name="TrashScopeLabel" Text="Corbeille du périmètre" IsEnabled="False"/>

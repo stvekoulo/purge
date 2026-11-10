@@ -1,4 +1,6 @@
-﻿namespace PurgeWin.Utilities;
+﻿using System.Globalization;
+
+namespace PurgeWin.Utilities;
 
 /// Purge for Windows:
 /// translates byte counts into relatable comparisons in FR and EN.
@@ -59,13 +61,14 @@ public static class SizeComparisonCatalog
         var pick = bestFits[StableIndex(bytes, bestFits.Count)];
 
         var count = Math.Max(1, (int)Math.Floor(pick.Mult));
+        var countText = count.ToString("N0", Loc.IsEn ? CultureInfo.GetCultureInfo("en-US") : CultureInfo.GetCultureInfo("fr-FR"));
         var a = pick.Anchor;
         string label;
         if (!a.IsTimesOver)
         {
             label = count == 1
                 ? Loc.T($"De la place pour {a.OneFr}", $"Room for {a.OneEn}")
-                : Loc.T($"De la place pour {count:N0} {a.ManyFr}", $"Room for {count:N0} {a.ManyEn}");
+                : Loc.T($"De la place pour {countText} {a.ManyFr}", $"Room for {countText} {a.ManyEn}");
         }
         else
         {
@@ -73,7 +76,7 @@ public static class SizeComparisonCatalog
                 ? Loc.T($"De la place pour {a.OneFr}", $"Room for {a.OneEn}")
                 : count == 2
                     ? Loc.T($"De la place pour {a.ManyFr}, deux fois", $"Room for {a.ManyEn}, twice over")
-                    : Loc.T($"De la place pour {a.ManyFr}, {count:N0} fois", $"Room for {a.ManyEn}, {count:N0} times over");
+                    : Loc.T($"De la place pour {a.ManyFr}, {countText} fois", $"Room for {a.ManyEn}, {countText} times over");
         }
         return (a.Glyph, label);
     }

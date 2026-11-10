@@ -6,7 +6,15 @@ namespace PurgeWin.ViewModels;
 public sealed partial class PurgeStore
 {
     public bool AutoEmptyRecycleBin => Settings.EmptyRecycleBinAfterCleaning;
-    public string TrashActionMessage { get; private set; } = "";
+    private string _trashActionMessageFr = "", _trashActionMessageEn = "";
+    public string TrashActionMessage => Loc.T(_trashActionMessageFr, _trashActionMessageEn);
+
+    private void SetTrashActionMessage(string fr, string en)
+    {
+        _trashActionMessageFr = fr;
+        _trashActionMessageEn = en;
+        OnPropertyChanged(nameof(TrashActionMessage));
+    }
 
     public void SetAutoEmptyRecycleBin(bool enabled)
     {
@@ -27,12 +35,16 @@ public sealed partial class PurgeStore
         {
             var result = restore ? await RecycleBin.RestoreAsync(roots) : await RecycleBin.EmptyAsync(roots);
             _scopeCache.Clear();
-            TrashActionMessage = result.Failures.Count > 0
-                ? Loc.T("Opération partielle. Certains éléments nécessitent une action dans Windows.", "Partial operation. Some items need attention in Windows.")
-                : restore ? Loc.T($"Restauration de {result.Requested} éléments demandée à Windows.", $"Restore requested for {result.Requested} items in Windows.")
-                : result.Requested == 0 ? Loc.T("Aucun élément à vider dans ce périmètre.", "No items to empty in this scope.")
-                : Loc.T("La Corbeille du périmètre a été vidée.", "The Recycle Bin for this scope has been emptied.");
-            OnPropertyChanged(nameof(TrashActionMessage));
+            if (result.Failures.Count > 0)
+                SetTrashActionMessage("Opération partielle. Certains éléments nécessitent une action dans Windows.",
+                    "Partial operation. Some items need attention in Windows.");
+            else if (restore)
+                SetTrashActionMessage($"Restauration de {result.Requested} éléments demandée à Windows.",
+                    $"Restore requested for {result.Requested} items in Windows.");
+            else if (result.Requested == 0)
+                SetTrashActionMessage("Aucun élément à vider dans ce périmètre.", "No items to empty in this scope.");
+            else SetTrashActionMessage("La Corbeille du périmètre a été vidée.",
+                    "The Recycle Bin for this scope has been emptied.");
             return result;
         }
         finally { IsCleaning = false; CleaningLabel = ""; RefreshDisk(); NotifyScope(); }
