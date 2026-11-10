@@ -18,8 +18,10 @@ internal static class FolderAndTrashTests
         Loc.IsEn = true;
         check("English language displays English app updater text", updaterEntry.DisplayName == "Downloaded app updates"
             && updaterEntry.Explanation.Contains("updates", StringComparison.OrdinalIgnoreCase));
+        check("English byte units follow UI language", ByteFormatter.Format(1_500_000) == "1.5 MB");
         Loc.IsEn = false;
         check("French language is restored without a rescan", updaterEntry.DisplayName == "Mises à jour d'applications téléchargées");
+        check("French byte units follow UI language", ByteFormatter.Format(1_500_000) == "1,5 Mo");
 
         var root = Path.Combine(AppContext.BaseDirectory, "fixtures", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "Visible"));

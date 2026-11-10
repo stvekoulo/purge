@@ -36,7 +36,11 @@ public sealed partial class AppLeftoverItem : ObservableObject
         ? Loc.T("Correspondance exacte", "Exact match")
         : Loc.T("À vérifier", "Check first");
 
-    public void RefreshLocalizedText() => OnPropertyChanged(nameof(MatchBadge));
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(MatchBadge));
+        OnPropertyChanged(nameof(SizeText));
+    }
 }
 
 /// Purge for Windows:.
@@ -108,6 +112,7 @@ public sealed partial class InstalledAppItem : ObservableObject
         OnPropertyChanged(nameof(UninstallHint));
         OnPropertyChanged(nameof(UninstallActionText));
         OnPropertyChanged(nameof(Subtitle));
+        OnPropertyChanged(nameof(TotalSizeText));
         foreach (var leftover in Leftovers) leftover.RefreshLocalizedText();
     }
 }
@@ -135,7 +140,11 @@ public sealed partial class OrphanLeftoverItem : ObservableObject
 
     public string SizeText => ByteFormatter.Format(Bytes);
     public string Subtitle => $"{LocationKind} · {Loc.T("Modifié", "Modified")} {RelativeDate.Format(LastModified)} · {FullPath}";
-    public void RefreshLocalizedText() => OnPropertyChanged(nameof(Subtitle));
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(Subtitle));
+        OnPropertyChanged(nameof(SizeText));
+    }
     public Brush BadgeBgBrush => ThemeBrushes.Get("StatusCheckFill");
     public Brush BadgeFgBrush => ThemeBrushes.Get("StatusCheckText");
 }
@@ -162,4 +171,5 @@ public sealed partial class CliToolItem : ObservableObject
 
     public string SizeText => ByteFormatter.Format(Bytes);
     public string Subtitle => $"{Manager} · {Path}";
+    public void RefreshLocalizedText() => OnPropertyChanged(nameof(SizeText));
 }

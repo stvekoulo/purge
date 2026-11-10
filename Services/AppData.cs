@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Globalization;
 using PurgeWin.Models;
 using PurgeWin.Utilities;
 
@@ -84,7 +85,9 @@ public sealed class HistoryEntry
     public List<string> Skipped { get; set; } = [];
 
     [JsonIgnore]
-    public string DateText => Date.ToString("dd/MM/yyyy HH:mm");
+    public string DateText => Loc.IsEn
+        ? Date.ToString("MMM d, yyyy HH:mm", CultureInfo.GetCultureInfo("en-US"))
+        : Date.ToString("dd/MM/yyyy HH:mm", CultureInfo.GetCultureInfo("fr-FR"));
 
     [JsonIgnore]
     public string FreedText => ByteFormatter.Format(FreedBytes);

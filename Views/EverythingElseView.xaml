@@ -17,7 +17,7 @@
       <Grid ColumnSpacing="8">
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <Button x:Name="ParentBtn" Content="←" Click="OnParentClick" AutomationProperties.Name="Revenir au dossier précédent"
-                ToolTipService.ToolTip="Dossier parent / Parent folder"/>
+                ToolTipService.ToolTip="Dossier parent"/>
         <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled"
                       VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
           <StackPanel x:Name="Breadcrumbs" Orientation="Horizontal" Spacing="4"/>

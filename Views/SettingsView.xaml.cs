@@ -44,12 +44,6 @@ public sealed partial class SettingsView : UserControl
         SyncTexts();
         UpdateThemeCardBorders();
 
-        long lifetime = history.Entries.Sum(e => e.FreedBytes);
-        var cmp = SizeComparisonCatalog.Describe(lifetime);
-        TxtLifetimeTotal.Text = lifetime > 0
-            ? $"{Loc.T("Volume nettoyé (Corbeille comprise) :", "Volume cleaned (including Recycle Bin):")} {ByteFormatter.Format(lifetime)}" + (cmp is { } c ? $" ({c.Label})" : "")
-            : "";
-
         TxtHistoryEmpty.Visibility = history.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         HistoryList.Visibility = history.Entries.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         HistoryList.ItemsSource = null;
@@ -129,6 +123,8 @@ public sealed partial class SettingsView : UserControl
         TxtThemeDark.Text = Loc.T("Sombre", "Dark");
         TxtLangTitle.Text = Loc.T("Langue de l'interface", "Interface Language");
         TxtLangSub.Text = Loc.T("Basculer instantanément entre le français et l'anglais", "Switch immediately between French and English");
+        LangFrItem.Content = Loc.T("Français", "French");
+        LangEnItem.Content = Loc.T("Anglais", "English");
 
         TxtSecAutomation.Text = Loc.T("Automatisation & Projets", "Automation & Projects");
         TxtStartupTitle.Text = Loc.T("Lancer au démarrage de Windows", "Launch at Windows Startup");
@@ -144,6 +140,9 @@ public sealed partial class SettingsView : UserControl
         TxtStaleTitle.Text = Loc.T("Ancienneté des artefacts de projets", "Project Build Artifact Age");
         TxtStaleSub.Text = Loc.T("Filtrer node_modules, target et .next selon leur dernière modification", "Filter node_modules, target, and .next by last modified date");
         StaleAllItem.Content = Loc.T("Tous les projets", "All projects");
+        Stale30Item.Content = Loc.T("> 30 jours", "> 30 days");
+        Stale90Item.Content = Loc.T("> 90 jours", "> 90 days");
+        Stale180Item.Content = Loc.T("> 180 jours", "> 180 days");
         RefreshComboSelection(CmbStale);
         TxtAutoUpdateTitle.Text = Loc.T("Vérifier les mises à jour au démarrage", "Check for updates on startup");
         TxtAutoUpdateSub.Text = Loc.T("Recherche discrètement si une nouvelle version est disponible sur GitHub", "Silently checks if a newer version is available on GitHub");
@@ -156,6 +155,17 @@ public sealed partial class SettingsView : UserControl
 
         TxtSecHistory.Text = Loc.T("Historique des nettoyages", "Cleaning History");
         TxtHistoryEmpty.Text = Loc.T("Aucun nettoyage effectué pour le moment.", "No cleanups recorded yet.");
+        var history = PurgeStore.Shared.History;
+        long lifetime = history.Entries.Sum(entry => entry.FreedBytes);
+        var comparison = SizeComparisonCatalog.Describe(lifetime);
+        TxtLifetimeTotal.Text = lifetime > 0
+            ? $"{Loc.T("Volume nettoyé (Corbeille comprise) :", "Volume cleaned (including Recycle Bin):")} {ByteFormatter.Format(lifetime)}"
+                + (comparison is { } c ? $" ({c.Label})" : "")
+            : "";
+        // HistoryEntry does not raise property changes. Recreate the item
+        // templates so computed summaries use the newly selected locale.
+        HistoryList.ItemsSource = null;
+        HistoryList.ItemsSource = history.Entries;
         TxtSecExclusions.Text = Loc.T("Dossiers exclus & Maintenance", "Excluded Folders & Maintenance");
         TxtExclusionsSub.Text = Loc.T("Les dossiers que vous avez demandé à Purge d'ignorer lors des analyses.", "Folders you asked Purge to skip during scans.");
         TxtNoExclusions.Text = Loc.T("Aucun dossier exclu.", "No excluded folders.");

@@ -62,6 +62,8 @@ public sealed partial class AboutView : UserControl
             ? Visibility.Visible : Visibility.Collapsed;
         AboutDownloadProgress.IsIndeterminate = state.Stage == UpdateStage.Verifying;
         AboutDownloadProgress.Value = state.Percent;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(AboutDownloadProgress,
+            Loc.T("Progression du téléchargement", "Download progress"));
     }
 
     private void SyncTexts()

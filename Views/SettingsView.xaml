@@ -81,13 +81,13 @@
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
               <StackPanel Spacing="2" VerticalAlignment="Center">
-                <TextBlock x:Name="TxtLangTitle" Text="Langue / Language" Style="{StaticResource RowTitleText}" TextWrapping="Wrap"/>
+                <TextBlock x:Name="TxtLangTitle" Text="Langue de l'interface" Style="{StaticResource RowTitleText}" TextWrapping="Wrap"/>
                 <TextBlock x:Name="TxtLangSub" Text="Basculer instantanément entre le français et l'anglais" Style="{StaticResource CalloutText}" TextWrapping="Wrap"/>
               </StackPanel>
               <ComboBox x:Name="CmbLang" Grid.Column="1" SelectionChanged="CmbLang_SelectionChanged"
                         Height="30" CornerRadius="{StaticResource RadiusMd}" FontSize="13" VerticalAlignment="Center">
-                <ComboBoxItem Content="Français"/>
-                <ComboBoxItem Content="English"/>
+                <ComboBoxItem x:Name="LangFrItem" Content="Français"/>
+                <ComboBoxItem x:Name="LangEnItem" Content="Anglais"/>
               </ComboBox>
             </Grid>
           </StackPanel>
@@ -153,9 +153,9 @@
               <ComboBox x:Name="CmbStale" Grid.Column="1" SelectionChanged="CmbStale_SelectionChanged"
                         Height="30" CornerRadius="{StaticResource RadiusMd}" FontSize="13" VerticalAlignment="Center">
                 <ComboBoxItem x:Name="StaleAllItem" Content="Tous les projets"/>
-                <ComboBoxItem Content="&gt; 30 jours / days"/>
-                <ComboBoxItem Content="&gt; 90 jours / days"/>
-                <ComboBoxItem Content="&gt; 180 jours / days"/>
+                <ComboBoxItem x:Name="Stale30Item" Content="&gt; 30 jours"/>
+                <ComboBoxItem x:Name="Stale90Item" Content="&gt; 90 jours"/>
+                <ComboBoxItem x:Name="Stale180Item" Content="&gt; 180 jours"/>
               </ComboBox>
             </Grid>
 

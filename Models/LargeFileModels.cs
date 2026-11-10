@@ -103,6 +103,7 @@ public sealed partial class LargeFileItem : ObservableObject
         OnPropertyChanged(nameof(AgeText));
         OnPropertyChanged(nameof(Subtitle));
         OnPropertyChanged(nameof(BadgeText));
+        OnPropertyChanged(nameof(SizeText));
     }
 
     public string Glyph => Category switch

@@ -42,7 +42,20 @@ public sealed partial class PurgeStore : ObservableObject
     [ObservableProperty] private bool _isCleaning;
     [ObservableProperty] private string _cleaningLabel = "";
     [ObservableProperty] private string _scanLabel = "";
-    [ObservableProperty] private string _scanError = "";
+    private enum ScanNotice { None, Stopped, Incomplete }
+    private ScanNotice _scanNotice;
+    public string ScanError => _scanNotice switch
+    {
+        ScanNotice.Stopped => Loc.T("Analyse arrêtée. Actualisez pour continuer.", "Scan stopped. Refresh to continue."),
+        ScanNotice.Incomplete => Loc.T("Analyse incomplète. Actualisez pour réessayer.", "Incomplete scan. Refresh to try again."),
+        _ => "",
+    };
+
+    private void SetScanNotice(ScanNotice notice)
+    {
+        _scanNotice = notice;
+        OnPropertyChanged(nameof(ScanError));
+    }
 
     private PurgeStore()
     {
@@ -136,7 +149,7 @@ public sealed partial class PurgeStore : ObservableObject
         if (IsScanning || IsCleaning || !HasActiveDrives) return;
         EnsureScanContext();
         var context = _scopeSession.Current;
-        ScanError = "";
+        SetScanNotice(ScanNotice.None);
         ScanLabel = label;
         phase(ScanPhase.Scanning);
         NotifyScanState();
@@ -168,7 +181,7 @@ public sealed partial class PurgeStore : ObservableObject
                     SaveScanCache();
                 }
                 if (finalPhase == ScanPhase.Failed)
-                    ScanError = Loc.T("Analyse incomplète. Actualisez pour réessayer.", "Incomplete scan. Refresh to try again.");
+                    SetScanNotice(ScanNotice.Incomplete);
                 RefreshAllFilteredViews();
                 NotifyTotals();
                 NotifyScanState();

@@ -70,6 +70,7 @@ public static class SystemIntegration
     public static async Task RunHeadlessScheduledCleanAsync()
     {
         var settings = AppData.Load<AppSettings>("settings.json");
+        Loc.SetLanguage(settings.Language);
         var history = AppData.Load<HistoryLog>("history.json");
         var excluded = settings.ExcludedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var roots = PathScope.AvailableRoots().Where(root => settings.SelectedDrive == "ALL"
@@ -95,7 +96,7 @@ public static class SystemIntegration
             {
                 RecycleBinEmptied = empty.Failures.Count == 0,
                 RecycleBinEmptyRequested = true,
-                Failures = outcome.Failures.Concat(empty.Failures.Select(f => new CleanFailure("Corbeille / Recycle Bin", f))).ToList(),
+                Failures = outcome.Failures.Concat(empty.Failures.Select(f => new CleanFailure(Loc.T("Corbeille", "Recycle Bin"), f))).ToList(),
             };
         }
         if (outcome.MovedCount > 0 || outcome.Failures.Count > 0)

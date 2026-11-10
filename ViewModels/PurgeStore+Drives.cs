@@ -15,11 +15,17 @@ public sealed partial class PurgeStore
         ?? Settings.SelectedDrive.TrimEnd('\\');
     public string ScopeStatus => !HasActiveDrives ? Loc.T("Disque indisponible. Reconnectez-le puis actualisez.", "Drive unavailable. Reconnect it and refresh.")
         : IsCleaning ? Loc.T("Nettoyage en cours — le disque reste verrouillé.", "Cleaning — drive selection is locked.")
-        : IsScanning ? Loc.T($"Analyse de {ScopeTitle} · {ScanLabel}…", $"Scanning {ScopeTitle} · {ScanLabel}…")
+        : IsScanning ? Loc.T($"Analyse de {ScopeTitle} · {LocalizedScanLabel}…", $"Scanning {ScopeTitle} · {LocalizedScanLabel}…")
         : new[] { CachePhase, DevPhase, LargePhase, UninstallPhase, EverythingElsePhase }.Contains(ScanPhase.Failed)
             ? Loc.T("Certaines analyses ont échoué. Actualisez pour réessayer.", "Some scans failed. Refresh to try again.")
         : !string.IsNullOrEmpty(ScanError) ? ScanError
         : Loc.T($"{LastScanText} · Toutes les vues suivent ce choix.", $"{LastScanText} · All views follow this selection.");
+    private string LocalizedScanLabel => CachePhase == ScanPhase.Scanning ? Loc.T("Caches d'apps", "App caches")
+        : DevPhase == ScanPhase.Scanning ? Loc.T("Outils de dev", "Dev tools")
+        : LargePhase == ScanPhase.Scanning ? Loc.T("Fichiers volumineux", "Large files")
+        : UninstallPhase == ScanPhase.Scanning ? Loc.T("Applications et restes", "Apps and leftovers")
+        : EverythingElsePhase == ScanPhase.Scanning ? Loc.T("Carte des dossiers", "Folder map")
+        : "";
     public int DriveCatalogVersion { get; private set; }
     public ScanContext CurrentScanContext => _scopeSession.Current;
     public long ScopeRevision => _scopeSession.Current.Generation;
@@ -35,6 +41,11 @@ public sealed partial class PurgeStore
         foreach (var item in LargeFileItems) item.RefreshLocalizedText();
         foreach (var item in InstalledApps) item.RefreshLocalizedText();
         foreach (var item in OrphanLeftovers) item.RefreshLocalizedText();
+        foreach (var item in CliTools) item.RefreshLocalizedText();
+        OnPropertyChanged(nameof(ScanError));
+        OnPropertyChanged(nameof(TrashActionMessage));
+        if (IsCleaning)
+            CleaningLabel = Loc.T("Opération en cours…", "Operation in progress…");
         RefreshDisk();
         RefreshAllFilteredViews();
         NotifyTotals();
@@ -134,7 +145,7 @@ public sealed partial class PurgeStore
         if (LargePhase == ScanPhase.Scanning) LargePhase = ScanPhase.NotScanned;
         if (UninstallPhase == ScanPhase.Scanning) UninstallPhase = ScanPhase.NotScanned;
         if (EverythingElsePhase == ScanPhase.Scanning) EverythingElsePhase = ScanPhase.NotScanned;
-        ScanError = Loc.T("Analyse arrêtée. Actualisez pour continuer.", "Scan stopped. Refresh to continue.");
+        SetScanNotice(ScanNotice.Stopped);
         ScanLabel = "";
         NotifyScanState();
     }

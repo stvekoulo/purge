@@ -74,5 +74,6 @@ public sealed partial class DevItem : ObservableObject
         OnPropertyChanged(nameof(SectionBadge));
         OnPropertyChanged(nameof(RevealHint));
         OnPropertyChanged(nameof(ExcludeHint));
+        OnPropertyChanged(nameof(SizeText));
     }
 }
