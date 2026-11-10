@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.10"
+  #define MyAppVersion "1.0.11"
 #endif
 #ifndef MyArch
   #define MyArch "x64"
@@ -31,6 +31,7 @@ UninstallDisplayName=Purge
 Compression=lzma2/fast
 SolidCompression=yes
 WizardStyle=modern
+AppMutex=Local\PurgeWin_SingleInstance_Mutex,PurgeWin_SingleInstance_Mutex
 CloseApplications=yes
 RestartApplications=no
 #if MyArch == "x64"

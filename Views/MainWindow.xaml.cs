@@ -239,7 +239,6 @@ public sealed partial class MainWindow : Window
         SetNavButtonActive(NavUninstaller, tab == AppTab.Uninstaller);
         SetNavButtonActive(NavSettings, tab == AppTab.Settings);
         SetNavButtonActive(NavAbout, tab == AppTab.About);
-        if (_ready && tab is not (AppTab.Settings or AppTab.About)) _ = store.ScanEverythingAsync(force: false);
     }
 
     private void SetNavButtonActive(Button btn, bool isActive)

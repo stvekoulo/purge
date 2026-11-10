@@ -134,7 +134,6 @@ public sealed partial class PurgeStore
             // The registered uninstaller owns removal of files, services and
             // registry keys. Never trash an installed application's directory.
             Process.Start(UninstallCommand.CreateStartInfo(app.UninstallString));
-            _scopeCache.Clear();
             return true;
         }
         catch (Exception ex) { App.LogCrash("Launch uninstaller", ex); return false; }
@@ -149,14 +148,13 @@ public sealed partial class PurgeStore
             // attrib +U -P requests dehydration; it does not prove that
             // Windows has already freed the local bytes. Keep the entry in
             // the result list until the next scan confirms its cloud state.
-            _scopeCache.Clear(); RefreshDisk(); NotifyTotals();
+            RefreshDisk(); NotifyTotals();
         }
         return ok;
     }
 
     public void RecordOutcome(CleanOutcome outcome, string trigger)
     {
-        _scopeCache.Clear();
         History.Entries.Insert(0, new() { Date = DateTime.Now, Trigger = trigger, FreedBytes = outcome.FreedBytes,
             RecycleBinEmptied = outcome.RecycleBinEmptied,
             RecycleBinEmptyRequested = outcome.RecycleBinEmptyRequested,

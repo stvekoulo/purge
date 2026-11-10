@@ -11,6 +11,15 @@ function WaitForSingleObject(Handle: THandle; Milliseconds: LongWord): LongWord;
 function CloseHandle(Handle: THandle): Boolean;
   external 'CloseHandle@kernel32.dll stdcall';
 
+function InitializeSetup(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := True;
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM Purge.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(400);
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ParentId: Integer;

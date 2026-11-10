@@ -34,7 +34,6 @@ public sealed partial class PurgeStore
         try
         {
             var result = restore ? await RecycleBin.RestoreAsync(roots) : await RecycleBin.EmptyAsync(roots);
-            _scopeCache.Clear();
             if (result.Failures.Count > 0)
                 SetTrashActionMessage("Opération partielle. Certains éléments nécessitent une action dans Windows.",
                     "Partial operation. Some items need attention in Windows.");
