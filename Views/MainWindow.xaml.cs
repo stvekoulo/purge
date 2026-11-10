@@ -20,6 +20,7 @@ public sealed partial class MainWindow : Window
     private AppCachesView? _appCachesView;
     private DevToolsView? _devToolsView;
     private LargeFilesView? _largeFilesView;
+    private OneDriveView? _oneDriveView;
     private UninstallerView? _uninstallerView;
     private SettingsView? _settingsView;
     private AboutView? _aboutView;
@@ -161,6 +162,8 @@ public sealed partial class MainWindow : Window
         TxtNavDev.Text = Loc.T("Outils de dev", "Dev Tools");
         TxtSecReview.Text = Loc.T("Vérifier", "Review");
         TxtNavLarge.Text = Loc.T("Fichiers volumineux", "Large Files");
+        TxtNavOneDrive.Text = "OneDrive";
+        NavOneDrive.Visibility = PurgeStore.Shared.IsOneDriveAvailable ? Visibility.Visible : Visibility.Collapsed;
         TxtNavUninstall.Text = Loc.T("Désinstalleur", "Uninstaller");
         TxtNavSettings.Text = Loc.T("Réglages", "Settings");
         TxtNavAbout.Text = Loc.T("À propos", "About");
@@ -183,7 +186,8 @@ public sealed partial class MainWindow : Window
         else if (e.PropertyName is nameof(PurgeStore.TrashBytes) or nameof(PurgeStore.TrashItemCount))
             UpdateTrashSummary();
         else if (e.PropertyName is nameof(PurgeStore.CacheBytes) or nameof(PurgeStore.DevBytes)
-                 or nameof(PurgeStore.LargeFileBytes) or nameof(PurgeStore.LeftoverBytes) or nameof(PurgeStore.InstalledAppBytes))
+                 or nameof(PurgeStore.LargeFileBytes) or nameof(PurgeStore.OneDriveLocalBytes)
+                 or nameof(PurgeStore.LeftoverBytes) or nameof(PurgeStore.InstalledAppBytes))
             UpdateBadges();
         else if (e.PropertyName is nameof(PurgeStore.IsCleaning) or nameof(PurgeStore.CleaningLabel))
         {
@@ -207,6 +211,7 @@ public sealed partial class MainWindow : Window
         TxtAppCachesBadge.Text = s.CacheBytes > 0 ? ByteFormatter.Format(s.CacheBytes) : "";
         TxtDevToolsBadge.Text = s.DevBytes > 0 ? ByteFormatter.Format(s.DevBytes) : "";
         TxtLargeFilesBadge.Text = s.LargeFileBytes > 0 ? ByteFormatter.Format(s.LargeFileBytes) : "";
+        TxtOneDriveBadge.Text = s.OneDriveLocalBytes > 0 ? ByteFormatter.Format(s.OneDriveLocalBytes) : "";
         long uninstTotal = s.InstalledAppBytes + s.LeftoverBytes;
         TxtUninstallBadge.Text = uninstTotal > 0 ? ByteFormatter.Format(uninstTotal) : "";
     }
@@ -221,6 +226,7 @@ public sealed partial class MainWindow : Window
             AppTab.AppCaches => _appCachesView ??= new(),
             AppTab.DevTools => _devToolsView ??= new(),
             AppTab.LargeFiles => _largeFilesView ??= new(),
+            AppTab.OneDrive => _oneDriveView ??= new(),
             AppTab.Uninstaller => _uninstallerView ??= new(),
             AppTab.Settings => _settingsView ??= new(),
             AppTab.About => _aboutView ??= new(),
@@ -236,6 +242,7 @@ public sealed partial class MainWindow : Window
         SetNavButtonActive(NavAppCaches, tab == AppTab.AppCaches);
         SetNavButtonActive(NavDevTools, tab == AppTab.DevTools);
         SetNavButtonActive(NavLargeFiles, tab == AppTab.LargeFiles);
+        SetNavButtonActive(NavOneDrive, tab == AppTab.OneDrive);
         SetNavButtonActive(NavUninstaller, tab == AppTab.Uninstaller);
         SetNavButtonActive(NavSettings, tab == AppTab.Settings);
         SetNavButtonActive(NavAbout, tab == AppTab.About);
@@ -266,6 +273,7 @@ public sealed partial class MainWindow : Window
     private void NavAppCaches_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.AppCaches;
     private void NavDevTools_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.DevTools;
     private void NavLargeFiles_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.LargeFiles;
+    private void NavOneDrive_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.OneDrive;
     private void NavUninstaller_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.Uninstaller;
     private void NavSettings_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.Settings;
     private void NavAbout_Click(object sender, RoutedEventArgs e) => PurgeStore.Shared.SelectedTab = AppTab.About;

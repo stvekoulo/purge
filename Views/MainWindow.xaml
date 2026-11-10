@@ -117,37 +117,30 @@
 
           <TextBlock x:Name="TxtSecReview" Text="Vérifier" Style="{StaticResource SidebarSectionText}"/>
 
-          <Button x:Name="NavLargeFiles" Click="NavLargeFiles_Click"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Padding="8,6" CornerRadius="{StaticResource RadiusMd}"
-                  Background="Transparent" BorderThickness="0">
+          <Button x:Name="NavLargeFiles" Click="NavLargeFiles_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,6" CornerRadius="{StaticResource RadiusMd}" Background="Transparent" BorderThickness="0">
             <Grid ColumnSpacing="8">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-              </Grid.ColumnDefinitions>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
               <FontIcon Grid.Column="0" Glyph="&#xE8B7;" FontSize="14" Foreground="{ThemeResource TextSecondary}"/>
               <TextBlock Grid.Column="1" x:Name="TxtNavLarge" Text="Fichiers volumineux" Style="{StaticResource BodyText}" FontWeight="Medium"/>
-              <TextBlock Grid.Column="2" x:Name="TxtLargeFilesBadge" Text="" Style="{StaticResource MetadataText}"
-                         FontWeight="SemiBold" Foreground="{ThemeResource TextTertiary}"/>
+              <TextBlock Grid.Column="2" x:Name="TxtLargeFilesBadge" Text="" Style="{StaticResource MetadataText}" FontWeight="SemiBold" Foreground="{ThemeResource TextTertiary}"/>
             </Grid>
           </Button>
 
-          <Button x:Name="NavUninstaller" Click="NavUninstaller_Click"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Padding="8,6" CornerRadius="{StaticResource RadiusMd}"
-                  Background="Transparent" BorderThickness="0">
+          <Button x:Name="NavOneDrive" Click="NavOneDrive_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,6" CornerRadius="{StaticResource RadiusMd}" Background="Transparent" BorderThickness="0">
             <Grid ColumnSpacing="8">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-              </Grid.ColumnDefinitions>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <FontIcon Grid.Column="0" Glyph="&#xE753;" FontSize="14" Foreground="{ThemeResource TextSecondary}"/>
+              <TextBlock Grid.Column="1" x:Name="TxtNavOneDrive" Text="OneDrive" Style="{StaticResource BodyText}" FontWeight="Medium"/>
+              <TextBlock Grid.Column="2" x:Name="TxtOneDriveBadge" Text="" Style="{StaticResource MetadataText}" FontWeight="SemiBold" Foreground="{ThemeResource TextTertiary}"/>
+            </Grid>
+          </Button>
+
+          <Button x:Name="NavUninstaller" Click="NavUninstaller_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,6" CornerRadius="{StaticResource RadiusMd}" Background="Transparent" BorderThickness="0">
+            <Grid ColumnSpacing="8">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
               <FontIcon Grid.Column="0" Glyph="&#xE74D;" FontSize="14" Foreground="{ThemeResource TextSecondary}"/>
               <TextBlock Grid.Column="1" x:Name="TxtNavUninstall" Text="Désinstalleur" Style="{StaticResource BodyText}" FontWeight="Medium"/>
-              <TextBlock Grid.Column="2" x:Name="TxtUninstallBadge" Text="" Style="{StaticResource MetadataText}"
-                         FontWeight="SemiBold" Foreground="{ThemeResource TextTertiary}"/>
+              <TextBlock Grid.Column="2" x:Name="TxtUninstallBadge" Text="" Style="{StaticResource MetadataText}" FontWeight="SemiBold" Foreground="{ThemeResource TextTertiary}"/>
             </Grid>
           </Button>
 

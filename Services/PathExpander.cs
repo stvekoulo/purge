@@ -1,7 +1,38 @@
+using System.Runtime.InteropServices;
+
 namespace PurgeWin.Services;
 
 public static class PathExpander
 {
+    private const uint IO_REPARSE_TAG_SURROGATE_BIT = 0x20000000u;
+    private const uint IO_REPARSE_TAG_CLOUD_MASK = 0xFFFF0FFFu;
+    private const uint IO_REPARSE_TAG_CLOUD = 0x9000001Au;
+    private const uint IO_REPARSE_TAG_WOF = 0x80000017u;
+    private const uint IO_REPARSE_TAG_DEDUP = 0x80000013u;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct WIN32_FIND_DATAW
+    {
+        public FileAttributes dwFileAttributes;
+        public System.Runtime.InteropServices.ComTypes.FILETIME ftCreationTime;
+        public System.Runtime.InteropServices.ComTypes.FILETIME ftLastAccessTime;
+        public System.Runtime.InteropServices.ComTypes.FILETIME ftLastWriteTime;
+        public uint nFileSizeHigh;
+        public uint nFileSizeLow;
+        public uint dwReserved0;
+        public uint dwReserved1;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+        public string cFileName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
+        public string cAlternateFileName;
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "FindFirstFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr FindFirstFileW(string lpFileName, out WIN32_FIND_DATAW lpFindFileData);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool FindClose(IntPtr hFindFile);
+
     public static IEnumerable<string> Expand(string template)
     {
         var expanded = Environment.ExpandEnvironmentVariables(template);
@@ -30,9 +61,31 @@ public static class PathExpander
         foreach (var r in roots) yield return Path.GetFullPath(r);
     }
 
+    /// <summary>Returns true if the reparse tag represents an in-place OS filter
+    /// (OneDrive / Cloud Files, WOF compression, or Data Deduplication) rather than
+    /// a link or mount point (symlink, junction, volume mount, AppExecLink).</summary>
+    public static bool IsBenignReparseTag(uint tag) =>
+        (tag & IO_REPARSE_TAG_SURROGATE_BIT) == 0 && (
+            (tag & IO_REPARSE_TAG_CLOUD_MASK) == IO_REPARSE_TAG_CLOUD ||
+            tag == IO_REPARSE_TAG_WOF ||
+            tag == IO_REPARSE_TAG_DEDUP);
+
+    public static bool IsReparseLink(FileSystemInfo info) =>
+        (info.Attributes & FileAttributes.ReparsePoint) != 0 && IsReparsePoint(info.FullName);
+
     public static bool IsReparsePoint(string path)
     {
-        try { return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0; }
+        try
+        {
+            var attrs = File.GetAttributes(path);
+            if ((attrs & FileAttributes.ReparsePoint) == 0) return false;
+            var trimmed = path.TrimEnd('\\', '/');
+            if (string.IsNullOrEmpty(trimmed) || trimmed.EndsWith(':')) return false;
+            var handle = FindFirstFileW(trimmed, out var data);
+            if (handle == IntPtr.Zero || handle == new IntPtr(-1)) return true;
+            try { return !IsBenignReparseTag(data.dwReserved0); }
+            finally { FindClose(handle); }
+        }
         catch { return true; } // unreadable counts as unsafe
     }
 
@@ -58,8 +111,7 @@ public static class PathExpander
             return Directory.EnumerateDirectories(root, pattern, new EnumerationOptions
             {
                 IgnoreInaccessible = true,
-                AttributesToSkip = FileAttributes.ReparsePoint,
-            }).ToList();
+            }).Where(d => !IsReparsePoint(d)).ToList();
         }
         catch { return []; }
     }

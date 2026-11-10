@@ -4,11 +4,9 @@ namespace PurgeWin.Services;
 /// skipping reparse points so a junction can never inflate or redirect a size.
 public static class FolderSizing
 {
-    private static readonly EnumerationOptions Options = new()
+    private static readonly EnumerationOptions FlatOptions = new()
     {
-        RecurseSubdirectories = true,
         IgnoreInaccessible = true,
-        AttributesToSkip = FileAttributes.ReparsePoint,
         ReturnSpecialDirectories = false,
     };
 
@@ -18,13 +16,33 @@ public static class FolderSizing
         var newest = DateTime.MinValue;
         try
         {
-            var dir = new DirectoryInfo(path);
-            newest = dir.LastWriteTime;
-            foreach (var file in dir.EnumerateFiles("*", Options))
+            var root = new DirectoryInfo(path);
+            if (!root.Exists) return (0, newest);
+            newest = root.LastWriteTime;
+            var stack = new Stack<DirectoryInfo>();
+            stack.Push(root);
+            while (stack.Count > 0)
             {
                 token.ThrowIfCancellationRequested();
-                total += file.Length;
-                if (file.LastWriteTime > newest) newest = file.LastWriteTime;
+                var current = stack.Pop();
+                IEnumerable<FileSystemInfo> entries;
+                try { entries = current.EnumerateFileSystemInfos("*", FlatOptions); }
+                catch { continue; }
+                foreach (var entry in entries)
+                {
+                    token.ThrowIfCancellationRequested();
+                    try
+                    {
+                        if (PathExpander.IsReparseLink(entry)) continue;
+                        if (entry is FileInfo file)
+                        {
+                            total += file.Length;
+                            if (file.LastWriteTime > newest) newest = file.LastWriteTime;
+                        }
+                        else if (entry is DirectoryInfo sub) stack.Push(sub);
+                    }
+                    catch { }
+                }
             }
         }
         catch (OperationCanceledException) { throw; }
@@ -48,12 +66,12 @@ public static class FolderSizing
             children = new DirectoryInfo(root).EnumerateFileSystemInfos("*", new EnumerationOptions
             {
                 IgnoreInaccessible = true,
-                AttributesToSkip = FileAttributes.ReparsePoint,
             }).ToList();
         }
         catch { yield break; }
         foreach (var child in children)
         {
+            if (PathExpander.IsReparseLink(child)) continue;
             DateTime modified;
             try { modified = child.LastWriteTime; }
             catch (IOException) { continue; }

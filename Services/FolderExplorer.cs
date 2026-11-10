@@ -8,7 +8,7 @@ public static class FolderExplorer
 {
     private static readonly EnumerationOptions Options = new()
     {
-        IgnoreInaccessible = true, AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
         ReturnSpecialDirectories = false
     };
 
@@ -24,7 +24,7 @@ public static class FolderExplorer
         foreach (var entry in info.EnumerateFileSystemInfos("*", Options).Take(2000))
         {
             token.ThrowIfCancellationRequested();
-            if (!scope.Allows(entry.FullName)) continue;
+            if (!scope.Allows(entry.FullName) || PathExpander.IsReparseLink(entry)) continue;
             try
             {
                 bool folder = entry is DirectoryInfo;
@@ -60,7 +60,7 @@ public static class FolderExplorer
                 {
                     token.ThrowIfCancellationRequested();
                     if (++count > 4000 || timer.ElapsedMilliseconds > 250) { partial = true; return; }
-                    if (!scope.Allows(item.FullName)) continue;
+                    if (!scope.Allows(item.FullName) || PathExpander.IsReparseLink(item)) continue;
                     if (item is FileInfo file) bytes += file.Length;
                     else if (depth < 2) Walk(item.FullName, depth + 1);
                     else partial = true;

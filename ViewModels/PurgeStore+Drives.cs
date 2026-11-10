@@ -16,13 +16,14 @@ public sealed partial class PurgeStore
     public string ScopeStatus => !HasActiveDrives ? Loc.T("Disque indisponible. Reconnectez-le puis actualisez.", "Drive unavailable. Reconnect it and refresh.")
         : IsCleaning ? Loc.T("Nettoyage en cours — le disque reste verrouillé.", "Cleaning — drive selection is locked.")
         : IsScanning ? Loc.T($"Analyse de {ScopeTitle} · {LocalizedScanLabel}…", $"Scanning {ScopeTitle} · {LocalizedScanLabel}…")
-        : new[] { CachePhase, DevPhase, LargePhase, UninstallPhase, EverythingElsePhase }.Contains(ScanPhase.Failed)
+        : new[] { CachePhase, DevPhase, LargePhase, OneDrivePhase, UninstallPhase, EverythingElsePhase }.Contains(ScanPhase.Failed)
             ? Loc.T("Certaines analyses ont échoué. Actualisez pour réessayer.", "Some scans failed. Refresh to try again.")
         : !string.IsNullOrEmpty(ScanError) ? ScanError
         : Loc.T($"{LastScanText} · Toutes les vues suivent ce choix.", $"{LastScanText} · All views follow this selection.");
     private string LocalizedScanLabel => CachePhase == ScanPhase.Scanning ? Loc.T("Caches d'apps", "App caches")
         : DevPhase == ScanPhase.Scanning ? Loc.T("Outils de dev", "Dev tools")
         : LargePhase == ScanPhase.Scanning ? Loc.T("Fichiers volumineux", "Large files")
+        : OneDrivePhase == ScanPhase.Scanning ? "OneDrive"
         : UninstallPhase == ScanPhase.Scanning ? Loc.T("Applications et restes", "Apps and leftovers")
         : EverythingElsePhase == ScanPhase.Scanning ? Loc.T("Carte des dossiers", "Folder map")
         : "";
@@ -39,6 +40,7 @@ public sealed partial class PurgeStore
         foreach (var item in CacheItems) item.RefreshLocalizedText();
         foreach (var item in DevItems) item.RefreshLocalizedText();
         foreach (var item in LargeFileItems) item.RefreshLocalizedText();
+        foreach (var item in OneDriveItems) item.RefreshLocalizedText();
         foreach (var item in InstalledApps) item.RefreshLocalizedText();
         foreach (var item in OrphanLeftovers) item.RefreshLocalizedText();
         foreach (var item in CliTools) item.RefreshLocalizedText();
@@ -62,7 +64,7 @@ public sealed partial class PurgeStore
 
     public void RefreshAllFilteredViews() => OnUi(() =>
     {
-        ApplyFilter(); ApplyDevFilter(); ApplyLargeFilter(); ApplyUninstallFilter();
+        ApplyFilter(); ApplyDevFilter(); ApplyLargeFilter(); ApplyOneDriveFilter(); ApplyUninstallFilter();
     });
 
     public void SetDrive(string key)
@@ -143,6 +145,7 @@ public sealed partial class PurgeStore
         if (CachePhase == ScanPhase.Scanning) CachePhase = ScanPhase.NotScanned;
         if (DevPhase == ScanPhase.Scanning) DevPhase = ScanPhase.NotScanned;
         if (LargePhase == ScanPhase.Scanning) LargePhase = ScanPhase.NotScanned;
+        if (OneDrivePhase == ScanPhase.Scanning) OneDrivePhase = ScanPhase.NotScanned;
         if (UninstallPhase == ScanPhase.Scanning) UninstallPhase = ScanPhase.NotScanned;
         if (EverythingElsePhase == ScanPhase.Scanning) EverythingElsePhase = ScanPhase.NotScanned;
         SetScanNotice(ScanNotice.Stopped);

@@ -121,6 +121,30 @@ public static class DuplicateAndAiScanner
         }
     }
 
+    public static void NormalizeDuplicateGroups(IEnumerable<LargeFileItem> items)
+    {
+        foreach (var group in items.Where(i => i.IsDuplicate).GroupBy(i => i.DuplicateGroupId).ToList())
+        {
+            var members = group.Where(i => File.Exists(i.FullPath)).ToList();
+            if (members.Count < 2)
+            {
+                foreach (var item in group)
+                {
+                    item.DuplicateGroupId = null;
+                    item.IsDuplicateKeeper = false;
+                    item.DuplicateGroupCount = 0;
+                }
+                continue;
+            }
+            var keeper = members.FirstOrDefault(i => i.IsDuplicateKeeper) ?? members[0];
+            foreach (var item in members)
+            {
+                item.DuplicateGroupCount = members.Count;
+                item.IsDuplicateKeeper = ReferenceEquals(item, keeper);
+            }
+        }
+    }
+
     private static string QuickHash(string path)
     {
         try

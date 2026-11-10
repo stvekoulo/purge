@@ -7,7 +7,7 @@ using PurgeWin.Utilities;
 
 namespace PurgeWin.ViewModels;
 
-public enum AppTab { Overview, AppCaches, DevTools, LargeFiles, Uninstaller, Settings, About }
+public enum AppTab { Overview, AppCaches, DevTools, LargeFiles, OneDrive, Uninstaller, Settings, About }
 public enum OverviewSubPage { Summary, EverythingElse }
 public enum ScanPhase { NotScanned, Scanning, Done, Failed }
 
@@ -112,7 +112,7 @@ public sealed partial class PurgeStore : ObservableObject
         + DevItems.Where(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache).Sum(i => i.Bytes);
     public int SafeCount => CacheItems.Count(i => i.IsSafe)
         + DevItems.Count(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache);
-    public bool IsScanning => new[] { CachePhase, DevPhase, LargePhase, UninstallPhase, EverythingElsePhase }
+    public bool IsScanning => new[] { CachePhase, DevPhase, LargePhase, OneDrivePhase, UninstallPhase, EverythingElsePhase }
         .Contains(ScanPhase.Scanning);
     public string LastScanText => IsScanning ? Loc.T("Analyse en cours…", "Scanning…")
         : LastScan == null ? Loc.T("Pas encore analysé", "Not scanned yet")
@@ -133,8 +133,8 @@ public sealed partial class PurgeStore : ObservableObject
         (Func<ScanPhase> Phase, Func<Task> Scan)[] scans =
         [
             (() => CachePhase, ScanAppCachesAsync), (() => DevPhase, ScanDevToolsAsync),
-            (() => LargePhase, ScanLargeFilesAsync), (() => UninstallPhase, ScanUninstallerAsync),
-            (() => EverythingElsePhase, ScanEverythingElseAsync)
+            (() => LargePhase, ScanLargeFilesAsync), (() => OneDrivePhase, ScanOneDriveAsync),
+            (() => UninstallPhase, ScanUninstallerAsync), (() => EverythingElsePhase, ScanEverythingElseAsync)
         ];
         foreach (var scan in scans)
         {

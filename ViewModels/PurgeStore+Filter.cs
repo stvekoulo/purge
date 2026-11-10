@@ -258,6 +258,7 @@ public sealed partial class PurgeStore
         NotifySelection();
         NotifyDevSelection();
         NotifyLargeSelection();
+        NotifyOneDriveSelection();
         NotifyUninstallSelection();
     }
 

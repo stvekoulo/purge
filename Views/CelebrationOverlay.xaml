@@ -39,6 +39,10 @@
           <TextBlock x:Name="TxtComparison" Style="{StaticResource CalloutText}" FontWeight="SemiBold"/>
         </Border>
 
+        <Border x:Name="SkippedBanner" Background="{ThemeResource StatusCheckFill}" CornerRadius="{StaticResource RadiusMd}" Padding="14,10" HorizontalAlignment="Stretch" Visibility="Collapsed">
+          <TextBlock x:Name="TxtSkippedSummary" Style="{StaticResource MetadataText}" Foreground="{ThemeResource StatusCheckText}" TextWrapping="Wrap" TextAlignment="Center"/>
+        </Border>
+
         <TextBlock x:Name="TxtTagline" Style="{StaticResource MetadataText}" HorizontalAlignment="Center"/>
 
         <c:PurgeButton x:Name="BtnDone" Role="Primary" Size="Regular"

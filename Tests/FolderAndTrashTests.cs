@@ -64,8 +64,35 @@ internal static class FolderAndTrashTests
             File.Delete(keeper);
             check("Duplicate verifier rejects missing keeper", !DuplicateFileVerifier.AreIdentical(candidate, keeper));
             check("Unknown Git worktree cannot be considered safe", GitWorktreeInspector.Inspect(duplicateFixture) == GitWorktreeState.Unknown);
+
+            var dupA = Path.Combine(duplicateFixture, "dupA.bin");
+            var dupB = Path.Combine(duplicateFixture, "dupB.bin");
+            await File.WriteAllBytesAsync(dupA, [9, 8, 7]);
+            await File.WriteAllBytesAsync(dupB, [9, 8, 7]);
+            var keepOne = DuplicateFileVerifier.ResolveKeepers([(dupA, "dup-1", false), (dupB, "dup-1", true)]);
+            check("Selecting one duplicate verifies against the unselected copy",
+                keepOne.TryGetValue(dupB, out var k1) && k1 == dupA);
+            var keepSecond = DuplicateFileVerifier.ResolveKeepers([(dupA, "dup-1", true), (dupB, "dup-1", false)]);
+            check("Selecting the first duplicate verifies against the remaining unselected copy",
+                keepSecond.TryGetValue(dupA, out var k2) && k2 == dupB);
+            var deleteBoth = DuplicateFileVerifier.ResolveKeepers([(dupA, "dup-1", true), (dupB, "dup-1", true)]);
+            check("Explicitly selecting all copies in Large Files does not block deletion",
+                deleteBoth.Count == 0);
+            File.Delete(dupA);
+            var loneSurvivor = DuplicateFileVerifier.ResolveKeepers([(dupA, "dup-1", false), (dupB, "dup-1", true)]);
+            check("Singleton survivor after deleting twin is not blocked as a duplicate",
+                loneSurvivor.Count == 0);
         }
         finally { Directory.Delete(duplicateFixture, true); }
+
+        check("OneDrive cloud reparse tags are treated as normal files/folders",
+            PathExpander.IsBenignReparseTag(0x9000001Au)
+            && PathExpander.IsBenignReparseTag(0x9000601Au)
+            && PathExpander.IsBenignReparseTag(0x9000701Au));
+        check("Junctions, symlinks and AppExecLinks are blocked as reparse links",
+            !PathExpander.IsBenignReparseTag(0xA0000003u)
+            && !PathExpander.IsBenignReparseTag(0xA000000Cu)
+            && !PathExpander.IsBenignReparseTag(0x8000001Bu));
 
         var bulk = new BulkObservableCollection<int>();
         int events = 0;

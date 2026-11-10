@@ -20,7 +20,7 @@ public sealed partial class PurgeStore
         string? DuplicateGroupId = null, bool IsDuplicateKeeper = false, int DuplicateGroupCount = 0);
 
     private sealed record ScopeSnapshot(List<CacheItem> Caches, List<DevItem> Dev,
-        List<LargeFileItem> Large, List<InstalledAppItem> Apps, List<OrphanLeftoverItem> Orphans,
+        List<LargeFileItem> Large, List<OneDriveFileItem> OneDrive, List<InstalledAppItem> Apps, List<OrphanLeftoverItem> Orphans,
         List<CliToolItem> Cli, List<EverythingElseFolder> Folders, ScanPhase[] Phases, DateTime? LastScan);
     private readonly Dictionary<string, ScopeSnapshot> _scopeCache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -79,20 +79,7 @@ public sealed partial class PurgeStore
                     IsDuplicateKeeper = d.IsDuplicateKeeper,
                     DuplicateGroupCount = d.DuplicateGroupCount
                 }).ToList();
-                // If files disappeared since this snapshot, invalidate the
-                // entire partial duplicate group instead of offering a
-                // dangerous or misleading keep-one action.
-                foreach (var group in items.Where(i => i.IsDuplicate).GroupBy(i => i.DuplicateGroupId))
-                {
-                    if (group.Count() >= 2 && group.Count(i => i.IsDuplicateKeeper) == 1
-                        && group.Count() == group.First().DuplicateGroupCount) continue;
-                    foreach (var item in group)
-                    {
-                        item.DuplicateGroupId = null;
-                        item.IsDuplicateKeeper = false;
-                        item.DuplicateGroupCount = 0;
-                    }
-                }
+                DuplicateAndAiScanner.NormalizeDuplicateGroups(items);
                 if (items.Count == 0) return;
                 LastScan = cache.LastScan;
                 Replace(LargeFileItems, items);
@@ -109,16 +96,16 @@ public sealed partial class PurgeStore
     {
         if (_scopeSession.Current.Generation == 0) return;
         _scopeCache[_scopeSession.Current.Key] = new(CacheItems.ToList(), DevItems.ToList(), LargeFileItems.ToList(),
-            InstalledApps.ToList(), OrphanLeftovers.ToList(), CliTools.ToList(), EverythingElseFolders.ToList(),
-            [CachePhase, DevPhase, LargePhase, UninstallPhase, EverythingElsePhase], LastScan);
+            OneDriveItems.ToList(), InstalledApps.ToList(), OrphanLeftovers.ToList(), CliTools.ToList(), EverythingElseFolders.ToList(),
+            [CachePhase, DevPhase, LargePhase, OneDrivePhase, UninstallPhase, EverythingElsePhase], LastScan);
     }
 
     private void RestoreScopeSnapshot(string key)
     {
         ClearSelections();
-        CacheItems.Clear(); DevItems.Clear(); LargeFileItems.Clear(); InstalledApps.Clear();
+        CacheItems.Clear(); DevItems.Clear(); LargeFileItems.Clear(); OneDriveItems.Clear(); InstalledApps.Clear();
         OrphanLeftovers.Clear(); CliTools.Clear(); EverythingElseFolders.Clear();
-        CachePhase = DevPhase = LargePhase = UninstallPhase = EverythingElsePhase = ScanPhase.NotScanned;
+        CachePhase = DevPhase = LargePhase = OneDrivePhase = UninstallPhase = EverythingElsePhase = ScanPhase.NotScanned;
         LastScan = null;
         ScanLabel = "";
         SetScanNotice(ScanNotice.None);
@@ -126,9 +113,9 @@ public sealed partial class PurgeStore
         {
             static ScanPhase Done(ScanPhase phase) => phase == ScanPhase.Scanning ? ScanPhase.NotScanned : phase;
             CachePhase = Done(saved.Phases[0]); DevPhase = Done(saved.Phases[1]); LargePhase = Done(saved.Phases[2]);
-            UninstallPhase = Done(saved.Phases[3]); EverythingElsePhase = Done(saved.Phases[4]);
+            OneDrivePhase = Done(saved.Phases[3]); UninstallPhase = Done(saved.Phases[4]); EverythingElsePhase = Done(saved.Phases[5]);
             Replace(CacheItems, saved.Caches); Replace(DevItems, saved.Dev); Replace(LargeFileItems, saved.Large);
-            Replace(InstalledApps, saved.Apps); Replace(OrphanLeftovers, saved.Orphans); Replace(CliTools, saved.Cli);
+            Replace(OneDriveItems, saved.OneDrive); Replace(InstalledApps, saved.Apps); Replace(OrphanLeftovers, saved.Orphans); Replace(CliTools, saved.Cli);
             Replace(EverythingElseFolders, saved.Folders);
             LastScan = saved.LastScan;
             ClearSelections();
@@ -143,6 +130,7 @@ public sealed partial class PurgeStore
         foreach (var item in CacheItems) item.IsSelected = false;
         foreach (var item in DevItems) item.IsSelected = false;
         foreach (var item in LargeFileItems) item.IsSelected = false;
+        foreach (var item in OneDriveItems) item.IsSelected = false;
         foreach (var item in InstalledApps)
         {
             item.IsSelected = false;

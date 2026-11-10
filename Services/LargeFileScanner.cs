@@ -125,7 +125,7 @@ public static class LargeFileScanner
             entries = new DirectoryInfo(folder).EnumerateFileSystemInfos("*", new EnumerationOptions
             {
                 IgnoreInaccessible = true,
-                AttributesToSkip = FileAttributes.ReparsePoint | FileAttributes.System,
+                AttributesToSkip = FileAttributes.System,
             }).ToList();
         }
         catch { return; }
@@ -135,7 +135,7 @@ public static class LargeFileScanner
             token.ThrowIfCancellationRequested();
             try
             {
-                if (excluded.Contains(entry.FullName)) continue;
+                if (excluded.Contains(entry.FullName) || PathExpander.IsReparseLink(entry)) continue;
 
                 if (entry is DirectoryInfo subDir)
                 {

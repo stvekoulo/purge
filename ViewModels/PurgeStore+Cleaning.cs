@@ -29,17 +29,10 @@ public sealed partial class PurgeStore
 
     public Task<CleanOutcome?> CleanSelectedLargeFilesAsync()
     {
+        DuplicateAndAiScanner.NormalizeDuplicateGroups(LargeFileItems);
         var selected = LargeFileItems.Where(i => i.IsSelected).ToList();
-        var selectedPaths = selected.Select(i => i.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var duplicateKeepers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var item in selected.Where(i => i.IsDuplicate))
-        {
-            var keeper = LargeFileItems.FirstOrDefault(i => i.DuplicateGroupId == item.DuplicateGroupId && i.IsDuplicateKeeper);
-            // If the keeper is selected, missing, or was itself selected,
-            // refuse the whole affected duplicate group rather than lose all copies.
-            duplicateKeepers[item.FullPath] = keeper is null || selectedPaths.Contains(keeper.FullPath)
-                ? "" : keeper.FullPath;
-        }
+        var duplicateKeepers = DuplicateFileVerifier.ResolveKeepers(
+            LargeFileItems.Select(i => (i.FullPath, i.DuplicateGroupId, i.IsSelected)));
         return RunCleanAsync([], selected.Select(i => (i.Name, i.FullPath)).ToList(), "manual", duplicateKeepers);
     }
 
@@ -93,7 +86,8 @@ public sealed partial class PurgeStore
             ClearSelections();
             // Keep failed large-file selections available for an explicit retry.
             var movedPaths = outcome.MovedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            foreach (var item in LargeFileItems.Where(i => selectedLargePaths.Contains(i.FullPath) && !movedPaths.Contains(i.FullPath)))
+            foreach (var item in LargeFileItems.Where(i => selectedLargePaths.Contains(i.FullPath)
+                && !movedPaths.Contains(i.FullPath) && (File.Exists(i.FullPath) || Directory.Exists(i.FullPath))))
                 item.IsSelected = true;
         }
         finally { IsCleaning = false; CleaningLabel = ""; NotifyScope(); }
@@ -110,13 +104,19 @@ public sealed partial class PurgeStore
                 var removed = outcome.MovedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
                 OnUi(() =>
                 {
-                    var remaining = LargeFileItems.Where(l => !removed.Contains(l.FullPath)).ToList();
+                    var remaining = LargeFileItems
+                        .Where(l => !removed.Contains(l.FullPath) && (File.Exists(l.FullPath) || Directory.Exists(l.FullPath)))
+                        .ToList();
+                    DuplicateAndAiScanner.NormalizeDuplicateGroups(remaining);
                     if (remaining.Count != LargeFileItems.Count)
-                    {
                         Replace(LargeFileItems, remaining);
-                        RefreshAllFilteredViews();
-                        NotifyTotals();
-                    }
+                    var remainingOneDrive = OneDriveItems
+                        .Where(o => !removed.Contains(o.FullPath) && File.Exists(o.FullPath))
+                        .ToList();
+                    if (remainingOneDrive.Count != OneDriveItems.Count)
+                        Replace(OneDriveItems, remainingOneDrive);
+                    RefreshAllFilteredViews();
+                    NotifyTotals();
                 });
             }
             RefreshDisk();
@@ -162,7 +162,7 @@ public sealed partial class PurgeStore
             Skipped = outcome.Failures.Select(f => $"{f.Path}: {f.Reason}").ToList() });
         AppData.Save("history.json", History);
         LastCleanOutcome = outcome;
-        if (outcome.FreedBytes > 0) ShowCelebration = true;
+        if (outcome.FreedBytes > 0 || outcome.MovedCount > 0 || outcome.Failures.Count > 0) ShowCelebration = true;
         RefreshDisk();
     }
 
