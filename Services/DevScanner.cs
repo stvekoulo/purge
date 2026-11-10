@@ -94,7 +94,8 @@ public static class DevScanner
 
     public static async Task<List<DevItem>> ScanAsync(
         Action<DevItem>? onItem, ISet<string> excluded, int staleDays,
-        IReadOnlyList<string> customRoots, IReadOnlyList<string> activeDrives, CancellationToken token)
+        IReadOnlyList<string> customRoots, IReadOnlyList<string> activeDrives, CancellationToken token,
+        bool globalCachesOnly = false)
     {
         var list = new List<DevItem>();
         var scope = new PathScope(activeDrives, excluded);
@@ -128,16 +129,19 @@ public static class DevScanner
                 if (bytes < 64 * 1024) continue;
                 Emit(new DevItem
                 {
-                    Id = spec.Id, Title = Loc.T(spec.TitleFr, spec.TitleEn), Subtitle = paths[0],
-                    Explanation = Loc.T(spec.ExplainFr, spec.ExplainEn),
+                    Id = spec.Id, Title = spec.TitleFr, TitleEn = spec.TitleEn, Subtitle = paths[0],
+                    Explanation = spec.ExplainFr, ExplanationEn = spec.ExplainEn,
                     Paths = paths, Bytes = bytes, LastModified = newest, Level = spec.Level,
                     Section = DevSectionKind.GlobalCache, Icon = spec.Icon,
                 });
             }
 
-            ScanAndroidAvds(Emit, excluded, token, scope);
-            ScanProjects(Emit, excluded, staleDays, customRoots, activeDrives, token);
-            ScanOrphanWorktrees(Emit, excluded, token, scope);
+            if (!globalCachesOnly)
+            {
+                ScanAndroidAvds(Emit, excluded, token, scope);
+                ScanProjects(Emit, excluded, staleDays, customRoots, activeDrives, token);
+                ScanOrphanWorktrees(Emit, excluded, token, scope);
+            }
         }, token);
         return list.OrderByDescending(i => i.Bytes).ToList();
     }
@@ -158,9 +162,8 @@ public static class DevScanner
             emit(new DevItem
             {
                 Id = $"avd:{name}", Title = $"AVD : {name}", Subtitle = dir,
-                Explanation = Loc.T(
-                    "Image système et données de l'émulateur Android. À vérifier avant suppression.",
-                    "Android Emulator system image and userdata. Check before removing."),
+                Explanation = "Image système et données de l'émulateur Android. À vérifier avant suppression.",
+                ExplanationEn = "Android Emulator system image and userdata. Check before removing.",
                 Paths = paths, Bytes = bytes, LastModified = mod, Level = SafetyLevel.Medium,
                 Section = DevSectionKind.AndroidAvd, Icon = "android",
             });
@@ -213,9 +216,8 @@ public static class DevScanner
                         Id = $"proj:{artifactPath}",
                         Title = $"{projName} — {rule.Folder}",
                         Subtitle = $"{rule.ProjectType} · {projectDir}",
-                        Explanation = Loc.T(
-                            $"Artefact de build ({rule.Folder}). Reconstructible via : {rule.Reinstall}",
-                            $"Build artifact ({rule.Folder}). Rebuild with: {rule.Reinstall}"),
+                        Explanation = $"Artefact de build ({rule.Folder}). Reconstructible via : {rule.Reinstall}",
+                        ExplanationEn = $"Build artifact ({rule.Folder}). Rebuild with: {rule.Reinstall}",
                         Paths = [artifactPath], Bytes = bytes, LastModified = mod, Level = rule.Level,
                         Section = DevSectionKind.ProjectArtifact, Icon = rule.Icon,
                         ProjectRoot = projectDir, ReinstallHint = rule.Reinstall,
@@ -243,13 +245,15 @@ public static class DevScanner
                 WalkProjectDirs(sub, depth + 1, maxDepth, visit);
             }
         }
+        catch (OperationCanceledException) { throw; }
         catch { }
     }
 
     private static void ScanOrphanWorktrees(Action<DevItem> emit, ISet<string> excluded, CancellationToken token, PathScope scope)
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string[] roots = [Path.Combine(home, ".cursor", "worktrees"), Path.Combine(home, ".codex", "worktrees")];
+        string[] roots = [Path.Combine(home, ".cursor", "worktrees"), Path.Combine(home, ".codex", "worktrees"),
+            Path.Combine(home, ".claude", "worktrees")];
         foreach (var root in roots.Where(Directory.Exists))
         {
             try
@@ -258,19 +262,21 @@ public static class DevScanner
                 {
                     token.ThrowIfCancellationRequested();
                     if (!scope.CanDelete(dir)) continue;
+                    var gitState = GitWorktreeInspector.Inspect(dir);
                     var (bytes, mod) = FolderSizing.Measure(dir, token);
                     if (bytes < 512 * 1024) continue;
                     emit(new DevItem
                     {
                         Id = $"wt:{dir}", Title = $"Worktree : {Path.GetFileName(dir)}", Subtitle = dir,
-                        Explanation = Loc.T(
-                            "Arbre de travail Git isolé créé par un agent de code IA.",
-                            "Isolated Git worktree created by an AI coding agent."),
+                        Explanation = "Worktree Git potentiellement actif. Les modifications non enregistrées ou non vérifiables sont protégées.",
+                        ExplanationEn = "Potentially active Git worktree. Uncommitted or unverifiable changes are protected.",
                         Paths = [dir], Bytes = bytes, LastModified = mod, Level = SafetyLevel.Medium,
                         Section = DevSectionKind.OrphanWorktree, Icon = "git",
+                        GitState = gitState,
                     });
                 }
             }
+            catch (OperationCanceledException) { throw; }
             catch { }
         }
     }

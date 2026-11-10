@@ -44,9 +44,11 @@ public enum CleanMode { Folder, Contents }
 public sealed class CatalogEntry
 {
     [JsonPropertyName("key")] public string Key { get; set; } = "";
-    [JsonPropertyName("display_name")] public string DisplayName { get; set; } = "";
+    [JsonPropertyName("display_name")] public string DisplayNameFr { get; set; } = "";
+    [JsonPropertyName("display_name_en")] public string DisplayNameEn { get; set; } = "";
     [JsonPropertyName("tag")] public string Tag { get; set; } = "unknown";
-    [JsonPropertyName("explanation")] public string Explanation { get; set; } = "";
+    [JsonPropertyName("explanation")] public string ExplanationFr { get; set; } = "";
+    [JsonPropertyName("explanation_en")] public string ExplanationEn { get; set; } = "";
     [JsonPropertyName("kind")] public string Kind { get; set; } = "app";
     [JsonPropertyName("icon")] public string? Icon { get; set; }
     [JsonPropertyName("mode")] public string Mode { get; set; } = "folder";
@@ -54,6 +56,10 @@ public sealed class CatalogEntry
     [JsonPropertyName("needs_admin")] public bool NeedsAdmin { get; set; }
     [JsonPropertyName("paths")] public List<string> Paths { get; set; } = [];
 
+    [JsonIgnore] public string DisplayName => Loc.T(DisplayNameFr,
+        string.IsNullOrWhiteSpace(DisplayNameEn) ? DisplayNameFr : DisplayNameEn);
+    [JsonIgnore] public string Explanation => Loc.T(ExplanationFr,
+        string.IsNullOrWhiteSpace(ExplanationEn) ? ExplanationFr : ExplanationEn);
     [JsonIgnore] public SafetyLevel Level => SafetyLevelExtensions.Parse(Tag);
     [JsonIgnore] public CleanMode CleanMode => Mode == "contents" ? CleanMode.Contents : CleanMode.Folder;
 }

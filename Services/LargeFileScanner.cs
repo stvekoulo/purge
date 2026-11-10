@@ -52,10 +52,10 @@ public static class LargeFileScanner
             var oneDriveRoot = Environment.GetEnvironmentVariable("OneDrive");
             var seenFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var (rootPath, label, maxDepth) in roots)
+            foreach (var (rootPath, labelFr, labelEn, maxDepth) in roots)
             {
                 if (!Directory.Exists(rootPath) || !scope.Allows(rootPath)) continue;
-                WalkFolder(rootPath, label, oneDriveRoot, excluded, 0, maxDepth, seenFiles, item =>
+                WalkFolder(rootPath, labelFr, labelEn, oneDriveRoot, excluded, 0, maxDepth, seenFiles, item =>
                 {
                     if (!scope.CanDelete(item.FullPath)) return;
                     lock (results) results.Add(item);
@@ -76,17 +76,17 @@ public static class LargeFileScanner
         return results.OrderByDescending(i => i.Bytes).ToList();
     }
 
-    private static List<(string Path, string Label, int MaxDepth)> GetScanRoots(IReadOnlyList<string> activeDrives)
+    private static List<(string Path, string LabelFr, string LabelEn, int MaxDepth)> GetScanRoots(IReadOnlyList<string> activeDrives)
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var list = new List<(string Path, string Label, int MaxDepth)>
+        var list = new List<(string Path, string LabelFr, string LabelEn, int MaxDepth)>
         {
-            (Path.Combine(home, "Downloads"), Loc.T("Téléchargements", "Downloads"), 5),
-            (Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Documents", 5),
-            (Environment.GetFolderPath(Environment.SpecialFolder.Desktop), Loc.T("Bureau", "Desktop"), 5),
-            (Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), Loc.T("Vidéos", "Videos"), 5),
-            (Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), Loc.T("Musique", "Music"), 5),
-            (Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Loc.T("Images", "Pictures"), 5),
+            (Path.Combine(home, "Downloads"), "Téléchargements", "Downloads", 5),
+            (Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Documents", "Documents", 5),
+            (Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Bureau", "Desktop", 5),
+            (Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Vidéos", "Videos", 5),
+            (Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Musique", "Music", 5),
+            (Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Images", "Pictures", 5),
         };
 
         var sysRoot = Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\";
@@ -100,7 +100,8 @@ public static class LargeFileScanner
                 {
                     var name = Path.GetFileName(sub);
                     if (name.StartsWith('$') || name.StartsWith('.') || SkippedDirs.Contains(name)) continue;
-                    list.Add((sub, $"{drive.TrimEnd('\\')}\\{name}", 3));
+                    var label = $"{drive.TrimEnd('\\')}\\{name}";
+                    list.Add((sub, label, label, 3));
                 }
             }
             catch { }
@@ -113,7 +114,7 @@ public static class LargeFileScanner
     }
 
     private static void WalkFolder(
-        string folder, string rootLabel, string? oneDriveRoot, ISet<string> excluded,
+        string folder, string rootLabelFr, string rootLabelEn, string? oneDriveRoot, ISet<string> excluded,
         int depth, int maxDepth, ISet<string> seenFiles, Action<LargeFileItem> emit, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
@@ -125,59 +126,67 @@ public static class LargeFileScanner
             {
                 IgnoreInaccessible = true,
                 AttributesToSkip = FileAttributes.ReparsePoint | FileAttributes.System,
-            });
+            }).ToList();
         }
         catch { return; }
 
         foreach (var entry in entries)
         {
             token.ThrowIfCancellationRequested();
-            if (excluded.Contains(entry.FullName)) continue;
-
-            if (entry is DirectoryInfo subDir)
+            try
             {
-                if (subDir.Name.StartsWith('.') || SkippedDirs.Contains(subDir.Name)) continue;
-                WalkFolder(subDir.FullName, rootLabel, oneDriveRoot, excluded, depth + 1, maxDepth, seenFiles, emit, token);
-            }
-            else if (entry is FileInfo file)
-            {
-                if (file.Length < MinimumBytes || !seenFiles.Add(file.FullName)) continue;
-                var ext = file.Extension;
-                var category = ExtMap.GetValueOrDefault(ext, LargeFileCategory.Other);
-                var (specialLabel, specialExplain) = InspectSpecialFile(ext);
-                var isOneDrive = !string.IsNullOrEmpty(oneDriveRoot)
-                    && file.FullName.StartsWith(oneDriveRoot, StringComparison.OrdinalIgnoreCase)
-                    && ((int)file.Attributes & 0x00400000) == 0;
+                if (excluded.Contains(entry.FullName)) continue;
 
-                emit(new LargeFileItem
+                if (entry is DirectoryInfo subDir)
                 {
-                    FullPath = file.FullName,
-                    Name = file.Name,
-                    FolderDisplay = $"{rootLabel} ({Path.GetDirectoryName(file.FullName)})",
-                    Bytes = file.Length,
-                    LastModified = file.LastWriteTime,
-                    Category = category,
-                    SpecialLabel = specialLabel,
-                    SpecialExplanation = specialExplain,
-                    IsOneDriveSynced = isOneDrive,
-                });
+                    if (subDir.Name.StartsWith('.') || SkippedDirs.Contains(subDir.Name)) continue;
+                    WalkFolder(subDir.FullName, rootLabelFr, rootLabelEn, oneDriveRoot, excluded, depth + 1, maxDepth, seenFiles, emit, token);
+                }
+                else if (entry is FileInfo file)
+                {
+                    if (file.Length < MinimumBytes || !seenFiles.Add(file.FullName)) continue;
+                    var ext = file.Extension;
+                    var category = ExtMap.GetValueOrDefault(ext, LargeFileCategory.Other);
+                    var (specialLabelFr, specialLabelEn, specialExplainFr, specialExplainEn) = InspectSpecialFile(ext);
+                    var isOneDrive = !string.IsNullOrEmpty(oneDriveRoot)
+                        && PathScope.IsWithin(file.FullName, oneDriveRoot)
+                        && ((int)file.Attributes & 0x00400000) == 0;
+
+                    emit(new LargeFileItem
+                    {
+                        FullPath = file.FullName,
+                        Name = file.Name,
+                        FolderDisplay = $"{rootLabelFr} ({Path.GetDirectoryName(file.FullName)})",
+                        FolderDisplayEn = $"{rootLabelEn} ({Path.GetDirectoryName(file.FullName)})",
+                        Bytes = file.Length,
+                        LastModified = file.LastWriteTime,
+                        Category = category,
+                        SpecialLabel = specialLabelFr,
+                        SpecialLabelEn = specialLabelEn,
+                        SpecialExplanation = specialExplainFr,
+                        SpecialExplanationEn = specialExplainEn,
+                        IsOneDriveSynced = isOneDrive,
+                    });
+                }
             }
+            catch (IOException) { /* File changed or was removed during the scan. */ }
+            catch (UnauthorizedAccessException) { /* Skip an inaccessible entry. */ }
         }
     }
 
-    private static (string? Label, string? Explain) InspectSpecialFile(string ext) =>
+    private static (string? LabelFr, string? LabelEn, string? ExplainFr, string? ExplainEn) InspectSpecialFile(string ext) =>
         ext.ToLowerInvariant() switch
         {
             ".crdownload" or ".part" or ".partial" => (
-                Loc.T("Téléchargement inachevé", "Unfinished download"),
-                Loc.T("Fichier d'un téléchargement interrompu par le navigateur.", "Partial file from an interrupted browser download.")),
+                "Téléchargement inachevé", "Unfinished download",
+                "Fichier d'un téléchargement interrompu par le navigateur.", "Partial file from an interrupted browser download."),
             ".iso" or ".wim" or ".img" => (
-                Loc.T("Image d'installation", "Installer disk image"),
-                Loc.T("Image disque volumineuse, souvent inutile après l'installation.", "Large disk image, often unneeded after installation.")),
+                "Image d'installation", "Installer disk image",
+                "Image disque volumineuse, souvent inutile après l'installation.", "Large disk image, often unneeded after installation."),
             ".vhdx" or ".vhd" or ".vmdk" or ".vdi" => (
-                Loc.T("Disque de machine virtuelle", "Virtual machine disk"),
-                Loc.T("Disque virtuel Hyper-V, VMware ou VirtualBox.", "Virtual disk for Hyper-V, VMware, or VirtualBox.")),
-            _ => (null, null),
+                "Disque de machine virtuelle", "Virtual machine disk",
+                "Disque virtuel Hyper-V, VMware ou VirtualBox.", "Virtual disk for Hyper-V, VMware, or VirtualBox."),
+            _ => (null, null, null, null),
         };
 
     public static bool EvictOneDriveLocalCopy(string path)

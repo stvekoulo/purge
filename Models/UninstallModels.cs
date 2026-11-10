@@ -35,6 +35,8 @@ public sealed partial class AppLeftoverItem : ObservableObject
     public string MatchBadge => IsExactMatch
         ? Loc.T("Correspondance exacte", "Exact match")
         : Loc.T("À vérifier", "Check first");
+
+    public void RefreshLocalizedText() => OnPropertyChanged(nameof(MatchBadge));
 }
 
 /// Purge for Windows:.
@@ -67,6 +69,7 @@ public sealed partial class InstalledAppItem : ObservableObject
     public string UninstallHint => CanUninstall ? Loc.T("Ouvrir le désinstalleur de l'application", "Open the application's uninstaller")
         : Loc.T("Choisissez le disque d'installation, ou Tous les disques, pour désinstaller l'application.",
             "Choose the installation drive, or All drives, to uninstall this application.");
+    public string UninstallActionText => Loc.T("Désinstaller", "Uninstall");
     public required long AppBytes { get; init; }
     public required List<AppLeftoverItem> Leftovers { get; init; }
 
@@ -99,6 +102,14 @@ public sealed partial class InstalledAppItem : ObservableObject
                 : pub;
         }
     }
+
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(UninstallHint));
+        OnPropertyChanged(nameof(UninstallActionText));
+        OnPropertyChanged(nameof(Subtitle));
+        foreach (var leftover in Leftovers) leftover.RefreshLocalizedText();
+    }
 }
 
 /// Port of OrphanLeftoverScanner findings: folders in AppData\Local or
@@ -124,6 +135,7 @@ public sealed partial class OrphanLeftoverItem : ObservableObject
 
     public string SizeText => ByteFormatter.Format(Bytes);
     public string Subtitle => $"{LocationKind} · {Loc.T("Modifié", "Modified")} {RelativeDate.Format(LastModified)} · {FullPath}";
+    public void RefreshLocalizedText() => OnPropertyChanged(nameof(Subtitle));
     public Brush BadgeBgBrush => ThemeBrushes.Get("StatusCheckFill");
     public Brush BadgeFgBrush => ThemeBrushes.Get("StatusCheckText");
 }

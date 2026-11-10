@@ -18,28 +18,52 @@ public sealed partial class PurgeStore
         DevItems.Where(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache)
             .SelectMany(i => i.Paths.Select(path => (i.Title, path))).ToList(), "safe");
 
-    public Task<CleanOutcome?> CleanSelectedDevAsync() => RunCleanAsync([], DevItems.Where(i => i.IsSelected)
-        .SelectMany(i => i.Paths.Select(path => (i.Title, path))).ToList(), "manual");
+    public Task<CleanOutcome?> CleanSelectedDevAsync()
+    {
+        var selected = DevItems.Where(i => i.IsSelected).ToList();
+        var worktrees = selected.Where(i => i.Section == DevSectionKind.OrphanWorktree)
+            .SelectMany(i => i.Paths).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return RunCleanAsync([], selected.SelectMany(i => i.Paths.Select(path => (i.Title, path))).ToList(),
+            "manual", gitWorktrees: worktrees);
+    }
 
-    public Task<CleanOutcome?> CleanSelectedLargeFilesAsync() => RunCleanAsync([], LargeFileItems.Where(i => i.IsSelected)
-        .Select(i => (i.Name, i.FullPath)).ToList(), "manual");
+    public Task<CleanOutcome?> CleanSelectedLargeFilesAsync()
+    {
+        var selected = LargeFileItems.Where(i => i.IsSelected).ToList();
+        var selectedPaths = selected.Select(i => i.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var duplicateKeepers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in selected.Where(i => i.IsDuplicate))
+        {
+            var keeper = LargeFileItems.FirstOrDefault(i => i.DuplicateGroupId == item.DuplicateGroupId && i.IsDuplicateKeeper);
+            // If the keeper is selected, missing, or was itself selected,
+            // refuse the whole affected duplicate group rather than lose all copies.
+            duplicateKeepers[item.FullPath] = keeper is null || selectedPaths.Contains(keeper.FullPath)
+                ? "" : keeper.FullPath;
+        }
+        return RunCleanAsync([], selected.Select(i => (i.Name, i.FullPath)).ToList(), "manual", duplicateKeepers);
+    }
 
     public Task<CleanOutcome?> CleanSelectedUninstallAsync()
     {
         var targets = new List<(string, string)>();
         if (UninstallSubTab == UninstallerSubTab.InstalledApps)
-            targets.AddRange(InstalledApps.Where(i => i.IsSelected).SelectMany(i => i.Leftovers.Select(l => (i.DisplayName, l.Path))));
+            targets.AddRange(InstalledApps.Where(i => i.IsSelected).SelectMany(i => i.Leftovers
+                .Where(l => l.IsExactMatch).Select(l => (i.DisplayName, l.Path))));
         else if (UninstallSubTab == UninstallerSubTab.Leftovers)
             targets.AddRange(OrphanLeftovers.Where(i => i.IsSelected).Select(i => (i.FolderName, i.FullPath)));
         else targets.AddRange(CliTools.Where(i => i.IsSelected).Select(i => (i.Name, i.Path)));
         return RunCleanAsync([], targets, "manual");
     }
 
-    private async Task<CleanOutcome?> RunCleanAsync(List<CacheItem> caches, List<(string Title, string Path)> paths, string trigger)
+    private async Task<CleanOutcome?> RunCleanAsync(List<CacheItem> caches, List<(string Title, string Path)> paths,
+        string trigger, IReadOnlyDictionary<string, string>? duplicateKeepers = null,
+        IReadOnlySet<string>? gitWorktrees = null)
     {
         if (!CanClean || caches.Count + paths.Count == 0) return null;
         var scope = CreateScope();
         var context = _scopeSession.Current;
+        var selectedLargePaths = LargeFileItems.Where(i => i.IsSelected)
+            .Select(i => i.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
         IsCleaning = true;
         NotifyScope();
         var progress = new Progress<string>(name => CleaningLabel = Loc.T($"Nettoyage de {name}…", $"Cleaning {name}…"));
@@ -47,7 +71,8 @@ public sealed partial class PurgeStore
         try
         {
             var cached = caches.Count == 0 ? new CleanOutcome(0, 0, [], []) : await FileDeleter.CleanAsync(caches, progress, scope);
-            var direct = paths.Count == 0 ? new CleanOutcome(0, 0, [], []) : await FileDeleter.CleanPathsAsync(paths, progress, scope);
+            var direct = paths.Count == 0 ? new CleanOutcome(0, 0, [], [])
+                : await FileDeleter.CleanPathsAsync(paths, progress, scope, duplicateKeepers, gitWorktrees);
             outcome = new(cached.FreedBytes + direct.FreedBytes, cached.MovedCount + direct.MovedCount,
                 cached.MovedPaths.Concat(direct.MovedPaths).ToList(), cached.Failures.Concat(direct.Failures).ToList());
             if (Settings.EmptyRecycleBinAfterCleaning && outcome.MovedCount > 0)
@@ -67,6 +92,10 @@ public sealed partial class PurgeStore
             }
             RecordOutcome(outcome, trigger);
             ClearSelections();
+            // Keep failed large-file selections available for an explicit retry.
+            var movedPaths = outcome.MovedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in LargeFileItems.Where(i => selectedLargePaths.Contains(i.FullPath) && !movedPaths.Contains(i.FullPath)))
+                item.IsSelected = true;
         }
         finally { IsCleaning = false; CleaningLabel = ""; NotifyScope(); }
         if (_scopeSession.IsCurrent(context))
@@ -77,7 +106,9 @@ public sealed partial class PurgeStore
                 if (DevItems.Any(d => d.Paths.Any(dp => paths.Any(p => string.Equals(p.Path, dp, StringComparison.OrdinalIgnoreCase)))))
                     await ScanDevToolsAsync();
 
-                var removed = paths.Select(p => p.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                // An attempted move is not a successful one. Failed files must
+                // remain in the current view until a later scan or retry.
+                var removed = outcome.MovedPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
                 OnUi(() =>
                 {
                     var remaining = LargeFileItems.Where(l => !removed.Contains(l.FullPath)).ToList();
@@ -96,24 +127,30 @@ public sealed partial class PurgeStore
         return outcome;
     }
 
-    public void LaunchAppUninstaller(InstalledAppItem app)
+    public bool LaunchAppUninstaller(InstalledAppItem app)
     {
-        if (!app.CanUninstall || !CanClean || string.IsNullOrWhiteSpace(app.UninstallString)) return;
+        if (!app.CanUninstall || !CanClean || string.IsNullOrWhiteSpace(app.UninstallString)) return false;
         try
         {
-            Process.Start(new ProcessStartInfo("cmd.exe", $"/c {app.UninstallString}") { CreateNoWindow = true, UseShellExecute = false });
+            // The registered uninstaller owns removal of files, services and
+            // registry keys. Never trash an installed application's directory.
+            Process.Start(UninstallCommand.CreateStartInfo(app.UninstallString));
             _scopeCache.Clear();
+            return true;
         }
-        catch (Exception ex) { App.LogCrash("Launch uninstaller", ex); }
+        catch (Exception ex) { App.LogCrash("Launch uninstaller", ex); return false; }
     }
 
     public bool EvictOneDriveFile(LargeFileItem item)
     {
-        if (!CanClean || !CreateScope().CanDelete(item.FullPath)) return false;
+        if (!CanClean || !item.IsOneDriveSynced || !CreateScope().CanDelete(item.FullPath)) return false;
         var ok = LargeFileScanner.EvictOneDriveLocalCopy(item.FullPath);
         if (ok)
         {
-            _scopeCache.Clear(); LargeFileItems.Remove(item); ApplyLargeFilter(); RefreshDisk(); NotifyTotals();
+            // attrib +U -P requests dehydration; it does not prove that
+            // Windows has already freed the local bytes. Keep the entry in
+            // the result list until the next scan confirms its cloud state.
+            _scopeCache.Clear(); RefreshDisk(); NotifyTotals();
         }
         return ok;
     }

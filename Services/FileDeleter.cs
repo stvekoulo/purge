@@ -10,8 +10,10 @@ public static class FileDeleter
     public static Task<CleanOutcome> CleanAsync(IEnumerable<CacheItem> items, IProgress<string>? progress = null, PathScope? scope = null) =>
         Task.Run(() => CleanCaches(items.ToList(), progress, scope));
 
-    public static Task<CleanOutcome> CleanPathsAsync(IEnumerable<(string Title, string Path)> targets, IProgress<string>? progress = null, PathScope? scope = null) =>
-        Task.Run(() => CleanDirectPaths(targets.ToList(), progress, scope));
+    public static Task<CleanOutcome> CleanPathsAsync(IEnumerable<(string Title, string Path)> targets, IProgress<string>? progress = null,
+        PathScope? scope = null, IReadOnlyDictionary<string, string>? duplicateKeepers = null,
+        IReadOnlySet<string>? gitWorktrees = null) =>
+        Task.Run(() => CleanDirectPaths(targets.ToList(), progress, scope, duplicateKeepers, gitWorktrees));
 
     private static CleanOutcome CleanCaches(List<CacheItem> items, IProgress<string>? progress, PathScope? scope)
     {
@@ -43,7 +45,8 @@ public static class FileDeleter
         return new CleanOutcome(freed, moved.Count, moved, failures);
     }
 
-    private static CleanOutcome CleanDirectPaths(List<(string Title, string Path)> targets, IProgress<string>? progress, PathScope? scope)
+    private static CleanOutcome CleanDirectPaths(List<(string Title, string Path)> targets, IProgress<string>? progress,
+        PathScope? scope, IReadOnlyDictionary<string, string>? duplicateKeepers, IReadOnlySet<string>? gitWorktrees)
     {
         var moved = new List<string>();
         var failures = new List<CleanFailure>();
@@ -54,7 +57,11 @@ public static class FileDeleter
             progress?.Report(title);
             string full;
             try { full = Path.GetFullPath(rawPath).TrimEnd('\\'); }
-            catch { continue; }
+            catch
+            {
+                failures.Add(new CleanFailure(rawPath, "Chemin invalide / Invalid path"));
+                continue;
+            }
 
             if (!File.Exists(full) && !Directory.Exists(full)) continue;
             if (scope?.CanDelete(full) == false)
@@ -62,14 +69,26 @@ public static class FileDeleter
                 failures.Add(new(full, "Hors du disque sélectionné ou chemin exclu / Outside selected disk or excluded"));
                 continue;
             }
-            if (DeletionSafetyPolicy.IsProtected(full) || full.Count(c => c == '\\') < 2)
+            if (DeletionSafetyPolicy.IsProtected(full) || DeletionSafetyPolicy.IsSystemPath(full)
+                || full.Count(c => c == '\\') < 2)
             {
                 failures.Add(new CleanFailure(full, "Ignoré par sécurité : emplacement protégé"));
                 continue;
             }
-            if (PathExpander.IsReparsePoint(full))
+            if (PathExpander.IsReparsePoint(full) || PathExpander.HasReparsePointAncestor(full))
             {
                 failures.Add(new CleanFailure(full, "Ignoré par sécurité : lien ou jonction"));
+                continue;
+            }
+            if (duplicateKeepers?.TryGetValue(full, out var keeper) == true
+                && (string.IsNullOrEmpty(keeper) || !DuplicateFileVerifier.AreIdentical(full, keeper)))
+            {
+                failures.Add(new CleanFailure(full, "Doublon non confirmé : copie à conserver absente ou modifiée / Duplicate not verified: keeper missing or changed"));
+                continue;
+            }
+            if (gitWorktrees?.Contains(full) == true && GitWorktreeInspector.Inspect(full) != GitWorktreeState.Clean)
+            {
+                failures.Add(new CleanFailure(full, "Worktree Git modifié ou non vérifiable / Modified or unverifiable Git worktree"));
                 continue;
             }
 
@@ -81,19 +100,20 @@ public static class FileDeleter
 
     private static void MoveOne(FileSystemInfo target, ref long freed, List<string> moved, List<CleanFailure> failures)
     {
-        var size = FolderSizing.MeasureEntry(target);
-        var error = RecycleBin.MoveToRecycleBin(target.FullName);
-        if (error is null)
+        try
         {
-            freed += size;
-            moved.Add(target.FullName);
+            var size = FolderSizing.MeasureEntry(target);
+            var error = RecycleBin.MoveToRecycleBin(target.FullName);
+            if (error is null)
+            {
+                freed += size;
+                moved.Add(target.FullName);
+            }
+            else failures.Add(new CleanFailure(target.FullName, error));
         }
-        else
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            var left = File.Exists(target.FullName) || Directory.Exists(target.FullName)
-                ? FolderSizing.MeasureEntry(Refresh(target)) : 0;
-            freed += Math.Max(0, size - left);
-            failures.Add(new CleanFailure(target.FullName, error));
+            failures.Add(new CleanFailure(target.FullName, ex.Message));
         }
     }
 
@@ -112,6 +132,4 @@ public static class FileDeleter
         }
     }
 
-    private static FileSystemInfo Refresh(FileSystemInfo info) =>
-        Directory.Exists(info.FullName) ? new DirectoryInfo(info.FullName) : new FileInfo(info.FullName);
 }

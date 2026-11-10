@@ -7,6 +7,7 @@ public sealed partial class PurgeStore
 {
     public sealed class ScanCacheRecord
     {
+        public int SchemaVersion { get; set; }
         public DateTime? LastScan { get; set; }
         public string ScopeKey { get; set; } = "";
         public List<LargeFileCacheDto> LargeFiles { get; set; } = [];
@@ -14,7 +15,9 @@ public sealed partial class PurgeStore
 
     public sealed record LargeFileCacheDto(string FullPath, string Name, string FolderDisplay,
         long Bytes, DateTime LastModified, LargeFileCategory Category, string? SpecialLabel,
-        string? SpecialExplanation, bool IsOneDriveSynced);
+        string? SpecialExplanation, bool IsOneDriveSynced, string? NameEn = null,
+        string? FolderDisplayEn = null, string? SpecialLabelEn = null, string? SpecialExplanationEn = null,
+        string? DuplicateGroupId = null, bool IsDuplicateKeeper = false, int DuplicateGroupCount = 0);
 
     private sealed record ScopeSnapshot(List<CacheItem> Caches, List<DevItem> Dev,
         List<LargeFileItem> Large, List<InstalledAppItem> Apps, List<OrphanLeftoverItem> Orphans,
@@ -29,10 +32,13 @@ public sealed partial class PurgeStore
             var record = new ScanCacheRecord
             {
                 LastScan = LastScan,
+                SchemaVersion = 2,
                 ScopeKey = _scopeSession.Current.Key,
-                LargeFiles = LargeFileItems.Select(l => new LargeFileCacheDto(l.FullPath, l.Name,
-                    l.FolderDisplay, l.Bytes, l.LastModified, l.Category, l.SpecialLabel,
-                    l.SpecialExplanation, l.IsOneDriveSynced)).ToList()
+                LargeFiles = LargeFileItems.Select(l => new LargeFileCacheDto(l.FullPath, l.NameFr,
+                    l.FolderDisplayFr, l.Bytes, l.LastModified, l.Category, l.SpecialLabelFr,
+                    l.SpecialExplanationFr, l.IsOneDriveSynced, l.NameEn, l.FolderDisplayEn,
+                    l.SpecialLabelEn, l.SpecialExplanationEn, l.DuplicateGroupId,
+                    l.IsDuplicateKeeper, l.DuplicateGroupCount)).ToList()
             };
             AppData.Save("scan-cache.json", record);
         }
@@ -44,22 +50,51 @@ public sealed partial class PurgeStore
         try
         {
             var cache = AppData.Load<ScanCacheRecord>("scan-cache.json");
-            if (cache?.LastScan != null && (DateTime.Now - cache.LastScan.Value) < TimeSpan.FromHours(24)
+            if (HasActiveDrives && cache?.SchemaVersion == 2 && cache.LastScan != null
+                && string.Equals(cache.ScopeKey, _scopeSession.Current.Key, StringComparison.OrdinalIgnoreCase)
+                && (DateTime.Now - cache.LastScan.Value) < TimeSpan.FromHours(24)
                 && cache.LargeFiles.Count > 0)
             {
-                LastScan = cache.LastScan;
-                var items = cache.LargeFiles.Select(d => new LargeFileItem
+                var scope = CreateScope();
+                // Cached entries may have been deleted, excluded or moved since
+                // the last session. Never expose entries from another scope.
+                var items = cache.LargeFiles.Where(d => scope.CanDelete(d.FullPath)
+                        && (File.Exists(d.FullPath) || Directory.Exists(d.FullPath)))
+                    .Select(d => new LargeFileItem
                 {
                     FullPath = d.FullPath,
                     Name = d.Name,
+                    NameEn = d.NameEn,
                     FolderDisplay = d.FolderDisplay,
+                    FolderDisplayEn = d.FolderDisplayEn,
                     Bytes = d.Bytes,
                     LastModified = d.LastModified,
                     Category = d.Category,
                     SpecialLabel = d.SpecialLabel,
+                    SpecialLabelEn = d.SpecialLabelEn,
                     SpecialExplanation = d.SpecialExplanation,
-                    IsOneDriveSynced = d.IsOneDriveSynced
+                    SpecialExplanationEn = d.SpecialExplanationEn,
+                    IsOneDriveSynced = d.IsOneDriveSynced,
+                    DuplicateGroupId = d.DuplicateGroupId,
+                    IsDuplicateKeeper = d.IsDuplicateKeeper,
+                    DuplicateGroupCount = d.DuplicateGroupCount
                 }).ToList();
+                // If files disappeared since this snapshot, invalidate the
+                // entire partial duplicate group instead of offering a
+                // dangerous or misleading keep-one action.
+                foreach (var group in items.Where(i => i.IsDuplicate).GroupBy(i => i.DuplicateGroupId))
+                {
+                    if (group.Count() >= 2 && group.Count(i => i.IsDuplicateKeeper) == 1
+                        && group.Count() == group.First().DuplicateGroupCount) continue;
+                    foreach (var item in group)
+                    {
+                        item.DuplicateGroupId = null;
+                        item.IsDuplicateKeeper = false;
+                        item.DuplicateGroupCount = 0;
+                    }
+                }
+                if (items.Count == 0) return;
+                LastScan = cache.LastScan;
                 Replace(LargeFileItems, items);
                 LargePhase = ScanPhase.Done;
                 RefreshAllFilteredViews();

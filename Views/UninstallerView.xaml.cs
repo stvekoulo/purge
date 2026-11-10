@@ -49,13 +49,16 @@ public sealed partial class UninstallerView : UserControl
         else
         {
             CleanSelectedBtn.Content = Store.SelectedUninstallCount > 0
-                ? Loc.T($"Nettoyer ({ByteFormatter.Format(Store.SelectedUninstallBytes)})", $"Clean ({ByteFormatter.Format(Store.SelectedUninstallBytes)})")
+                ? Store.UninstallSubTab == UninstallerSubTab.InstalledApps
+                    ? Loc.T($"Nettoyer les données ({ByteFormatter.Format(Store.SelectedUninstallBytes)})", $"Clean app data ({ByteFormatter.Format(Store.SelectedUninstallBytes)})")
+                    : Loc.T($"Nettoyer ({ByteFormatter.Format(Store.SelectedUninstallBytes)})", $"Clean ({ByteFormatter.Format(Store.SelectedUninstallBytes)})")
                 : Loc.T("Nettoyer la sélection", "Clean Selected");
         }
-        CleanSelectedBtn.IsEnabled = Store.SelectedUninstallCount > 0 && !Store.IsScanning;
+        CleanSelectedBtn.IsEnabled = Store.SelectedUninstallCount > 0 && !Store.IsScanning && !Store.IsCleaning
+            && (Store.UninstallSubTab != UninstallerSubTab.InstalledApps || Store.SelectedUninstallCount == 1 || Store.SelectedUninstallBytes > 0);
 
         TabAppsBtn.Content = $"{Loc.T("Applications installées", "Installed Apps")} ({Store.InstalledApps.Count})";
-        TabLeftoversBtn.Content = $"{Loc.T("Restes orphelins", "Removed App Leftovers")} ({Store.OrphanLeftovers.Count})";
+        TabLeftoversBtn.Content = $"{Loc.T("Restes possibles", "Possible Leftovers")} ({Store.OrphanLeftovers.Count})";
         TabCliBtn.Content = $"{Loc.T("Outils CLI", "CLI Tools")} ({Store.CliTools.Count})";
 
         TabAppsBtn.Variant = Store.UninstallSubTab == UninstallerSubTab.InstalledApps ? PurgeButtonVariant.Secondary : PurgeButtonVariant.Ghost;
@@ -64,6 +67,11 @@ public sealed partial class UninstallerView : UserControl
 
         SearchBox.PlaceholderText = Loc.T("Rechercher...", "Search...");
         SelectionSummary.Text = Store.SelectedUninstallSummaryText;
+        SortLargestItem.Content = Loc.T("Taille (décroissante)", "Size (largest first)");
+        SortSmallestItem.Content = Loc.T("Taille (croissante)", "Size (smallest first)");
+        SortNameAZItem.Content = Loc.T("Nom (A à Z)", "Name (A to Z)");
+        ToolTipService.SetToolTip(ViewGridBtn, Loc.T("Affichage en grille", "Grid view"));
+        ToolTipService.SetToolTip(ViewListBtn, Loc.T("Affichage en liste", "List view"));
 
         bool isApps = Store.UninstallSubTab == UninstallerSubTab.InstalledApps;
         SortCombo.Visibility = isApps ? Visibility.Visible : Visibility.Collapsed;
@@ -119,8 +127,11 @@ public sealed partial class UninstallerView : UserControl
 
         var candidates = Store.UninstallSubTab switch
         {
-            UninstallerSubTab.InstalledApps => Store.InstalledApps.Where(a => a.IsSelected && a.LeftoverBytes > 0)
-                .Select(a => new DeletionConfirmDialog.Candidate(a.DisplayName, a.Subtitle, a.LeftoverBytes, SafetyLevel.Medium)).ToList(),
+            UninstallerSubTab.InstalledApps => Store.InstalledApps.Where(a => a.IsSelected && a.Leftovers.Any(l => l.IsExactMatch))
+                .Select(a => new DeletionConfirmDialog.Candidate(
+                    Loc.T($"Données de {a.DisplayName}", $"Data for {a.DisplayName}"),
+                    Loc.T("Dossiers associés uniquement, application conservée", "Associated folders only; app stays installed"),
+                    a.Leftovers.Where(l => l.IsExactMatch).Sum(l => l.Bytes), SafetyLevel.Medium)).ToList(),
             UninstallerSubTab.Leftovers => Store.OrphanLeftovers.Where(o => o.IsSelected)
                 .Select(o => new DeletionConfirmDialog.Candidate(o.FolderName, o.FullPath, o.Bytes, SafetyLevel.Medium)).ToList(),
             _ => Store.CliTools.Where(c => c.IsSelected)

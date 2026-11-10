@@ -57,7 +57,8 @@ public sealed partial class PurgeStore
 
     public long SelectedUninstallBytes => UninstallSubTab switch
     {
-        UninstallerSubTab.InstalledApps => InstalledApps.Where(i => i.IsSelected).Sum(i => i.LeftoverBytes),
+        UninstallerSubTab.InstalledApps => InstalledApps.Where(i => i.IsSelected)
+            .Sum(i => i.Leftovers.Where(l => l.IsExactMatch).Sum(l => l.Bytes)),
         UninstallerSubTab.Leftovers => OrphanLeftovers.Where(i => i.IsSelected).Sum(i => i.Bytes),
         _ => CliTools.Where(i => i.IsSelected).Sum(i => i.Bytes),
     };
@@ -79,8 +80,8 @@ public sealed partial class PurgeStore
 
     public string UninstallSubtitle => (InstalledApps.Count + OrphanLeftovers.Count + CliTools.Count) == 0
         ? EmptyScanText(UninstallPhase)
-        : Loc.T($"{InstalledApps.Count} apps · {OrphanLeftovers.Count} restes · {CliTools.Count} outils CLI",
-                $"{InstalledApps.Count} apps · {OrphanLeftovers.Count} leftovers · {CliTools.Count} CLI tools");
+        : Loc.T($"{InstalledApps.Count} apps · {OrphanLeftovers.Count} restes possibles · {CliTools.Count} outils CLI",
+                $"{InstalledApps.Count} apps · {OrphanLeftovers.Count} possible leftovers · {CliTools.Count} CLI tools");
 
     private static string EmptyScanText(ScanPhase phase) => phase switch
     {
@@ -205,7 +206,7 @@ public sealed partial class PurgeStore
 
     public void SelectAllDev(bool select)
     {
-        foreach (var item in FilteredDevItems) item.IsSelected = select;
+        foreach (var item in FilteredDevItems) item.IsSelected = select && item.CanSelect;
         NotifyDevSelection();
     }
 

@@ -36,6 +36,21 @@ public static class PathExpander
         catch { return true; } // unreadable counts as unsafe
     }
 
+    /// <summary>Reject paths whose ancestor passes through a junction or
+    /// symlink, even if the final file itself is not a reparse point.</summary>
+    public static bool HasReparsePointAncestor(string path)
+    {
+        var normalized = PathScope.Normalize(path);
+        if (normalized is null) return true;
+        for (var ancestor = Path.GetDirectoryName(normalized); !string.IsNullOrEmpty(ancestor);
+             ancestor = Path.GetDirectoryName(ancestor))
+        {
+            if (ancestor.Equals(Path.GetPathRoot(ancestor), StringComparison.OrdinalIgnoreCase)) break;
+            if (IsReparsePoint(ancestor)) return true;
+        }
+        return false;
+    }
+
     private static IEnumerable<string> SafeDirectories(string root, string pattern)
     {
         try

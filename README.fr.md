@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="./README.md">English</a> · <strong>Français</strong> · <a href="https://github.com/stvekoulo/purge/releases/latest"><strong>⬇ Télécharger la dernière version (v1.0.8)</strong></a>
+  <a href="./README.md">English</a> · <strong>Français</strong> · <a href="https://github.com/stvekoulo/purge/releases/latest"><strong>⬇ Télécharger la dernière version</strong></a>
 </p>
 
 <p align="center">
@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/Plateforme-Windows%2010%20%2F%2011%20(x64%20%26%20ARM64)-6B4DE6?style=flat-square" alt="Plateforme : Windows 10/11">
   <img src="https://img.shields.io/badge/Interface-WinUI%203%20%C2%B7%20.NET%2010-2E2D2B?style=flat-square" alt="Interface : WinUI 3 .NET 10">
   <img src="https://img.shields.io/badge/S%C3%A9curit%C3%A9-Corbeille%20par%20d%C3%A9faut-1F7A35?style=flat-square" alt="Sécurité : Corbeille par défaut">
-  <img src="https://img.shields.io/badge/Confidentialit%C3%A9-100%25%20Hors--ligne-2E2D2B?style=flat-square" alt="Confidentialité : 100% Hors-ligne">
+  <img src="https://img.shields.io/badge/Confidentialit%C3%A9-Z%C3%A9ro%20t%C3%A9l%C3%A9m%C3%A9trie-2E2D2B?style=flat-square" alt="Confidentialité : zéro télémétrie">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/Licence-MIT-ECEAE6?style=flat-square" alt="Licence : MIT"></a>
 </p>
 
@@ -44,7 +44,7 @@
 
 **Purge** est un analyseur d'espace disque, nettoyeur de caches système et nettoyeur d'artefacts de développement natif **WinUI 3** pour **Windows 11 et Windows 10**. Il inspecte tous vos disques locaux (`C:`, `D:`, `E:`, ou l'ensemble des disques combinés) et répartit l'espace récupérable en cinq catégories claires — accompagnées d'une carte proportionnelle (Treemap) de tout le reste de votre PC.
 
-Chaque élément est documenté en langage clair pour expliquer son rôle et l'effet de son nettoyage. Rien n'est jamais effacé définitivement dans votre dos : **tous les éléments nettoyés sont envoyés dans la Corbeille de Windows**.
+Chaque élément est documenté en langage clair pour expliquer son rôle et l'effet de son nettoyage. **Par défaut, les éléments nettoyés sont envoyés dans la Corbeille de Windows.** Leur déplacement ne libère pas immédiatement d'espace disque ; l'option de vidage définitif exige une activation explicite et concerne aussi les anciens éléments de la Corbeille.
 
 ---
 
@@ -59,11 +59,11 @@ Chaque élément est documenté en langage clair pour expliquer son rôle et l'e
 | **Corbeille par défaut** | Utilise l'API native Windows Shell `SHFileOperationW` (`FOF_ALLOWUNDO`) afin que chaque fichier ou dossier nettoyé puisse être restauré depuis la Corbeille à tout moment. |
 | **Liste blanche stricte (Allowlist)** | Seuls les emplacements vérifiés dans [`windows-cache-catalog.json`](./Resources/windows-cache-catalog.json) sont éligibles au nettoyage sûr en un clic. Les mots de passe, sessions, cookies et clés SSH/GPG ne sont jamais touchés. |
 | **Analyse & sélecteur multi-disques** | Analysez tous vos disques (`Tous les disques`) simultanément ou basculez d'un clic entre vos disques individuels (`C:`, `D:`, `E:`). |
-| **Conçu pour les développeurs** | Détecte les caches globaux (`npm`, `pnpm`, `Yarn`, `Bun`, `NuGet`, `Cargo`, `pip`, `uv`, `Gradle`, `Maven`, `Go`, `JetBrains`, `VS Code`, `Cursor`) et les dossiers de build (`node_modules`, `target`, `.next`, `dist`, `bin/obj`, `.venv`, émulateurs Android AVD et worktrees IA orphelins). |
-| **Désinstallateur avec icônes natives** | Extraction d'icônes haute résolution (catalogue de 83+ applications de marque + Registre Windows + raccourcis Démarrer), bascule Grille (`[ ⊞ ]`) et Liste (`[ ≡ ]`), tri dynamique (`Plus volumineux`, `Moins volumineux`, `Nom A-Z`), et feuille interactive de révision avec suppression sécurisée vers la Corbeille. |
+| **Conçu pour les développeurs** | Détecte les caches globaux (`npm`, `pnpm`, `Yarn`, `Bun`, `NuGet`, `Cargo`, `pip`, `uv`, `Gradle`, `Go`, `JetBrains`, `VS Code`, `Cursor`) et les dossiers de build (`node_modules`, `target`, `.next`, `.nuxt`, `.venv`, émulateurs Android AVD et worktrees IA à vérifier). Les worktrees Git encore enregistrés, modifiés ou non vérifiables sont protégés. |
+| **Désinstallateur avec icônes natives** | Extraction d'icônes haute résolution (catalogue de 83+ applications de marque + Registre Windows + raccourcis Démarrer), bascule Grille (`[ ⊞ ]`) et Liste (`[ ≡ ]`), tri dynamique (`Plus volumineux`, `Moins volumineux`, `Nom A-Z`), et dialogue lançant le désinstalleur enregistré sous Windows. |
 | **Exécution en arrière-plan (Zone de notification)** | Se réduit proprement dans la zone de notification système Windows (`Shell_NotifyIconW`) pour un accès rapide et une surveillance discrète. |
 | **Respect de OneDrive & des liens NTFS** | Ne traverse jamais les jonctions ou liens symboliques NTFS et permet de libérer l'espace local des fichiers OneDrive (`attrib +U -P`) tout en les conservant dans le cloud. |
-| **100 % hors-ligne & bilingue** | Zéro télémétrie, aucun appel réseau, bascule instantanée **Français / English**, et thèmes **Clair / Sombre / Système**. |
+| **Confidentialité & bilingue** | Nettoyage local sans télémétrie ; vérification facultative des mises à jour sur GitHub. Bascule instantanée **Français / English** et thèmes **Clair / Sombre / Système**. |
 
 ---
 
@@ -88,7 +88,7 @@ Chaque élément est documenté en langage clair pour expliquer son rôle et l'e
 
 1. **Vue d'ensemble & Treemap Tout le reste** — Barre de stockage 7 segments Okabe-Ito à fort contraste sur tous vos disques, associée à une carte proportionnelle squarifiée (Bruls–Huizing–van Wijk) classant le reste du disque (*Géré par les applications*, *Vos fichiers*, *Non touché par Purge*, *Géré par Windows*).
 2. **Caches d'applications** — Caches de navigateurs (Chrome, Edge, Brave, Opera, Firefox), caches graphiques DirectX / GPU (NVIDIA, AMD, Intel), fichiers temporaires Windows et rapports d'erreur, Discord, Slack, Teams, Figma, Notion, Spotify, Steam, Adobe Media Cache, et programmes d'installation Electron en attente.
-3. **Outils de développement** — Caches de paquets globaux, artefacts de build filtrables par ancienneté (`Tous`, `> 30j`, `> 90j`, `> 180j`), émulateurs Android Studio AVD et worktrees d'agents IA orphelins avec protection anti-perte git.
+3. **Outils de développement** — Caches de paquets globaux, artefacts de build filtrables par ancienneté (`Tous`, `> 30j`, `> 90j`, `> 180j`), émulateurs Android Studio AVD et dossiers de worktrees d'agents IA avec vérification Git préalable (aucune suppression directe d'un worktree enregistré ou modifié).
 4. **Fichiers volumineux, modèles IA & Doublons** — Analyse multi-threadée (`>= 5 Mo`) avec filtres thématiques (*Vidéos*, *Archives*, *Images disque*, *Machines virtuelles*, *Modèles IA* tels qu'Ollama, LM Studio ou Hugging Face `.gguf`/`.safetensors`, *OneDrive*, et détection des doublons en deux passes avec bouton **Garder un seul exemplaire**).
 5. **Désinstallateur, restes orphelins & outils CLI** — Analyse des logiciels installés avec extraction de leurs icônes réelles, affichage en Grille (`AppTile`) ou Liste (`AppListRow`), tri par taille et nom, détection des dossiers orphelins dans `AppData` et `ProgramData`, inventaire des exécutables CLI (`.cargo\bin`, `go\bin`, `.dotnet\tools`, `scoop\shims`), et dialogue de confirmation déplaçant les données vers la Corbeille.
 
@@ -100,9 +100,9 @@ Chaque élément est documenté en langage clair pour expliquer son rôle et l'e
 
 | Architecture | Installateur (`.exe`) | Systèmes cibles |
 | :--- | :--- | :--- |
-| **x64 (64 bits)** | [`Purge-1.0.8-win-x64-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | PC Windows 10/11 Intel & AMD 64 bits |
-| **ARM64** | [`Purge-1.0.8-win-arm64-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Snapdragon X Elite / Plus, Surface Pro, Windows on ARM |
-| **x86 (32 bits)** | [`Purge-1.0.8-win-x86-Setup.exe`](https://github.com/stvekoulo/purge/releases/latest) | Systèmes et machines virtuelles Windows 32 bits |
+| **x64 (64 bits)** | [Dernier installateur x64](https://github.com/stvekoulo/purge/releases/latest) | PC Windows 10/11 Intel & AMD 64 bits |
+| **ARM64** | [Dernier installateur ARM64](https://github.com/stvekoulo/purge/releases/latest) | Snapdragon X Elite / Plus, Surface Pro, Windows on ARM |
+| **x86 (32 bits)** | [Dernier installateur x86](https://github.com/stvekoulo/purge/releases/latest) | Systèmes et machines virtuelles Windows 32 bits |
 
 Lancez l'installateur (`Purge-Setup-*.exe`) correspondant à votre architecture pour installer Purge avec raccourci Menu Démarrer, icône Bureau et désinstalleur Windows intégré.
 

@@ -127,12 +127,12 @@
 
               <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <TextBlock Text="{x:Bind Title}" Style="{StaticResource RowTitleText}"/>
+                  <TextBlock Text="{x:Bind Title, Mode=OneWay}" Style="{StaticResource RowTitleText}"/>
                   <Border CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Background="{x:Bind BadgeBgBrush}">
-                    <TextBlock Text="{x:Bind SafetyText}" Style="{StaticResource MicroText}" Foreground="{x:Bind BadgeFgBrush}"/>
+                    <TextBlock Text="{x:Bind SafetyText, Mode=OneWay}" Style="{StaticResource MicroText}" Foreground="{x:Bind BadgeFgBrush}"/>
                   </Border>
                 </StackPanel>
-                <TextBlock Text="{x:Bind Explanation}" Style="{StaticResource CalloutText}"
+                <TextBlock Text="{x:Bind Explanation, Mode=OneWay}" Style="{StaticResource CalloutText}"
                            Foreground="{ThemeResource TextSecondary}"
                            MaxLines="2" TextWrapping="Wrap"/>
                 <TextBlock Text="{x:Bind PathSummary}" FontSize="11" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>

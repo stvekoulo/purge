@@ -47,7 +47,7 @@ public sealed partial class SettingsView : UserControl
         long lifetime = history.Entries.Sum(e => e.FreedBytes);
         var cmp = SizeComparisonCatalog.Describe(lifetime);
         TxtLifetimeTotal.Text = lifetime > 0
-            ? $"{Loc.T("Total libéré :", "Total freed:")} {ByteFormatter.Format(lifetime)}" + (cmp is { } c ? $" ({c.Label})" : "")
+            ? $"{Loc.T("Volume nettoyé (Corbeille comprise) :", "Volume cleaned (including Recycle Bin):")} {ByteFormatter.Format(lifetime)}" + (cmp is { } c ? $" ({c.Label})" : "")
             : "";
 
         TxtHistoryEmpty.Visibility = history.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -189,19 +189,50 @@ public sealed partial class SettingsView : UserControl
         PurgeStore.Shared.SetLanguage(CmbLang.SelectedIndex == 1 ? "en" : "fr");
     }
 
-    private void OnStartupToggled(object sender, RoutedEventArgs e)
+    private async void OnStartupToggled(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        SystemIntegration.SetLaunchAtStartup(TglStartup.IsOn);
+        if (SystemIntegration.SetLaunchAtStartup(TglStartup.IsOn)) return;
+        _loading = true;
+        TglStartup.IsOn = SystemIntegration.IsLaunchAtStartupEnabled();
+        _loading = false;
+        await ShowIntegrationFailureAsync(Loc.T("Impossible de modifier le démarrage automatique.",
+            "Could not update Windows startup registration."));
     }
 
-    private void CmbSchedule_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void CmbSchedule_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_loading || CmbSchedule is null) return;
         var freq = CmbSchedule.SelectedIndex switch { 1 => "weekly", 2 => "monthly", 3 => "quarterly", _ => "off" };
-        PurgeStore.Shared.Settings.ScheduledFrequency = freq;
-        PurgeStore.Shared.SaveSettings();
-        SystemIntegration.ApplyScheduledCleaning(freq);
+        var previous = PurgeStore.Shared.Settings.ScheduledFrequency;
+        CmbSchedule.IsEnabled = false;
+        try
+        {
+            if (await Task.Run(() => SystemIntegration.ApplyScheduledCleaning(freq)))
+            {
+                PurgeStore.Shared.Settings.ScheduledFrequency = freq;
+                PurgeStore.Shared.SaveSettings();
+                return;
+            }
+            _loading = true;
+            CmbSchedule.SelectedIndex = previous switch { "weekly" => 1, "monthly" => 2, "quarterly" => 3, _ => 0 };
+            _loading = false;
+            await ShowIntegrationFailureAsync(Loc.T("Windows n'a pas pu enregistrer la tâche planifiée. Le réglage précédent a été conservé.",
+                "Windows could not register the scheduled task. The previous setting was kept."));
+        }
+        finally { CmbSchedule.IsEnabled = true; }
+    }
+
+    private async Task ShowIntegrationFailureAsync(string message)
+    {
+        if (XamlRoot is null) return;
+        await new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = Loc.T("Action impossible", "Action failed"),
+            Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+            CloseButtonText = "OK",
+        }.ShowAsync();
     }
 
     private void CmbStale_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -219,9 +250,44 @@ public sealed partial class SettingsView : UserControl
         PurgeStore.Shared.SaveSettings();
     }
 
-    private void OnAutoEmptyChanged(object sender, RoutedEventArgs e)
+    private async void OnAutoEmptyChanged(object sender, RoutedEventArgs e)
     {
-        if (!_loading && ChkAutoEmptyTrash != null) PurgeStore.Shared.SetAutoEmptyRecycleBin(ChkAutoEmptyTrash.IsChecked == true);
+        if (_loading || ChkAutoEmptyTrash is null) return;
+        bool enable = ChkAutoEmptyTrash.IsChecked == true;
+        if (enable && !PurgeStore.Shared.AutoEmptyRecycleBin)
+        {
+            ChkAutoEmptyTrash.IsEnabled = false;
+            try
+            {
+                if (XamlRoot is null) enable = false;
+                else
+                {
+                    var confirmation = new ContentDialog
+                    {
+                        XamlRoot = XamlRoot,
+                        Title = Loc.T("Vider automatiquement toute la Corbeille ?", "Automatically empty the entire Recycle Bin?"),
+                        Content = new TextBlock
+                        {
+                            Text = Loc.T("Après chaque nettoyage, les éléments déjà présents dans la Corbeille des disques concernés seront aussi supprimés définitivement. Cette opération ne peut pas être annulée.",
+                                "After each cleanup, older items already in the Recycle Bin on the affected drives will also be permanently deleted. This cannot be undone."),
+                            TextWrapping = TextWrapping.Wrap,
+                        },
+                        PrimaryButtonText = Loc.T("Activer", "Enable"),
+                        CloseButtonText = Loc.T("Annuler", "Cancel"),
+                        DefaultButton = ContentDialogButton.Close,
+                    };
+                    enable = await confirmation.ShowAsync() == ContentDialogResult.Primary;
+                }
+            }
+            finally { ChkAutoEmptyTrash.IsEnabled = true; }
+        }
+        PurgeStore.Shared.SetAutoEmptyRecycleBin(enable);
+        if (ChkAutoEmptyTrash.IsChecked != enable)
+        {
+            _loading = true;
+            ChkAutoEmptyTrash.IsChecked = enable;
+            _loading = false;
+        }
     }
 
     private async void OnAddProjectFolderClick(object sender, RoutedEventArgs e)

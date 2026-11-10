@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.Win32;
 using PurgeWin.Models;
 
@@ -14,7 +13,7 @@ public static class UninstallScanner
     {
         "Microsoft", "Windows", "Packages", "Programs", "Temp", "ConnectedDevicesPlatform",
         "D3DSCache", "PlaceholderTileLogoFolder", "Publishers", "VirtualStore", "Purge",
-        "Comms", "PeerDistRepub", "SquirrelTemp", "CrashDumps", " NuGet", "pip", "uv",
+        "Comms", "PeerDistRepub", "SquirrelTemp", "CrashDumps", "NuGet", "pip", "uv",
         "npm-cache", "pnpm", "Yarn", "Google", "Mozilla", "BraveSoftware",
     };
 
@@ -65,7 +64,7 @@ public static class UninstallScanner
                         if (sub is null) continue;
 
                         var name = (sub.GetValue("DisplayName") as string)?.Trim();
-                        if (string.IsNullOrEmpty(name) || raw.ContainsKey(name)) continue;
+                        if (string.IsNullOrEmpty(name)) continue;
                         if (sub.GetValue("SystemComponent") is int sys && sys == 1) continue;
                         if (!string.IsNullOrEmpty(sub.GetValue("ParentKeyName") as string)) continue;
                         if (name.StartsWith("KB", StringComparison.OrdinalIgnoreCase)
@@ -86,16 +85,21 @@ public static class UninstallScanner
                             appBytes = FolderSizing.Measure(installLoc, token).Bytes;
 
                         var leftovers = MatchLeftovers(name, publisher, localDirs, roamingDirs, excluded, token);
-                        if (appBytes <= 0 && leftovers.Count == 0) continue;
+                        // Many legitimate uninstall entries have no EstimatedSize.
+                        // Hiding them would also make their AppData look orphaned.
+                        if (!installedHere && leftovers.Count == 0) continue;
 
                         var iconPath = AppIconService.GetAppIconPath(subName, name, displayIcon, installLoc);
 
-                        raw[name] = new InstalledAppItem
+                        // Display names are not unique: parallel versions, per-user
+                        // installs and editions can legitimately share the same name.
+                        raw[$"{hive}:{view}:{subName}"] = new InstalledAppItem
                         {
                             Key = subName, DisplayName = name, Publisher = publisher, DisplayVersion = version,
                             InstallLocation = installLoc, UninstallString = uninstallStr, DisplayIcon = displayIcon,
                             IconPath = iconPath,
-                            AppBytes = appBytes, Leftovers = leftovers, CanUninstall = installedHere,
+                            AppBytes = appBytes, Leftovers = leftovers,
+                            CanUninstall = installedHere && !string.IsNullOrWhiteSpace(uninstallStr),
                         };
                     }
                     catch { }
@@ -228,16 +232,4 @@ public static class UninstallScanner
         catch { return []; }
     }
 
-    public static void LaunchSystemUninstaller(InstalledAppItem app)
-    {
-        if (string.IsNullOrWhiteSpace(app.UninstallString)) return;
-        try
-        {
-            Process.Start(new ProcessStartInfo("cmd.exe", $"/c {app.UninstallString}")
-            {
-                UseShellExecute = true,
-            });
-        }
-        catch { }
-    }
 }

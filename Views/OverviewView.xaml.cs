@@ -76,23 +76,17 @@ public sealed partial class OverviewView : UserControl
             TxtDiskFree.Text = Loc.T($"{ByteFormatter.Format(Store.DiskFree)} libres", $"{ByteFormatter.Format(Store.DiskFree)} free");
 
             double total = Math.Max(1.0, Store.DiskTotal);
-            var cachesW = Math.Max(0.0001, Store.CacheBytes / total);
-            var devW = Math.Max(0.0001, Store.DevBytes / total);
-            var largeW = Math.Max(0.0001, Store.LargeFileBytes / total);
-            var appsW = Math.Max(0.0001, Store.InstalledAppBytes / total);
-            var leftW = Math.Max(0.0001, Store.LeftoverBytes / total);
-            var freeW = Math.Max(0.001, Store.DiskFree / total);
-            var categorized = Store.CacheBytes + Store.DevBytes + Store.LargeFileBytes + Store.InstalledAppBytes + Store.LeftoverBytes;
-            var restBytes = Math.Max(0, Store.DiskUsed - categorized);
-            var restW = Math.Max(0.001, restBytes / total);
-
-            ColCaches.Width = new GridLength(cachesW, GridUnitType.Star);
-            ColDev.Width = new GridLength(devW, GridUnitType.Star);
-            ColLarge.Width = new GridLength(largeW, GridUnitType.Star);
-            ColApps.Width = new GridLength(appsW, GridUnitType.Star);
-            ColLeftovers.Width = new GridLength(leftW, GridUnitType.Star);
-            ColRest.Width = new GridLength(restW, GridUnitType.Star);
-            ColFree.Width = new GridLength(freeW, GridUnitType.Star);
+            // Scans overlap (e.g. developer caches also appear in app data).
+            // Adding their estimates double-counts bytes, so the disk bar
+            // shows only the accurate used/free split. Category estimates are
+            // presented separately below, without false stacked proportions.
+            ColCaches.Width = new GridLength(0);
+            ColDev.Width = new GridLength(0);
+            ColLarge.Width = new GridLength(0);
+            ColApps.Width = new GridLength(0);
+            ColLeftovers.Width = new GridLength(0);
+            ColRest.Width = new GridLength(Math.Max(0, Store.DiskUsed) / total, GridUnitType.Star);
+            ColFree.Width = new GridLength(Math.Max(0, Store.DiskFree) / total, GridUnitType.Star);
 
             TxtCachesPercent.Text = ByteFormatter.Percent(Store.CacheBytes, Store.DiskTotal);
             TxtDevPercent.Text = ByteFormatter.Percent(Store.DevBytes, Store.DiskTotal);
@@ -100,6 +94,9 @@ public sealed partial class OverviewView : UserControl
             TxtUninstallPercent.Text = ByteFormatter.Percent(Store.InstalledAppBytes + Store.LeftoverBytes, Store.DiskTotal);
             TxtRestOfDiskSize.Text = ByteFormatter.Format(Store.DiskUsed);
         }
+
+        TxtDiskBarHint.Text = Loc.T("Espace utilisé / libre · Les estimations par catégorie peuvent se recouper.",
+            "Used / free space · Category estimates may overlap.");
 
         TxtCachesSubtitle.Text = Store.CacheSubtitle;
         TxtCachesSize.Text = ByteFormatter.Format(Store.CacheBytes);
