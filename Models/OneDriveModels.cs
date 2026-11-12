@@ -40,10 +40,14 @@ public sealed partial class OneDriveFileItem : ObservableObject
         OnPropertyChanged(nameof(IsLocalOnDisk));
         OnPropertyChanged(nameof(CanEvictLocalCopy));
         OnPropertyChanged(nameof(BadgeText));
+        OnPropertyChanged(nameof(BadgeGlyph));
         OnPropertyChanged(nameof(BadgeBgBrush));
         OnPropertyChanged(nameof(BadgeFgBrush));
+        OnPropertyChanged(nameof(IconBgBrush));
+        OnPropertyChanged(nameof(IconFgBrush));
         OnPropertyChanged(nameof(EvictButtonVisibility));
         OnPropertyChanged(nameof(SizeNoteText));
+        OnPropertyChanged(nameof(SizeFgBrush));
     }
 
     public bool IsLocalOnDisk => SyncState is OneDriveSyncState.Local or OneDriveSyncState.Pinned;
@@ -52,17 +56,30 @@ public sealed partial class OneDriveFileItem : ObservableObject
 
     public string SizeText => ByteFormatter.Format(Bytes);
     public string SizeNoteText => SyncState == OneDriveSyncState.CloudOnly
-        ? Loc.T("0 o sur ce PC", "0 B on PC")
-        : Loc.T("Sur le disque", "On disk");
+        ? Loc.T("Cloud · 0 o local", "Cloud · 0 B local")
+        : Loc.T("Stocké sur ce PC", "Stored on PC");
+    public Brush SizeFgBrush => ThemeBrushes.Get(SyncState == OneDriveSyncState.CloudOnly ? "TextSecondary" : "TextPrimary");
+
     public string AgeText => Loc.T("Modifié ", "Modified ") + RelativeDate.Format(LastModified);
     public string Subtitle => $"{FolderDisplay} · {AgeText}";
-    public string EvictButtonLabel => Loc.T("Libérer l'espace", "Free up space");
+    public string EvictButtonLabel => Loc.T("Libérer", "Free up");
+    public string EvictTooltip => Loc.T(
+        "Passer en ligne uniquement (libère l'espace sur ce PC sans supprimer de OneDrive)",
+        "Make online-only (frees disk space on this PC without deleting from OneDrive)");
+    public string RevealTooltip => Loc.T("Afficher dans l'Explorateur Windows", "Show in File Explorer");
 
     public string BadgeText => SyncState switch
     {
-        OneDriveSyncState.CloudOnly => Loc.T("En ligne uniquement", "Online-only"),
-        OneDriveSyncState.Pinned => Loc.T("Toujours gardé sur ce PC", "Always kept on PC"),
-        _ => Loc.T("Sur ce PC (Local)", "On this PC (Local)"),
+        OneDriveSyncState.CloudOnly => Loc.T("En ligne", "Online-only"),
+        OneDriveSyncState.Pinned => Loc.T("Épinglé", "Pinned"),
+        _ => Loc.T("Sur ce PC", "On this PC"),
+    };
+
+    public string BadgeGlyph => SyncState switch
+    {
+        OneDriveSyncState.CloudOnly => "\uE753",
+        OneDriveSyncState.Pinned => "\uE718",
+        _ => "\uEDA2",
     };
 
     public Brush BadgeBgBrush => ThemeBrushes.Get(SyncState switch
@@ -79,6 +96,20 @@ public sealed partial class OneDriveFileItem : ObservableObject
         _ => "StatusSafeText",
     });
 
+    public Brush IconBgBrush => ThemeBrushes.Get(SyncState switch
+    {
+        OneDriveSyncState.Local => "StatusSafeFill",
+        OneDriveSyncState.Pinned => "StatusCheckFill",
+        _ => "FillSecondary",
+    });
+
+    public Brush IconFgBrush => ThemeBrushes.Get(SyncState switch
+    {
+        OneDriveSyncState.Local => "StatusSafeText",
+        OneDriveSyncState.Pinned => "StatusCheckText",
+        _ => "TextSecondary",
+    });
+
     public string Glyph => Category switch
     {
         LargeFileCategory.Video => "\uE714",
@@ -89,7 +120,7 @@ public sealed partial class OneDriveFileItem : ObservableObject
         LargeFileCategory.DiskImage => "\uEDA2",
         LargeFileCategory.VirtualMachine => "\uE7F4",
         LargeFileCategory.AiModel => "\uE945",
-        _ => "\uE753",
+        _ => "\uE7C3",
     };
 
     public void RefreshLocalizedText()
@@ -98,10 +129,16 @@ public sealed partial class OneDriveFileItem : ObservableObject
         OnPropertyChanged(nameof(AgeText));
         OnPropertyChanged(nameof(Subtitle));
         OnPropertyChanged(nameof(BadgeText));
+        OnPropertyChanged(nameof(BadgeGlyph));
         OnPropertyChanged(nameof(BadgeBgBrush));
         OnPropertyChanged(nameof(BadgeFgBrush));
+        OnPropertyChanged(nameof(IconBgBrush));
+        OnPropertyChanged(nameof(IconFgBrush));
         OnPropertyChanged(nameof(SizeText));
         OnPropertyChanged(nameof(SizeNoteText));
+        OnPropertyChanged(nameof(SizeFgBrush));
         OnPropertyChanged(nameof(EvictButtonLabel));
+        OnPropertyChanged(nameof(EvictTooltip));
+        OnPropertyChanged(nameof(RevealTooltip));
     }
 }

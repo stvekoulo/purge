@@ -126,7 +126,9 @@ public static class OneDriveScanner
                         continue;
 
                     var relDir = Path.GetRelativePath(oneDriveRoot, Path.GetDirectoryName(file.FullName) ?? oneDriveRoot);
-                    var displayDir = relDir == "." ? "OneDrive" : $"OneDrive\\{relDir}";
+                    var displayDir = relDir == "."
+                        ? "OneDrive"
+                        : "OneDrive › " + relDir.Replace('\\', '/').Replace("/", " › ");
                     var category = ExtMap.GetValueOrDefault(file.Extension, LargeFileCategory.Other);
                     var syncState = InspectSyncState(file.Attributes);
 

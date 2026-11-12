@@ -10,12 +10,11 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Grid Grid.Row="0" Padding="28,16,28,12" ColumnSpacing="12">
+        <Grid Grid.Row="0" Padding="28,16,28,14" ColumnSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -31,70 +30,136 @@
             </StackPanel>
         </Grid>
 
-        <!-- Summary Cards (Local vs Cloud-only vs Pinned) -->
-        <Grid Grid.Row="1" Padding="28,0,28,12" ColumnSpacing="12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Border Grid.Column="0" Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}" BorderThickness="1" CornerRadius="10" Padding="14,10">
-                <StackPanel Spacing="2">
-                    <TextBlock x:Name="TxtLocalCardLabel" Text="Sur ce PC (Local)" Style="{StaticResource PurgeCaption}" Foreground="{ThemeResource TextSecondary}"/>
-                    <TextBlock x:Name="TxtLocalCardBytes" Text="0 o" Style="{StaticResource SectionTitleText}" Foreground="{ThemeResource StatusSafeText}"/>
-                    <TextBlock x:Name="TxtLocalCardSub" Text="0 fichier occupé sur le disque" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="1" Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}" BorderThickness="1" CornerRadius="10" Padding="14,10">
-                <StackPanel Spacing="2">
-                    <TextBlock x:Name="TxtCloudCardLabel" Text="En ligne uniquement (Cloud)" Style="{StaticResource PurgeCaption}" Foreground="{ThemeResource TextSecondary}"/>
-                    <TextBlock x:Name="TxtCloudCardBytes" Text="0 o" Style="{StaticResource SectionTitleText}"/>
-                    <TextBlock x:Name="TxtCloudCardSub" Text="0 fichier (0 o occupé sur ce PC)" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="2" Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}" BorderThickness="1" CornerRadius="10" Padding="14,10">
-                <StackPanel Spacing="2">
-                    <TextBlock x:Name="TxtPinnedCardLabel" Text="Toujours gardés (Épinglés)" Style="{StaticResource PurgeCaption}" Foreground="{ThemeResource TextSecondary}"/>
-                    <TextBlock x:Name="TxtPinnedCardBytes" Text="0 o" Style="{StaticResource SectionTitleText}" Foreground="{ThemeResource StatusCheckText}"/>
-                    <TextBlock x:Name="TxtPinnedCardSub" Text="0 fichier épinglé hors ligne" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
-                </StackPanel>
-            </Border>
-        </Grid>
+        <!-- Interactive Filter Cards + Proportional Storage Bar -->
+        <StackPanel Grid.Row="1" Padding="28,0,28,14" Spacing="10">
+            <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-        <!-- Filter Chips -->
-        <ScrollViewer Grid.Row="2" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Auto"
-                      VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
-            <StackPanel Orientation="Horizontal" Spacing="6" Padding="28,0,28,10">
-                <c:PurgeButton x:Name="ChipAll" Content="Tout" Size="Compact" Variant="Secondary" Click="OnChipClick" Tag="All"/>
-                <c:PurgeButton x:Name="ChipLocal" Content="Sur ce PC (Local)" Size="Compact" Variant="Ghost" Click="OnChipClick" Tag="Local"/>
-                <c:PurgeButton x:Name="ChipCloud" Content="En ligne uniquement (Cloud)" Size="Compact" Variant="Ghost" Click="OnChipClick" Tag="CloudOnly"/>
-                <c:PurgeButton x:Name="ChipPinned" Content="Toujours gardés (Épinglés)" Size="Compact" Variant="Ghost" Click="OnChipClick" Tag="Pinned"/>
+                <!-- Card 0: All OneDrive Files -->
+                <Border Grid.Column="0" x:Name="CardAll" CornerRadius="12" BorderThickness="1" Padding="0"
+                        Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource BorderStrong}">
+                    <Button Tag="All" Click="OnFilterCardClick" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                            Background="Transparent" BorderThickness="0" Padding="13,11" CornerRadius="11">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Border Width="24" Height="24" CornerRadius="6" Background="{ThemeResource ChartAppCachesTile}">
+                                    <FontIcon Glyph="&#xE753;" FontSize="12" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Grid.Column="1" x:Name="TxtAllCardLabel" Text="Tout OneDrive" Style="{StaticResource MetadataText}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            </Grid>
+                            <TextBlock x:Name="TxtAllCardBytes" Text="0 o" FontFamily="{StaticResource Numbers}" FontSize="18" FontWeight="Bold"/>
+                            <TextBlock x:Name="TxtAllCardSub" Text="0 fichier" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Button>
+                </Border>
+
+                <!-- Card 1: On This PC (Local) -->
+                <Border Grid.Column="1" x:Name="CardLocal" CornerRadius="12" BorderThickness="1" Padding="0"
+                        Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}">
+                    <Button Tag="Local" Click="OnFilterCardClick" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                            Background="Transparent" BorderThickness="0" Padding="13,11" CornerRadius="11">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Border Width="24" Height="24" CornerRadius="6" Background="{ThemeResource StatusSafeFill}">
+                                    <FontIcon Glyph="&#xEDA2;" FontSize="12" Foreground="{ThemeResource StatusSafeText}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Grid.Column="1" x:Name="TxtLocalCardLabel" Text="Sur ce PC" Style="{StaticResource MetadataText}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            </Grid>
+                            <TextBlock x:Name="TxtLocalCardBytes" Text="0 o" FontFamily="{StaticResource Numbers}" FontSize="18" FontWeight="Bold" Foreground="{ThemeResource StatusSafeText}"/>
+                            <TextBlock x:Name="TxtLocalCardSub" Text="0 fichier · libérable" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Button>
+                </Border>
+
+                <!-- Card 2: Online-only (Cloud) -->
+                <Border Grid.Column="2" x:Name="CardCloud" CornerRadius="12" BorderThickness="1" Padding="0"
+                        Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}">
+                    <Button Tag="CloudOnly" Click="OnFilterCardClick" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                            Background="Transparent" BorderThickness="0" Padding="13,11" CornerRadius="11">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Border Width="24" Height="24" CornerRadius="6" Background="{ThemeResource FillSecondary}">
+                                    <FontIcon Glyph="&#xE753;" FontSize="12" Foreground="{ThemeResource TextSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Grid.Column="1" x:Name="TxtCloudCardLabel" Text="En ligne" Style="{StaticResource MetadataText}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            </Grid>
+                            <TextBlock x:Name="TxtCloudCardBytes" Text="0 o" FontFamily="{StaticResource Numbers}" FontSize="18" FontWeight="Bold"/>
+                            <TextBlock x:Name="TxtCloudCardSub" Text="0 fichier · 0 o sur PC" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Button>
+                </Border>
+
+                <!-- Card 3: Always Kept (Pinned) -->
+                <Border Grid.Column="3" x:Name="CardPinned" CornerRadius="12" BorderThickness="1" Padding="0"
+                        Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}">
+                    <Button Tag="Pinned" Click="OnFilterCardClick" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                            Background="Transparent" BorderThickness="0" Padding="13,11" CornerRadius="11">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Border Width="24" Height="24" CornerRadius="6" Background="{ThemeResource StatusCheckFill}">
+                                    <FontIcon Glyph="&#xE718;" FontSize="12" Foreground="{ThemeResource StatusCheckText}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Grid.Column="1" x:Name="TxtPinnedCardLabel" Text="Épinglés" Style="{StaticResource MetadataText}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            </Grid>
+                            <TextBlock x:Name="TxtPinnedCardBytes" Text="0 o" FontFamily="{StaticResource Numbers}" FontSize="18" FontWeight="Bold" Foreground="{ThemeResource StatusCheckText}"/>
+                            <TextBlock x:Name="TxtPinnedCardSub" Text="0 fichier · hors ligne" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Button>
+                </Border>
+            </Grid>
+
+            <!-- Proportional Storage Bar (Local vs Pinned vs Online) -->
+            <Border Height="6" CornerRadius="3" Background="{ThemeResource FillSecondary}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="ColBarLocal" Width="0"/>
+                        <ColumnDefinition x:Name="ColBarPinned" Width="0"/>
+                        <ColumnDefinition x:Name="ColBarCloud" Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Rectangle Grid.Column="0" Fill="{ThemeResource StatusSafeText}"/>
+                    <Rectangle Grid.Column="1" Fill="{ThemeResource StatusCheckText}"/>
+                    <Rectangle Grid.Column="2" Fill="{ThemeResource ChartAppCaches}" Opacity="0.45"/>
+                </Grid>
+            </Border>
+        </StackPanel>
+
+        <!-- Toolbar: Select All + Summary (Left) | Search + Sort (Right) -->
+        <Grid Grid.Row="2" Padding="28,9,28,9" Background="{ThemeResource SurfacePrimary}" BorderBrush="{ThemeResource Hairline}" BorderThickness="0,1,0,1" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <CheckBox Grid.Column="0" x:Name="SelectAllCheck" Content="Tout sélectionner" IsThreeState="True" Click="OnSelectAllClick" MinWidth="0" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" x:Name="SelectionSummary" Style="{StaticResource PurgeCaption}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBox x:Name="SearchBox" PlaceholderText="Rechercher un fichier..." TextChanged="OnSearchChanged" FontSize="12" CornerRadius="8" Width="210"/>
+                <ComboBox x:Name="SortCombo" SelectionChanged="OnSortChanged" SelectedIndex="0" FontSize="12" CornerRadius="8" MinWidth="160">
+                    <ComboBoxItem x:Name="SortSizeItem" Content="Taille (décroissante)"/>
+                    <ComboBoxItem x:Name="SortDateItem" Content="Date de modification"/>
+                    <ComboBoxItem x:Name="SortNameItem" Content="Nom (A–Z)"/>
+                </ComboBox>
             </StackPanel>
-        </ScrollViewer>
-
-        <!-- Toolbar: Select All + Search + Summary + Sort -->
-        <Grid Grid.Row="3" Padding="24,8" Background="{ThemeResource SurfacePrimary}" BorderBrush="{ThemeResource Hairline}" BorderThickness="0,1,0,1" ColumnSpacing="10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*" MaxWidth="240"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <CheckBox Grid.Column="0" x:Name="SelectAllCheck" Content="Tout sélectionner" Click="OnSelectAllClick" VerticalAlignment="Center"/>
-            <TextBox Grid.Column="1" x:Name="SearchBox" PlaceholderText="Rechercher dans OneDrive..." TextChanged="OnSearchChanged" FontSize="12" CornerRadius="8"/>
-            <TextBlock Grid.Column="2" x:Name="SelectionSummary" Style="{StaticResource PurgeCaption}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-
-            <ComboBox Grid.Column="3" x:Name="SortCombo" SelectionChanged="OnSortChanged" SelectedIndex="0" FontSize="12" CornerRadius="8">
-                <ComboBoxItem x:Name="SortSizeItem" Content="Taille (décroissante)"/>
-                <ComboBoxItem x:Name="SortDateItem" Content="Date de modification"/>
-                <ComboBoxItem x:Name="SortNameItem" Content="Nom (A–Z)"/>
-            </ComboBox>
         </Grid>
 
         <!-- File List -->
-        <Grid Grid.Row="4">
-            <ListView x:Name="FilesListView" SelectionMode="None" Padding="24,14">
+        <Grid Grid.Row="3">
+            <ListView x:Name="FilesListView" SelectionMode="None" Padding="28,14,28,24">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -104,7 +169,8 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="m:OneDriveFileItem">
-                        <Border Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}" BorderThickness="1" CornerRadius="10" Padding="14,12">
+                        <Border Background="{ThemeResource SurfaceElevated}" BorderBrush="{ThemeResource Hairline}" BorderThickness="1" CornerRadius="12" Padding="14,11"
+                                PointerEntered="OnRowPointerEntered" PointerExited="OnRowPointerExited">
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -115,36 +181,44 @@
 
                                 <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center"/>
 
-                                <Border Grid.Column="1" Width="32" Height="32" CornerRadius="7" Background="{ThemeResource FillSecondary}" VerticalAlignment="Center">
-                                    <FontIcon Glyph="{x:Bind Glyph}" FontSize="15" Foreground="{ThemeResource TextSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="1" Width="36" Height="36" CornerRadius="9" Background="{x:Bind IconBgBrush, Mode=OneWay}" VerticalAlignment="Center">
+                                    <FontIcon Glyph="{x:Bind Glyph}" FontSize="15" Foreground="{x:Bind IconFgBrush, Mode=OneWay}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
 
-                                <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="2" Spacing="3" VerticalAlignment="Center">
                                     <Grid ColumnSpacing="8">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Border Grid.Column="0" CornerRadius="4" Padding="6,2" Background="{x:Bind BadgeBgBrush, Mode=OneWay}" VerticalAlignment="Center">
-                                            <TextBlock Text="{x:Bind BadgeText, Mode=OneWay}" FontSize="10" FontWeight="SemiBold" Foreground="{x:Bind BadgeFgBrush, Mode=OneWay}"/>
+                                        <TextBlock Grid.Column="0" Text="{x:Bind Name, Mode=OneWay}" Style="{StaticResource RowTitleText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="340" VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1" CornerRadius="6" Padding="7,2" Background="{x:Bind BadgeBgBrush, Mode=OneWay}" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <FontIcon Glyph="{x:Bind BadgeGlyph, Mode=OneWay}" FontSize="9" Foreground="{x:Bind BadgeFgBrush, Mode=OneWay}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{x:Bind BadgeText, Mode=OneWay}" FontSize="10" FontWeight="SemiBold" Foreground="{x:Bind BadgeFgBrush, Mode=OneWay}" VerticalAlignment="Center"/>
+                                            </StackPanel>
                                         </Border>
-                                        <TextBlock Grid.Column="1" Text="{x:Bind Name, Mode=OneWay}" Style="{StaticResource PurgeBody}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                     </Grid>
-                                    <TextBlock Text="{x:Bind Subtitle, Mode=OneWay}" Style="{StaticResource PurgeCaption}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{x:Bind Subtitle, Mode=OneWay}" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                                    <Button Click="OnEvictItemClick" Visibility="{x:Bind EvictButtonVisibility, Mode=OneWay}" CornerRadius="14" Padding="10,4" FontSize="11">
+                                    <Button Click="OnEvictItemClick" Visibility="{x:Bind EvictButtonVisibility, Mode=OneWay}"
+                                            ToolTipService.ToolTip="{x:Bind EvictTooltip, Mode=OneWay}"
+                                            Background="{ThemeResource FillSecondary}" BorderBrush="{ThemeResource BorderSubtle}" BorderThickness="1"
+                                            CornerRadius="14" Padding="10,4" FontSize="11">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
-                                            <FontIcon Glyph="&#xE753;" FontSize="11"/>
-                                            <TextBlock Text="{x:Bind EvictButtonLabel, Mode=OneWay}"/>
+                                            <FontIcon Glyph="&#xE753;" FontSize="11" Foreground="{ThemeResource StatusSafeText}"/>
+                                            <TextBlock Text="{x:Bind EvictButtonLabel, Mode=OneWay}" FontWeight="Medium"/>
                                         </StackPanel>
                                     </Button>
-                                    <StackPanel Spacing="0" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                        <TextBlock Text="{x:Bind SizeText, Mode=OneWay}" Style="{StaticResource PurgeMono}" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                    <StackPanel Spacing="1" VerticalAlignment="Center" MinWidth="82">
+                                        <TextBlock Text="{x:Bind SizeText, Mode=OneWay}" Style="{StaticResource NumbersText}" Foreground="{x:Bind SizeFgBrush, Mode=OneWay}" HorizontalAlignment="Right"/>
                                         <TextBlock Text="{x:Bind SizeNoteText, Mode=OneWay}" FontSize="10" Foreground="{ThemeResource TextTertiary}" HorizontalAlignment="Right"/>
                                     </StackPanel>
-                                    <Button Tag="{x:Bind FullPath}" Click="OnRevealClick" Background="Transparent" BorderThickness="0" Padding="6">
+                                    <Button Tag="{x:Bind FullPath}" Click="OnRevealClick" ToolTipService.ToolTip="{x:Bind RevealTooltip, Mode=OneWay}"
+                                            Background="Transparent" BorderThickness="0" Padding="6" CornerRadius="6">
                                         <FontIcon Glyph="&#xE8DA;" FontSize="13" Foreground="{ThemeResource TextSecondary}"/>
                                     </Button>
                                 </StackPanel>
@@ -156,8 +230,8 @@
 
             <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" Visibility="Collapsed">
                 <FontIcon Glyph="&#xE753;" FontSize="44" Foreground="{ThemeResource TextTertiary}" HorizontalAlignment="Center"/>
-                <TextBlock x:Name="EmptyTitle" Text="Aucun fichier OneDrive à afficher" Style="{StaticResource PurgeSection}" HorizontalAlignment="Center" Foreground="{ThemeResource TextSecondary}"/>
-                <TextBlock x:Name="EmptySubtitle" Text="Analysez votre dossier OneDrive pour visualiser les fichiers stockés sur ce PC ou en ligne uniquement." Style="{StaticResource PurgeCaption}" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="EmptyTitle" Text="Aucun fichier OneDrive dans cette vue" Style="{StaticResource PurgeSection}" HorizontalAlignment="Center" Foreground="{ThemeResource TextSecondary}"/>
+                <TextBlock x:Name="EmptySubtitle" Text="Changez de filtre ou lancez une analyse pour inspecter vos fichiers OneDrive." Style="{StaticResource PurgeCaption}" HorizontalAlignment="Center"/>
             </StackPanel>
         </Grid>
     </Grid>

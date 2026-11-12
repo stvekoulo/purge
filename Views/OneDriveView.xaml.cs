@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using PurgeWin.Controls;
+using Microsoft.UI.Xaml.Input;
 using PurgeWin.Models;
 using PurgeWin.Theme;
 using PurgeWin.Utilities;
@@ -35,8 +35,8 @@ public sealed partial class OneDriveView : UserControl
         ScanBtn.IsEnabled = !Store.IsCleaning && !Store.IsScanning && Store.HasActiveDrives;
 
         EvictSelectedBtn.Content = Store.SelectedOneDriveLocalCount > 0
-            ? Loc.T($"Libérer l'espace ({ByteFormatter.Format(Store.SelectedOneDriveLocalBytes)})",
-                    $"Free up space ({ByteFormatter.Format(Store.SelectedOneDriveLocalBytes)})")
+            ? Loc.T($"Libérer ({ByteFormatter.Format(Store.SelectedOneDriveLocalBytes)})",
+                    $"Free up ({ByteFormatter.Format(Store.SelectedOneDriveLocalBytes)})")
             : Loc.T("Libérer l'espace local", "Free up local space");
         EvictSelectedBtn.IsEnabled = Store.SelectedOneDriveLocalCount > 0 && !Store.IsScanning && !Store.IsCleaning;
 
@@ -49,52 +49,97 @@ public sealed partial class OneDriveView : UserControl
                 : Loc.T("Envoyer à la Corbeille", "Move to Recycle Bin");
         CleanSelectedBtn.IsEnabled = Store.SelectedOneDriveCount > 0 && !Store.IsScanning && !Store.IsCleaning;
 
-        TxtLocalCardLabel.Text = Loc.T("Sur ce PC (Local)", "On this PC (Local)");
+        var totalCount = Store.OneDriveItems.Count;
+        var localCount = Store.OneDriveLocalCount;
+        var cloudCount = Store.OneDriveCloudOnlyCount;
+        var pinnedCount = Store.OneDrivePinnedCount;
+
+        TxtAllCardLabel.Text = Loc.T("Tout OneDrive", "All OneDrive");
+        TxtAllCardBytes.Text = ByteFormatter.Format(Store.OneDriveTotalBytes);
+        TxtAllCardSub.Text = Loc.T(
+            $"{totalCount} fichier{(totalCount > 1 ? "s" : "")} au total",
+            $"{totalCount} file{(totalCount > 1 ? "s" : "")} total");
+
+        TxtLocalCardLabel.Text = Loc.T("Sur ce PC", "On this PC");
         TxtLocalCardBytes.Text = ByteFormatter.Format(Store.OneDriveLocalBytes);
         TxtLocalCardSub.Text = Loc.T(
-            $"{Store.OneDriveLocalCount} fichier{(Store.OneDriveLocalCount > 1 ? "s" : "")} · libérable sans supprimer du Cloud",
-            $"{Store.OneDriveLocalCount} file{(Store.OneDriveLocalCount > 1 ? "s" : "")} · can be freed without deleting from Cloud");
+            $"{localCount} fichier{(localCount > 1 ? "s" : "")} · libérable{(localCount > 1 ? "s" : "")}",
+            $"{localCount} file{(localCount > 1 ? "s" : "")} · can be freed");
 
-        TxtCloudCardLabel.Text = Loc.T("En ligne uniquement (Cloud)", "Online-only (Cloud)");
+        TxtCloudCardLabel.Text = Loc.T("En ligne", "Online-only");
         TxtCloudCardBytes.Text = ByteFormatter.Format(Store.OneDriveCloudOnlyBytes);
         TxtCloudCardSub.Text = Loc.T(
-            $"{Store.OneDriveCloudOnlyCount} fichier{(Store.OneDriveCloudOnlyCount > 1 ? "s" : "")} · 0 o occupé sur ce PC",
-            $"{Store.OneDriveCloudOnlyCount} file{(Store.OneDriveCloudOnlyCount > 1 ? "s" : "")} · 0 B used on this PC");
+            $"{cloudCount} fichier{(cloudCount > 1 ? "s" : "")} · 0 o sur PC",
+            $"{cloudCount} file{(cloudCount > 1 ? "s" : "")} · 0 B on PC");
 
-        TxtPinnedCardLabel.Text = Loc.T("Toujours gardés (Épinglés)", "Always kept (Pinned)");
+        TxtPinnedCardLabel.Text = Loc.T("Épinglés", "Pinned");
         TxtPinnedCardBytes.Text = ByteFormatter.Format(Store.OneDrivePinnedBytes);
         TxtPinnedCardSub.Text = Loc.T(
-            $"{Store.OneDrivePinnedCount} fichier{(Store.OneDrivePinnedCount > 1 ? "s" : "")} conservé{(Store.OneDrivePinnedCount > 1 ? "s" : "")} hors ligne",
-            $"{Store.OneDrivePinnedCount} file{(Store.OneDrivePinnedCount > 1 ? "s" : "")} kept offline");
+            $"{pinnedCount} fichier{(pinnedCount > 1 ? "s" : "")} · hors ligne",
+            $"{pinnedCount} file{(pinnedCount > 1 ? "s" : "")} · kept offline");
 
-        ChipAll.Content = Loc.T($"Tout ({Store.OneDriveItems.Count})", $"All ({Store.OneDriveItems.Count})");
-        ChipLocal.Content = Loc.T($"Sur ce PC ({Store.OneDriveLocalCount})", $"On this PC ({Store.OneDriveLocalCount})");
-        ChipCloud.Content = Loc.T($"En ligne uniquement ({Store.OneDriveCloudOnlyCount})", $"Online-only ({Store.OneDriveCloudOnlyCount})");
-        ChipPinned.Content = Loc.T($"Toujours gardés ({Store.OneDrivePinnedCount})", $"Always kept ({Store.OneDrivePinnedCount})");
-
-        PurgeButton[] chips = [ChipAll, ChipLocal, ChipCloud, ChipPinned];
-        foreach (var chip in chips)
-        {
-            var active = Enum.TryParse<OneDriveFilter>(chip.Tag as string, out var f) && f == Store.OneDriveStateFilter;
-            chip.Variant = active ? PurgeButtonVariant.Secondary : PurgeButtonVariant.Ghost;
-        }
+        UpdateFilterCardsVisualState();
+        UpdateStorageBar();
 
         SelectAllCheck.Content = Loc.T("Tout sélectionner", "Select all");
         SelectAllCheck.IsChecked = Store.IsAllOneDriveSelected;
-        SearchBox.PlaceholderText = Loc.T("Rechercher dans OneDrive...", "Search in OneDrive...");
+        SearchBox.PlaceholderText = Loc.T("Rechercher un fichier...", "Search files...");
         SelectionSummary.Text = Store.SelectedOneDriveSummaryText;
 
         SortSizeItem.Content = Loc.T("Taille (décroissante)", "Size (largest)");
         SortDateItem.Content = Loc.T("Date de modification", "Date modified");
         SortNameItem.Content = Loc.T("Nom (A–Z)", "Name (A–Z)");
 
-        EmptyTitle.Text = Loc.T("Aucun fichier OneDrive à afficher", "No OneDrive files to display");
+        EmptyTitle.Text = Loc.T("Aucun fichier OneDrive dans cette vue", "No OneDrive files in this view");
         EmptySubtitle.Text = Loc.T(
-            "Lancez une analyse pour voir vos fichiers OneDrive stockés sur ce PC ou en ligne uniquement (≥ 1 Mo).",
-            "Run a scan to inspect your OneDrive files stored locally on this PC or online-only (≥ 1 MB).");
+            "Sélectionnez un autre filtre ci-dessus ou lancez une analyse OneDrive.",
+            "Select another filter card above or run a OneDrive scan.");
 
         EmptyState.Visibility = Store.FilteredOneDriveItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         FilesListView.Visibility = Store.FilteredOneDriveItems.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void UpdateFilterCardsVisualState()
+    {
+        var activeBorder = ThemeBrushes.Get(this, "ActionPrimary");
+        var subtleBorder = ThemeBrushes.Get(this, "Hairline");
+        var activeBg = ThemeBrushes.Get(this, "FillSecondary");
+        var normalBg = ThemeBrushes.Get(this, "SurfaceElevated");
+
+        (Border Card, OneDriveFilter Filter)[] cards =
+        [
+            (CardAll, OneDriveFilter.All),
+            (CardLocal, OneDriveFilter.Local),
+            (CardCloud, OneDriveFilter.CloudOnly),
+            (CardPinned, OneDriveFilter.Pinned),
+        ];
+
+        foreach (var (card, filter) in cards)
+        {
+            bool active = Store.OneDriveStateFilter == filter;
+            card.BorderBrush = active ? activeBorder : subtleBorder;
+            card.Background = active ? activeBg : normalBg;
+        }
+    }
+
+    private void UpdateStorageBar()
+    {
+        double total = Math.Max(1, Store.OneDriveTotalBytes);
+        double localOnly = Math.Max(0, Store.OneDriveLocalBytes - Store.OneDrivePinnedBytes);
+        double pinned = Math.Max(0, Store.OneDrivePinnedBytes);
+        double cloud = Math.Max(0, Store.OneDriveCloudOnlyBytes);
+
+        if (Store.OneDriveTotalBytes <= 0)
+        {
+            ColBarLocal.Width = new GridLength(0);
+            ColBarPinned.Width = new GridLength(0);
+            ColBarCloud.Width = new GridLength(1, GridUnitType.Star);
+            return;
+        }
+
+        ColBarLocal.Width = new GridLength(localOnly / total, GridUnitType.Star);
+        ColBarPinned.Width = new GridLength(pinned / total, GridUnitType.Star);
+        ColBarCloud.Width = new GridLength(Math.Max(0.001, cloud / total), GridUnitType.Star);
     }
 
     private void OnScanClick(object sender, RoutedEventArgs e) => _ = Store.ScanOneDriveAsync();
@@ -112,12 +157,13 @@ public sealed partial class OneDriveView : UserControl
             await Store.CleanSelectedOneDriveAsync();
     }
 
-    private void OnChipClick(object sender, RoutedEventArgs e)
+    private void OnFilterCardClick(object sender, RoutedEventArgs e)
     {
-        if (sender is PurgeButton { Tag: string tag } && Enum.TryParse<OneDriveFilter>(tag, out var filter))
+        if (sender is Button { Tag: string tag } && Enum.TryParse<OneDriveFilter>(tag, out var filter))
         {
             Store.OneDriveStateFilter = filter;
             Store.ApplyOneDriveFilter();
+            SyncUi();
         }
     }
 
@@ -152,5 +198,17 @@ public sealed partial class OneDriveView : UserControl
     {
         if (sender is Button { Tag: string p } && !string.IsNullOrEmpty(p))
             ExplorerReveal.Show(p);
+    }
+
+    private void OnRowPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Border border)
+            border.BorderBrush = ThemeBrushes.Get(this, "BorderStrong");
+    }
+
+    private void OnRowPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Border border)
+            border.BorderBrush = ThemeBrushes.Get(this, "Hairline");
     }
 }

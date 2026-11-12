@@ -19,48 +19,40 @@ public static class ScreenshotCapturer
         foreach (var d in dirs) Directory.CreateDirectory(d);
 
         var s = PurgeStore.Shared;
+        s.CancelScan();
+        await Task.Delay(400);
         s.SetLanguage("fr");
         s.SetAppearance("dark");
-        s.CancelScan();
+        Theme.ThemeBrushes.ApplyAppearance("dark", window);
         await Task.Delay(300);
 
-        // Run uninstaller scan directly
-        await s.ScanUninstallerAsync();
+        // Scan OneDrive & capture Dark + Light views
+        await s.ScanOneDriveAsync();
         int attempts = 0;
-        while (s.UninstallPhase == ScanPhase.Scanning && attempts++ < 60)
+        while (s.OneDrivePhase == ScanPhase.Scanning && attempts++ < 80)
             await Task.Delay(250);
 
-        // 1. Uninstaller Grid Mode (Real extracted app icons + cards)
-        s.SelectedTab = AppTab.Uninstaller;
-        s.IsUninstallGridView = true;
-        s.ApplyUninstallFilter();
+        // 1. OneDrive Dark Mode (Tout OneDrive)
+        s.SelectedTab = AppTab.OneDrive;
+        s.OneDriveStateFilter = Models.OneDriveFilter.All;
+        s.ApplyOneDriveFilter();
+        await Task.Delay(600);
+        await CaptureMultiAsync(window, dirs, "screenshot-onedrive-dark.png");
+
+        // 2. OneDrive Dark Mode ("Sur ce PC" filter selected)
+        s.OneDriveStateFilter = Models.OneDriveFilter.Local;
+        s.ApplyOneDriveFilter();
         await Task.Delay(500);
-        await CaptureMultiAsync(window, dirs, "screenshot-uninstaller-grid-dark.png");
+        await CaptureMultiAsync(window, dirs, "screenshot-onedrive-local-dark.png");
 
-        // 2. Uninstaller List Mode
-        s.IsUninstallGridView = false;
-        s.ApplyUninstallFilter();
-        await Task.Delay(500);
-        await CaptureMultiAsync(window, dirs, "screenshot-uninstaller-list-dark.png");
-
-        // 3. French Overview
-        s.OverviewPage = OverviewSubPage.Summary;
-        s.SelectedTab = AppTab.Overview;
-        await Task.Delay(400);
-        await CaptureMultiAsync(window, dirs, "screenshot-overview-dark.png");
-
-        // 4. Light Mode App Caches & Dev Tools (to verify light mode icons & no Ctrl+R badge)
+        // 3. OneDrive Light Mode (Tout OneDrive)
+        s.OneDriveStateFilter = Models.OneDriveFilter.All;
+        s.ApplyOneDriveFilter();
         s.SetAppearance("light");
-        s.SelectedTab = AppTab.AppCaches;
-        await s.ScanAppCachesAsync();
         await Task.Delay(600);
-        await CaptureMultiAsync(window, dirs, "screenshot-appcaches-light.png");
+        await CaptureMultiAsync(window, dirs, "screenshot-onedrive-light.png");
 
-        s.SelectedTab = AppTab.DevTools;
-        await s.ScanDevToolsAsync();
-        await Task.Delay(600);
-        await CaptureMultiAsync(window, dirs, "screenshot-devtools-light.png");
-
+        s.SetAppearance("dark");
         window.Close();
     }
 
