@@ -44,18 +44,25 @@ public sealed partial class UninstallerView : UserControl
         CleanSelectedBtn.IsBusy = Store.IsCleaning;
         if (Store.IsCleaning)
         {
-            CleanSelectedBtn.Content = Loc.T("Nettoyage en cours...", "Cleaning...");
+            CleanSelectedBtn.Content = !string.IsNullOrWhiteSpace(Store.CleaningLabel)
+                ? Store.CleaningLabel
+                : Loc.T("Désinstallation en cours...", "Uninstalling...");
         }
         else
         {
             CleanSelectedBtn.Content = Store.SelectedUninstallCount > 0
                 ? Store.UninstallSubTab == UninstallerSubTab.InstalledApps
-                    ? Loc.T($"Nettoyer les données ({ByteFormatter.Format(Store.SelectedUninstallBytes)})", $"Clean app data ({ByteFormatter.Format(Store.SelectedUninstallBytes)})")
+                    ? Loc.T($"Désinstaller et nettoyer ({Store.SelectedUninstallCount}) · {ByteFormatter.Format(Store.SelectedUninstallBytes)}",
+                            $"Uninstall & clean ({Store.SelectedUninstallCount}) · {ByteFormatter.Format(Store.SelectedUninstallBytes)}")
                     : Loc.T($"Nettoyer ({ByteFormatter.Format(Store.SelectedUninstallBytes)})", $"Clean ({ByteFormatter.Format(Store.SelectedUninstallBytes)})")
-                : Loc.T("Nettoyer la sélection", "Clean Selected");
+                : Store.UninstallSubTab == UninstallerSubTab.InstalledApps
+                    ? Loc.T("Désinstaller la sélection", "Uninstall Selected")
+                    : Loc.T("Nettoyer la sélection", "Clean Selected");
         }
-        CleanSelectedBtn.IsEnabled = Store.SelectedUninstallCount > 0 && !Store.IsScanning && !Store.IsCleaning
-            && (Store.UninstallSubTab != UninstallerSubTab.InstalledApps || Store.SelectedUninstallCount == 1 || Store.SelectedUninstallBytes > 0);
+        CleanSelectedBtn.IsEnabled = Store.SelectedUninstallCount > 0 && !Store.IsScanning && !Store.IsCleaning;
+
+        SelectAllCheck.Content = Loc.T("Tout sélectionner", "Select all");
+        SelectAllCheck.IsChecked = Store.IsAllUninstallSelected;
 
         TabAppsBtn.Content = $"{Loc.T("Applications installées", "Installed Apps")} ({Store.InstalledApps.Count})";
         TabLeftoversBtn.Content = $"{Loc.T("Restes possibles", "Possible Leftovers")} ({Store.OrphanLeftovers.Count})";
@@ -113,25 +120,21 @@ public sealed partial class UninstallerView : UserControl
 
     private void OnScanClick(object sender, RoutedEventArgs e) => _ = Store.ScanUninstallerAsync();
 
+    private void OnSelectAllClick(object sender, RoutedEventArgs e) =>
+        Store.SelectAllUninstall(SelectAllCheck.IsChecked == true);
+
     private async void OnCleanSelectedClick(object sender, RoutedEventArgs e)
     {
         if (Store.UninstallSubTab == UninstallerSubTab.InstalledApps)
         {
             var picked = Store.InstalledApps.Where(a => a.IsSelected).ToList();
-            if (picked.Count == 1)
-            {
-                await UninstallReviewDialog.ShowAsync(XamlRoot, picked[0], Store);
-                return;
-            }
+            if (picked.Count > 0)
+                await UninstallReviewDialog.ShowBatchAsync(XamlRoot, picked, Store);
+            return;
         }
 
         var candidates = Store.UninstallSubTab switch
         {
-            UninstallerSubTab.InstalledApps => Store.InstalledApps.Where(a => a.IsSelected && a.Leftovers.Any(l => l.IsExactMatch))
-                .Select(a => new DeletionConfirmDialog.Candidate(
-                    Loc.T($"Données de {a.DisplayName}", $"Data for {a.DisplayName}"),
-                    Loc.T("Dossiers associés uniquement, application conservée", "Associated folders only; app stays installed"),
-                    a.Leftovers.Where(l => l.IsExactMatch).Sum(l => l.Bytes), SafetyLevel.Medium)).ToList(),
             UninstallerSubTab.Leftovers => Store.OrphanLeftovers.Where(o => o.IsSelected)
                 .Select(o => new DeletionConfirmDialog.Candidate(o.FolderName, o.FullPath, o.Bytes, SafetyLevel.Medium)).ToList(),
             _ => Store.CliTools.Where(c => c.IsSelected)

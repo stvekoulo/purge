@@ -38,26 +38,27 @@
             </StackPanel>
         </Grid>
 
-        <!-- Toolbar: Sort, Summary, Search, ViewSwitcher (Row 2) -->
+        <!-- Toolbar: SelectAll + Summary on left; Sort + Search + ViewSwitcher on right (Row 2) -->
         <Grid Grid.Row="2" Padding="28,6,28,10" BorderBrush="{ThemeResource Hairline}" BorderThickness="0,1,0,1" ColumnSpacing="12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Left: Sort selector -->
-            <ComboBox x:Name="SortCombo" SelectionChanged="OnSortChanged" FontSize="12" CornerRadius="8" MinWidth="150" Padding="10,4">
-                <ComboBoxItem x:Name="SortLargestItem" Content="Taille (décroissante)" Tag="Largest" IsSelected="True"/>
-                <ComboBoxItem x:Name="SortSmallestItem" Content="Taille (croissante)" Tag="Smallest"/>
-                <ComboBoxItem x:Name="SortNameAZItem" Content="Nom (A à Z)" Tag="NameAZ"/>
-            </ComboBox>
+            <!-- Left: Select All + Selection summary -->
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <CheckBox x:Name="SelectAllCheck" Content="Tout sélectionner" Click="OnSelectAllClick" MinWidth="0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="SelectionSummary" Style="{StaticResource PurgeCaption}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
 
-            <!-- Center: Selection summary -->
-            <TextBlock Grid.Column="1" x:Name="SelectionSummary" Style="{StaticResource PurgeCaption}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+            <!-- Right: Sort + Search + View switcher capsule -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <ComboBox x:Name="SortCombo" SelectionChanged="OnSortChanged" FontSize="12" CornerRadius="8" MinWidth="150" Padding="10,4">
+                    <ComboBoxItem x:Name="SortLargestItem" Content="Taille (décroissante)" Tag="Largest" IsSelected="True"/>
+                    <ComboBoxItem x:Name="SortSmallestItem" Content="Taille (croissante)" Tag="Smallest"/>
+                    <ComboBoxItem x:Name="SortNameAZItem" Content="Nom (A à Z)" Tag="NameAZ"/>
+                </ComboBox>
 
-            <!-- Right: Search + View switcher capsule -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                 <TextBox x:Name="SearchBox" PlaceholderText="Rechercher..." TextChanged="OnSearchChanged" FontSize="12" CornerRadius="8" Width="180"/>
 
                 <Border x:Name="ViewSwitcher" Background="{ThemeResource FillSecondary}" BorderBrush="{ThemeResource BorderSubtle}" BorderThickness="1" CornerRadius="16" Padding="2">

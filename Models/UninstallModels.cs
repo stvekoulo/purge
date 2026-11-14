@@ -52,6 +52,8 @@ public sealed partial class InstalledAppItem : ObservableObject
     public required string DisplayVersion { get; init; }
     public string? InstallLocation { get; init; }
     public string? UninstallString { get; init; }
+    public string? QuietUninstallString { get; init; }
+    public bool IsWindowsInstaller { get; init; }
     public string? DisplayIcon { get; init; }
     public string? IconPath { get; set; }
     private ImageSource? _cachedIconSource;

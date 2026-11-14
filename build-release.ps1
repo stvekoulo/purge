@@ -51,6 +51,8 @@ $buildArch = {
         }
     }
     if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant() -eq $arch) {
+        Stop-Process -Name Purge -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 300
         & "$PSScriptRoot\scripts\Test-Startup.ps1" -Executable "$outDir\Purge.exe" -ExpectedVersion "$version.0"
     }
     

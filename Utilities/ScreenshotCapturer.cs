@@ -52,7 +52,25 @@ public static class ScreenshotCapturer
         await Task.Delay(600);
         await CaptureMultiAsync(window, dirs, "screenshot-onedrive-light.png");
 
+        // 4. Uninstaller Dark Mode with multiple apps selected for batch uninstall & clean
         s.SetAppearance("dark");
+        Theme.ThemeBrushes.ApplyAppearance("dark", window);
+        await s.ScanUninstallerAsync();
+        attempts = 0;
+        while (s.UninstallPhase == ScanPhase.Scanning && attempts++ < 80)
+            await Task.Delay(250);
+        s.SelectedTab = AppTab.Uninstaller;
+        s.UninstallSubTab = Models.UninstallerSubTab.InstalledApps;
+        s.IsUninstallGridView = true;
+        s.ApplyUninstallFilter();
+        foreach (var app in s.FilteredInstalledApps.Take(3))
+            app.IsSelected = true;
+        s.NotifyUninstallSelection();
+        await Task.Delay(600);
+        await CaptureMultiAsync(window, dirs, "screenshot-uninstaller-batch-dark.png");
+
+        foreach (var app in s.InstalledApps) app.IsSelected = false;
+        s.NotifyUninstallSelection();
         window.Close();
     }
 

@@ -157,6 +157,15 @@ var unquotedUninstaller = UninstallCommand.CreateStartInfo(@"C:\Program Files\Sa
 Check("Unquoted uninstall paths with spaces preserve arguments", unquotedUninstaller.FileName == @"C:\Program Files\Sample App\uninstall.exe"
     && unquotedUninstaller.Arguments == "/remove");
 Check("MSI uninstall commands need no cmd.exe wrapper", UninstallCommand.CreateStartInfo("MsiExec.exe /X{1234} /quiet").FileName == "MsiExec.exe");
+var quietPreferred = UninstallCommand.CreateUnattendedStartInfo(
+    "\"C:\\Program Files\\App\\uninstall.exe\"", "\"C:\\Program Files\\App\\uninstall.exe\" /VERYSILENT");
+Check("QuietUninstallString is preferred when present", quietPreferred.Arguments == "/VERYSILENT");
+var msiUnattended = UninstallCommand.CreateUnattendedStartInfo("MsiExec.exe /I{1234-5678}", null, preferUnattended: true, isMsi: true);
+Check("MSI interactive /I is converted to unattended /X /passive /norestart",
+    msiUnattended.Arguments.Contains("/X{1234-5678}") && msiUnattended.Arguments.Contains("/passive") && msiUnattended.Arguments.Contains("/norestart"));
+var innoUnattended = UninstallCommand.CreateUnattendedStartInfo("\"C:\\Program Files\\App\\unins000.exe\"");
+Check("Inno Setup unins000.exe receives /VERYSILENT /SUPPRESSMSGBOXES /NORESTART",
+    innoUnattended.Arguments.Contains("/VERYSILENT") && innoUnattended.Arguments.Contains("/SUPPRESSMSGBOXES"));
 try { UninstallCommand.CreateStartInfo("  "); Check("Empty uninstall commands are rejected", false); }
 catch (ArgumentException) { Check("Empty uninstall commands are rejected", true); }
 Check("Drive roots added after startup are protected", DeletionSafetyPolicy.IsProtected(@"Z:\")

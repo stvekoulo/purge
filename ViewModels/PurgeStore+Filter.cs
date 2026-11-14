@@ -58,7 +58,7 @@ public sealed partial class PurgeStore
     public long SelectedUninstallBytes => UninstallSubTab switch
     {
         UninstallerSubTab.InstalledApps => InstalledApps.Where(i => i.IsSelected)
-            .Sum(i => i.Leftovers.Where(l => l.IsExactMatch).Sum(l => l.Bytes)),
+            .Sum(i => i.TotalBytes),
         UninstallerSubTab.Leftovers => OrphanLeftovers.Where(i => i.IsSelected).Sum(i => i.Bytes),
         _ => CliTools.Where(i => i.IsSelected).Sum(i => i.Bytes),
     };
@@ -237,6 +237,7 @@ public sealed partial class PurgeStore
         OnPropertyChanged(nameof(SelectedUninstallCount));
         OnPropertyChanged(nameof(SelectedUninstallBytes));
         OnPropertyChanged(nameof(SelectedUninstallSummaryText));
+        OnPropertyChanged(nameof(IsAllUninstallSelected));
     }
 
     private void NotifyTotals()

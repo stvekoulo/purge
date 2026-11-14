@@ -75,6 +75,8 @@ public static class UninstallScanner
                         var version = (sub.GetValue("DisplayVersion") as string)?.Trim() ?? "";
                         var installLoc = (sub.GetValue("InstallLocation") as string)?.Trim('"', ' ');
                         var uninstallStr = (sub.GetValue("UninstallString") as string)?.Trim();
+                        var quietUninstallStr = (sub.GetValue("QuietUninstallString") as string)?.Trim();
+                        var isMsi = sub.GetValue("WindowsInstaller") is int wi && wi == 1;
                         var displayIcon = (sub.GetValue("DisplayIcon") as string)?.Trim();
                         bool installedHere = string.IsNullOrEmpty(installLoc) ? allDrives : scope.Contains(installLoc);
 
@@ -96,10 +98,12 @@ public static class UninstallScanner
                         raw[$"{hive}:{view}:{subName}"] = new InstalledAppItem
                         {
                             Key = subName, DisplayName = name, Publisher = publisher, DisplayVersion = version,
-                            InstallLocation = installLoc, UninstallString = uninstallStr, DisplayIcon = displayIcon,
+                            InstallLocation = installLoc, UninstallString = uninstallStr,
+                            QuietUninstallString = quietUninstallStr, IsWindowsInstaller = isMsi,
+                            DisplayIcon = displayIcon,
                             IconPath = iconPath,
                             AppBytes = appBytes, Leftovers = leftovers,
-                            CanUninstall = installedHere && !string.IsNullOrWhiteSpace(uninstallStr),
+                            CanUninstall = installedHere && (!string.IsNullOrWhiteSpace(uninstallStr) || !string.IsNullOrWhiteSpace(quietUninstallStr)),
                         };
                     }
                     catch { }
@@ -219,6 +223,29 @@ public static class UninstallScanner
 
     private static string NormalizeToken(string input) =>
         new(input.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+
+    public static bool IsRegistryEntryPresent(string subKeyName)
+    {
+        if (string.IsNullOrWhiteSpace(subKeyName)) return false;
+        (RegistryHive Hive, RegistryView View)[] roots =
+        [
+            (RegistryHive.CurrentUser, RegistryView.Default),
+            (RegistryHive.LocalMachine, RegistryView.Registry64),
+            (RegistryHive.LocalMachine, RegistryView.Registry32),
+        ];
+        foreach (var (hive, view) in roots)
+        {
+            try
+            {
+                using var baseKey = RegistryKey.OpenBaseKey(hive, view);
+                using var sub = baseKey.OpenSubKey($@"Software\Microsoft\Windows\CurrentVersion\Uninstall\{subKeyName}");
+                if (sub?.GetValue("DisplayName") is string dn && !string.IsNullOrWhiteSpace(dn))
+                    return true;
+            }
+            catch { }
+        }
+        return false;
+    }
 
     private static List<DirectoryInfo> SafeTopDirs(string root)
     {
