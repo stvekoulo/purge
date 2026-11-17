@@ -81,7 +81,7 @@ public sealed partial class DevToolsView : UserControl
         var selected = Store.DevItems.Where(i => i.IsSelected).ToList();
         if (selected.Count == 0) return;
         var candidates = selected.Select(i =>
-            new DeletionConfirmDialog.Candidate(i.Title, i.Subtitle, i.Bytes, i.Level)).ToList();
+            new DeletionConfirmDialog.Candidate(i.Title, i.Subtitle, i.Bytes, i.Level, i.Id)).ToList();
         if (await DeletionConfirmDialog.ConfirmAsync(XamlRoot, candidates))
             await Store.CleanSelectedDevAsync();
     }

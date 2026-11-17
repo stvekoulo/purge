@@ -35,7 +35,13 @@ public static class OneDriveScanner
         [".iso"] = LargeFileCategory.DiskImage, [".img"] = LargeFileCategory.DiskImage, [".wim"] = LargeFileCategory.DiskImage,
         [".vhdx"] = LargeFileCategory.VirtualMachine, [".vhd"] = LargeFileCategory.VirtualMachine,
         [".vmdk"] = LargeFileCategory.VirtualMachine, [".vdi"] = LargeFileCategory.VirtualMachine,
+        [".ova"] = LargeFileCategory.VirtualMachine,
+        [".gguf"] = LargeFileCategory.AiModel, [".safetensors"] = LargeFileCategory.AiModel,
+        [".onnx"] = LargeFileCategory.AiModel, [".pt"] = LargeFileCategory.AiModel, [".pth"] = LargeFileCategory.AiModel,
     };
+
+    public static LargeFileCategory CategorizeExtension(string ext) =>
+        ExtMap.GetValueOrDefault(ext, LargeFileCategory.Other);
 
     public static IReadOnlyList<string> GetOneDriveRoots()
     {
@@ -152,14 +158,23 @@ public static class OneDriveScanner
 
     public static bool EvictLocalCopy(string path)
     {
-        if (!File.Exists(path)) return false;
+        var full = PathScope.Normalize(path);
+        if (full is null || !File.Exists(full)) return false;
+        if (DeletionSafetyPolicy.IsProtected(full) || DeletionSafetyPolicy.IsSystemPath(full)) return false;
+        if (PathExpander.IsReparsePoint(full) || PathExpander.HasReparsePointAncestor(full)) return false;
+
         try
         {
-            using var proc = Process.Start(new ProcessStartInfo("attrib.exe", $"+U -P \"{path}\"")
+            var attribExe = Path.Combine(Environment.SystemDirectory, "attrib.exe");
+            var psi = new ProcessStartInfo(attribExe)
             {
                 CreateNoWindow = true,
                 UseShellExecute = false,
-            });
+            };
+            psi.ArgumentList.Add("+U");
+            psi.ArgumentList.Add("-P");
+            psi.ArgumentList.Add(full);
+            using var proc = Process.Start(psi);
             proc?.WaitForExit(4000);
             return proc?.ExitCode == 0;
         }

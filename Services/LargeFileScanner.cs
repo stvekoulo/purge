@@ -17,27 +17,6 @@ public static class LargeFileScanner
         "$Recycle.Bin", "System Volume Information", "Recovery", "PerfLogs", "Config.Msi",
     };
 
-    private static readonly Dictionary<string, LargeFileCategory> ExtMap = new(StringComparer.OrdinalIgnoreCase)
-    {
-        [".mp4"] = LargeFileCategory.Video, [".mkv"] = LargeFileCategory.Video, [".mov"] = LargeFileCategory.Video,
-        [".avi"] = LargeFileCategory.Video, [".webm"] = LargeFileCategory.Video, [".wmv"] = LargeFileCategory.Video,
-        [".mp3"] = LargeFileCategory.Audio, [".wav"] = LargeFileCategory.Audio, [".flac"] = LargeFileCategory.Audio,
-        [".m4a"] = LargeFileCategory.Audio, [".aac"] = LargeFileCategory.Audio, [".ogg"] = LargeFileCategory.Audio,
-        [".png"] = LargeFileCategory.Image, [".jpg"] = LargeFileCategory.Image, [".jpeg"] = LargeFileCategory.Image,
-        [".webp"] = LargeFileCategory.Image, [".tiff"] = LargeFileCategory.Image, [".psd"] = LargeFileCategory.Image,
-        [".raw"] = LargeFileCategory.Image, [".heic"] = LargeFileCategory.Image,
-        [".zip"] = LargeFileCategory.Archive, [".rar"] = LargeFileCategory.Archive, [".7z"] = LargeFileCategory.Archive,
-        [".tar"] = LargeFileCategory.Archive, [".gz"] = LargeFileCategory.Archive, [".tgz"] = LargeFileCategory.Archive,
-        [".pdf"] = LargeFileCategory.Document, [".docx"] = LargeFileCategory.Document, [".pptx"] = LargeFileCategory.Document,
-        [".xlsx"] = LargeFileCategory.Document,
-        [".iso"] = LargeFileCategory.DiskImage, [".img"] = LargeFileCategory.DiskImage, [".wim"] = LargeFileCategory.DiskImage,
-        [".vhdx"] = LargeFileCategory.VirtualMachine, [".vhd"] = LargeFileCategory.VirtualMachine,
-        [".vmdk"] = LargeFileCategory.VirtualMachine, [".vdi"] = LargeFileCategory.VirtualMachine,
-        [".ova"] = LargeFileCategory.VirtualMachine,
-        [".gguf"] = LargeFileCategory.AiModel, [".safetensors"] = LargeFileCategory.AiModel,
-        [".onnx"] = LargeFileCategory.AiModel, [".pt"] = LargeFileCategory.AiModel, [".pth"] = LargeFileCategory.AiModel,
-    };
-
     public static async Task<List<LargeFileItem>> ScanAsync(
         Action<LargeFileItem>? onItem, ISet<string> excluded, IReadOnlyList<string> activeDrives, CancellationToken token)
     {
@@ -146,8 +125,8 @@ public static class LargeFileScanner
                 {
                     if (file.Length < MinimumBytes || !seenFiles.Add(file.FullName)) continue;
                     var ext = file.Extension;
-                    var category = ExtMap.GetValueOrDefault(ext, LargeFileCategory.Other);
-                    var (specialLabelFr, specialLabelEn, specialExplainFr, specialExplainEn) = InspectSpecialFile(ext);
+                    var category = OneDriveScanner.CategorizeExtension(ext);
+                    var (specialLabelFr, specialLabelEn, specialExplainFr, specialExplainEn) = InspectSpecialFile(ext, file.FullName, file.LastWriteTime);
                     var isOneDrive = !string.IsNullOrEmpty(oneDriveRoot)
                         && PathScope.IsWithin(file.FullName, oneDriveRoot)
                         && ((int)file.Attributes & 0x00400000) == 0;
@@ -174,7 +153,8 @@ public static class LargeFileScanner
         }
     }
 
-    private static (string? LabelFr, string? LabelEn, string? ExplainFr, string? ExplainEn) InspectSpecialFile(string ext) =>
+    private static (string? LabelFr, string? LabelEn, string? ExplainFr, string? ExplainEn) InspectSpecialFile(
+        string ext, string fullPath, DateTime lastModified) =>
         ext.ToLowerInvariant() switch
         {
             ".crdownload" or ".part" or ".partial" => (
@@ -186,22 +166,12 @@ public static class LargeFileScanner
             ".vhdx" or ".vhd" or ".vmdk" or ".vdi" => (
                 "Disque de machine virtuelle", "Virtual machine disk",
                 "Disque virtuel Hyper-V, VMware ou VirtualBox.", "Virtual disk for Hyper-V, VMware, or VirtualBox."),
+            ".exe" or ".msi" or ".msix" when fullPath.Contains("\\Downloads\\", StringComparison.OrdinalIgnoreCase)
+                && lastModified < DateTime.Now.AddDays(-30) => (
+                "Ancien installeur", "Old installer",
+                "Programme d'installation téléchargé il y a plus de 30 jours.", "Installer package downloaded over 30 days ago."),
             _ => (null, null, null, null),
         };
 
-    public static bool EvictOneDriveLocalCopy(string path)
-    {
-        if (!File.Exists(path)) return false;
-        try
-        {
-            using var proc = Process.Start(new ProcessStartInfo("attrib.exe", $"+U -P \"{path}\"")
-            {
-                CreateNoWindow = true,
-                UseShellExecute = false,
-            });
-            proc?.WaitForExit(4000);
-            return proc?.ExitCode == 0;
-        }
-        catch { return false; }
-    }
+    public static bool EvictOneDriveLocalCopy(string path) => OneDriveScanner.EvictLocalCopy(path);
 }

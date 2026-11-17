@@ -23,6 +23,7 @@ public sealed class TrayIconService : IDisposable
     private const uint NIF_TIP = 0x00000004;
 
     private const uint MF_STRING = 0x00000000;
+    private const uint MF_GRAYED = 0x00000001;
     private const uint MF_SEPARATOR = 0x00000800;
     private const uint TPM_RIGHTBUTTON = 0x0002;
     private const int SW_RESTORE = 9;
@@ -36,6 +37,9 @@ public sealed class TrayIconService : IDisposable
     private const int CMD_DEV_TOOLS = 1007;
     private const int CMD_SETTINGS = 1008;
     private const int CMD_EXIT = 1009;
+    private const int CMD_QUICK_CLEAN = 1010;
+    private const int CMD_ONEDRIVE = 1011;
+    private const int CMD_OPTIMIZATION = 1012;
 
     private readonly IntPtr _hWnd;
     private readonly AppWindow _appWindow;
@@ -108,15 +112,29 @@ public sealed class TrayIconService : IDisposable
     {
         var hMenu = CreatePopupMenu();
         if (hMenu == IntPtr.Zero) return;
+        var s = PurgeStore.Shared;
+        var statusLine = Loc.T(
+            $"Espace libre : {ByteFormatter.Format(s.DiskFree)} · Corbeille : {ByteFormatter.Format(s.TrashBytes)}",
+            $"Free space: {ByteFormatter.Format(s.DiskFree)} · Recycle Bin: {ByteFormatter.Format(s.TrashBytes)}");
+        AppendMenu(hMenu, MF_STRING | MF_GRAYED, UIntPtr.Zero, statusLine);
+        AppendMenu(hMenu, MF_SEPARATOR, UIntPtr.Zero, string.Empty);
         AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_OPEN, Loc.T("Ouvrir Purge", "Open Purge"));
         AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_SCAN, Loc.T("Tout analyser", "Scan Everything"));
+        if (s.SafeBytes > 0)
+        {
+            AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_QUICK_CLEAN,
+                Loc.T($"Nettoyage rapide sûr ({ByteFormatter.Format(s.SafeBytes)})", $"Quick Safe Clean ({ByteFormatter.Format(s.SafeBytes)})"));
+        }
         AppendMenu(hMenu, MF_SEPARATOR, UIntPtr.Zero, string.Empty);
         AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_CACHES, Loc.T("Caches d'applications", "App Caches"));
-        AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_TRASH, Loc.T("Vider la Corbeille", "Empty Recycle Bin"));
-        AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_UNINSTALLER, Loc.T("Désinstallateur", "Uninstaller"));
-        AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_LARGE, Loc.T("Fichiers volumineux", "Large Files"));
         AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_DEV_TOOLS, Loc.T("Outils de développement", "Developer Tools"));
+        AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_LARGE, Loc.T("Fichiers volumineux", "Large Files"));
+        if (s.IsOneDriveAvailable)
+            AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_ONEDRIVE, "OneDrive");
+        AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_UNINSTALLER, Loc.T("Désinstalleur", "Uninstaller"));
+        AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_OPTIMIZATION, Loc.T("Optimisation & Démarrage", "Optimization & Startup"));
         AppendMenu(hMenu, MF_SEPARATOR, UIntPtr.Zero, string.Empty);
+        AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_TRASH, Loc.T("Vider la Corbeille", "Empty Recycle Bin"));
         AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_SETTINGS, Loc.T("Réglages", "Settings"));
         AppendMenu(hMenu, MF_SEPARATOR, UIntPtr.Zero, string.Empty);
         AppendMenu(hMenu, MF_STRING, (UIntPtr)CMD_EXIT, Loc.T("Quitter Purge", "Quit Purge"));
@@ -149,10 +167,13 @@ public sealed class TrayIconService : IDisposable
             int cmdId = (int)(wParam.ToInt64() & 0xFFFF);
             if (cmdId == CMD_OPEN) { ShowWindow(); return IntPtr.Zero; }
             if (cmdId == CMD_SCAN) { ShowWindow(); _ = PurgeStore.Shared.ScanEverythingAsync(force: true); return IntPtr.Zero; }
+            if (cmdId == CMD_QUICK_CLEAN) { ShowWindow(); _ = PurgeStore.Shared.CleanSafeItemsAsync(); return IntPtr.Zero; }
             if (cmdId == CMD_CACHES) { _navigate?.Invoke(AppTab.AppCaches); return IntPtr.Zero; }
             if (cmdId == CMD_TRASH) { ShowWindow(); _ = PurgeStore.Shared.ActOnTrashAsync(restore: false); return IntPtr.Zero; }
             if (cmdId == CMD_UNINSTALLER) { _navigate?.Invoke(AppTab.Uninstaller); return IntPtr.Zero; }
             if (cmdId == CMD_LARGE) { _navigate?.Invoke(AppTab.LargeFiles); return IntPtr.Zero; }
+            if (cmdId == CMD_ONEDRIVE) { _navigate?.Invoke(AppTab.OneDrive); return IntPtr.Zero; }
+            if (cmdId == CMD_OPTIMIZATION) { _navigate?.Invoke(AppTab.Optimization); return IntPtr.Zero; }
             if (cmdId == CMD_DEV_TOOLS) { _navigate?.Invoke(AppTab.DevTools); return IntPtr.Zero; }
             if (cmdId == CMD_SETTINGS) { _navigate?.Invoke(AppTab.Settings); return IntPtr.Zero; }
             if (cmdId == CMD_EXIT) { ExitApplication(); return IntPtr.Zero; }

@@ -84,7 +84,7 @@ public sealed partial class AppCachesView : UserControl
         var selected = PurgeStore.Shared.CacheItems.Where(i => i.IsSelected).ToList();
         if (selected.Count == 0) return;
         var candidates = selected.Select(i =>
-            new DeletionConfirmDialog.Candidate(i.Title, i.PathSummary, i.Bytes, i.Level)).ToList();
+            new DeletionConfirmDialog.Candidate(i.Title, i.PathSummary, i.Bytes, i.Level, i.Entry.Key)).ToList();
         if (await DeletionConfirmDialog.ConfirmAsync(XamlRoot, candidates))
             await PurgeStore.Shared.CleanSelectedAsync();
     }

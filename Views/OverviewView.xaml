@@ -175,7 +175,26 @@
           </Button>
           <Border Height="1" Background="{ThemeResource BorderSubtle}"/>
 
-          <!-- 4. Installed Apps & Leftovers -->
+          <!-- 4. OneDrive (visible when OneDrive exists) -->
+          <Button x:Name="RowOneDrive" Click="RowOneDrive_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,13" Background="Transparent" BorderThickness="0">
+            <Grid ColumnSpacing="14">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Border Width="28" Height="28" CornerRadius="{StaticResource RadiusTile}" Background="{ThemeResource ChartAppCaches}">
+                <FontIcon Glyph="&#xE753;" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock x:Name="TxtOneDriveTitle" Text="OneDrive (espace local)" Style="{StaticResource RowTitleText}"/>
+                <TextBlock x:Name="TxtOneDriveSubtitle" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextSecondary}"/>
+              </StackPanel>
+              <TextBlock Grid.Column="2" x:Name="TxtOneDrivePercent" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+              <TextBlock Grid.Column="3" x:Name="TxtOneDriveSize" Style="{StaticResource NumbersText}" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Border x:Name="SepOneDrive" Height="1" Background="{ThemeResource BorderSubtle}"/>
+
+          <!-- 5. Installed Apps & Leftovers -->
           <Button Click="RowUninstaller_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,13" Background="Transparent" BorderThickness="0">
             <Grid ColumnSpacing="14">
               <Grid.ColumnDefinitions>
@@ -193,6 +212,24 @@
               </StackPanel>
               <TextBlock Grid.Column="2" x:Name="TxtUninstallPercent" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextTertiary}" VerticalAlignment="Center" Margin="0,0,14,0"/>
               <TextBlock Grid.Column="3" x:Name="TxtUninstallSize" Style="{StaticResource NumbersText}" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Border Height="1" Background="{ThemeResource BorderSubtle}"/>
+
+          <!-- 6. Optimization & Startup -->
+          <Button Click="RowOptimization_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,13" Background="Transparent" BorderThickness="0">
+            <Grid ColumnSpacing="14">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Border Width="28" Height="28" CornerRadius="{StaticResource RadiusTile}" Background="{ThemeResource StatusSafeText}">
+                <FontIcon Glyph="&#xEC4A;" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock x:Name="TxtOptTitle" Text="Optimisation &amp; Démarrage" Style="{StaticResource RowTitleText}"/>
+                <TextBlock x:Name="TxtOptSubtitle" Style="{StaticResource MetadataText}" Foreground="{ThemeResource TextSecondary}"/>
+              </StackPanel>
+              <TextBlock Grid.Column="2" x:Name="TxtOptBadge" Style="{StaticResource NumbersText}" FontSize="14" VerticalAlignment="Center"/>
             </Grid>
           </Button>
 

@@ -52,17 +52,18 @@ public static class SystemIntegration
         {
             if (string.IsNullOrEmpty(frequency) || frequency == "off")
             {
-                return RunSchtasks($"/Delete /TN \"{ScheduledTaskName}\" /F", allowMissing: true);
+                return RunSchtasks(["/Delete", "/TN", ScheduledTaskName, "/F"], allowMissing: true);
             }
 
             var exe = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "Purge.exe");
-            var scheduleArgs = frequency switch
+            string[] scheduleArgs = frequency switch
             {
-                "weekly" => "/SC WEEKLY /D MON /ST 12:00",
-                "quarterly" => "/SC MONTHLY /MO 3 /D 1 /ST 12:00",
-                _ => "/SC MONTHLY /D 1 /ST 12:00",
+                "weekly" => ["/SC", "WEEKLY", "/D", "MON", "/ST", "12:00"],
+                "quarterly" => ["/SC", "MONTHLY", "/MO", "3", "/D", "1", "/ST", "12:00"],
+                _ => ["/SC", "MONTHLY", "/D", "1", "/ST", "12:00"],
             };
-            return RunSchtasks($"/Create /TN \"{ScheduledTaskName}\" /TR \"\\\"{exe}\\\" --scheduled-clean\" {scheduleArgs} /F");
+            string[] args = ["/Create", "/TN", ScheduledTaskName, "/TR", $"\"{exe}\" --scheduled-clean", ..scheduleArgs, "/F"];
+            return RunSchtasks(args);
         }
         catch { return false; }
     }
@@ -121,7 +122,7 @@ public static class SystemIntegration
         try
         {
             SetLaunchAtStartup(false);
-            RunSchtasks($"/Delete /TN \"{ScheduledTaskName}\" /F");
+            RunSchtasks(["/Delete", "/TN", ScheduledTaskName, "/F"], allowMissing: true);
             if (removeAppData && Directory.Exists(AppData.Folder))
             {
                 RecycleBin.MoveToRecycleBin(AppData.Folder);
@@ -130,18 +131,19 @@ public static class SystemIntegration
         catch { }
     }
 
-    private static bool RunSchtasks(string arguments, bool allowMissing = false)
+    private static bool RunSchtasks(IReadOnlyList<string> arguments, bool allowMissing = false)
     {
         try
         {
-            using var p = Process.Start(new ProcessStartInfo("schtasks.exe", arguments)
+            var schtasksExe = Path.Combine(Environment.SystemDirectory, "schtasks.exe");
+            var psi = new ProcessStartInfo(schtasksExe)
             {
                 CreateNoWindow = true,
                 UseShellExecute = false,
-            });
+            };
+            foreach (var arg in arguments) psi.ArgumentList.Add(arg);
+            using var p = Process.Start(psi);
             if (p is null || !p.WaitForExit(4000)) return false;
-            // schtasks reports a missing task with 1 when disabling an already
-            // disabled schedule. Treat that case as a successful no-op.
             return p.ExitCode == 0 || (allowMissing && p.ExitCode == 1);
         }
         catch { return false; }

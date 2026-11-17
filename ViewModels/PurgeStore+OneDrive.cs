@@ -87,13 +87,12 @@ public sealed partial class PurgeStore
 
     public void NotifyOneDriveSelection()
     {
-        if (FilteredOneDriveItems.Count == 0) _isAllOneDriveSelected = false;
+        if (FilteredOneDriveItems.Count == 0) IsAllOneDriveSelected = false;
         else
         {
             var sel = FilteredOneDriveItems.Count(i => i.IsSelected);
-            _isAllOneDriveSelected = sel == FilteredOneDriveItems.Count ? true : sel == 0 ? false : null;
+            IsAllOneDriveSelected = sel == FilteredOneDriveItems.Count ? true : sel == 0 ? false : null;
         }
-        OnPropertyChanged(nameof(IsAllOneDriveSelected));
         OnPropertyChanged(nameof(SelectedOneDriveCount));
         OnPropertyChanged(nameof(SelectedOneDriveBytes));
         OnPropertyChanged(nameof(SelectedOneDriveLocalCount));

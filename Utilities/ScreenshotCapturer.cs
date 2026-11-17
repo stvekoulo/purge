@@ -26,57 +26,37 @@ public static class ScreenshotCapturer
         Theme.ThemeBrushes.ApplyAppearance("dark", window);
         await Task.Delay(300);
 
-        // Scan OneDrive & capture Dark + Light views
+        // Scan modules for realistic Overview & Optimization screenshots
+        await s.ScanAppCachesAsync();
+        await s.ScanDevToolsAsync();
         await s.ScanOneDriveAsync();
-        int attempts = 0;
-        while (s.OneDrivePhase == ScanPhase.Scanning && attempts++ < 80)
-            await Task.Delay(250);
+        await s.ScanOptimizationAsync();
+        await Task.Delay(400);
 
-        // 1. OneDrive Dark Mode (Tout OneDrive)
-        s.SelectedTab = AppTab.OneDrive;
-        s.OneDriveStateFilter = Models.OneDriveFilter.All;
-        s.ApplyOneDriveFilter();
-        await Task.Delay(600);
-        await CaptureMultiAsync(window, dirs, "screenshot-onedrive-dark.png");
-
-        // 2. OneDrive Dark Mode ("Sur ce PC" filter selected)
-        s.OneDriveStateFilter = Models.OneDriveFilter.Local;
-        s.ApplyOneDriveFilter();
+        // 1. Enriched Overview (Dark)
+        s.OverviewPage = OverviewSubPage.Summary;
+        s.SelectedTab = AppTab.Overview;
         await Task.Delay(500);
-        await CaptureMultiAsync(window, dirs, "screenshot-onedrive-local-dark.png");
+        await CaptureMultiAsync(window, dirs, "screenshot-overview-v13-dark.png");
 
-        // 3. OneDrive Light Mode (Tout OneDrive)
-        s.OneDriveStateFilter = Models.OneDriveFilter.All;
-        s.ApplyOneDriveFilter();
-        s.SetAppearance("light");
-        await Task.Delay(600);
-        await CaptureMultiAsync(window, dirs, "screenshot-onedrive-light.png");
+        // 2. Optimization — Startup Apps (Dark)
+        s.SelectedTab = AppTab.Optimization;
+        s.OptimizationSubTab = Models.OptimizationSubTab.StartupApps;
+        s.ApplyOptimizationFilter();
+        await Task.Delay(500);
+        await CaptureMultiAsync(window, dirs, "screenshot-optimization-startup-dark.png");
 
-        // 4. Uninstaller Dark Mode with multiple apps selected for batch uninstall & clean
-        s.SetAppearance("dark");
-        Theme.ThemeBrushes.ApplyAppearance("dark", window);
-        await s.ScanUninstallerAsync();
-        attempts = 0;
-        while (s.UninstallPhase == ScanPhase.Scanning && attempts++ < 80)
-            await Task.Delay(250);
-        s.SelectedTab = AppTab.Uninstaller;
-        s.UninstallSubTab = Models.UninstallerSubTab.InstalledApps;
-        s.IsUninstallGridView = true;
-        s.ApplyUninstallFilter();
-        foreach (var app in s.FilteredInstalledApps.Take(3))
-            app.IsSelected = true;
-        s.NotifyUninstallSelection();
-        await Task.Delay(600);
-        await CaptureMultiAsync(window, dirs, "screenshot-uninstaller-batch-dark.png");
+        // 3. Optimization — System Maintenance (Dark)
+        s.OptimizationSubTab = Models.OptimizationSubTab.Maintenance;
+        await Task.Delay(500);
+        await CaptureMultiAsync(window, dirs, "screenshot-optimization-maintenance-dark.png");
 
-        foreach (var app in s.InstalledApps) app.IsSelected = false;
-        s.NotifyUninstallSelection();
         window.Close();
     }
 
     private static async Task CaptureMultiAsync(Window window, List<string> dirs, string fileName)
     {
-        await Task.Delay(650);
+        await Task.Delay(600);
         if (window.Content is not UIElement root) return;
 
         var rtb = new RenderTargetBitmap();

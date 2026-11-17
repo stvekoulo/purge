@@ -66,10 +66,28 @@
     "paths": ["%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Cache", "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Code Cache", "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\GPUCache"]
   },
   {
-    "key": "opera", "display_name": "Opera", "display_name_en": "Opera", "tag": "safe", "kind": "browser", "icon": "opera",
-    "explanation": "Cache web d'Opera, reconstruit en naviguant.",
-    "explanation_en": "Opera's web cache, which is rebuilt as you browse.",
-    "paths": ["%LOCALAPPDATA%\\Opera Software\\Opera Stable\\Cache", "%LOCALAPPDATA%\\Opera Software\\Opera GX Stable\\Cache"]
+    "key": "opera", "display_name": "Opera & Opera GX", "display_name_en": "Opera & Opera GX", "tag": "safe", "kind": "browser", "icon": "opera",
+    "explanation": "Cache web et GPU d'Opera et Opera GX, reconstruit en naviguant.",
+    "explanation_en": "Web and GPU cache of Opera and Opera GX, rebuilt as you browse.",
+    "paths": ["%LOCALAPPDATA%\\Opera Software\\Opera Stable\\Cache", "%LOCALAPPDATA%\\Opera Software\\Opera Stable\\Code Cache", "%LOCALAPPDATA%\\Opera Software\\Opera Stable\\GPUCache", "%LOCALAPPDATA%\\Opera Software\\Opera GX Stable\\Cache", "%LOCALAPPDATA%\\Opera Software\\Opera GX Stable\\Code Cache", "%LOCALAPPDATA%\\Opera Software\\Opera GX Stable\\GPUCache"]
+  },
+  {
+    "key": "vivaldi", "display_name": "Vivaldi", "display_name_en": "Vivaldi", "tag": "safe", "kind": "browser",
+    "explanation": "Cache web et scripts compilés de Vivaldi. Vos onglets, notes et favoris restent intacts.",
+    "explanation_en": "Vivaldi web and compiled script cache. Tabs, notes and bookmarks remain untouched.",
+    "paths": ["%LOCALAPPDATA%\\Vivaldi\\User Data\\*\\Cache", "%LOCALAPPDATA%\\Vivaldi\\User Data\\*\\Code Cache", "%LOCALAPPDATA%\\Vivaldi\\User Data\\*\\GPUCache"]
+  },
+  {
+    "key": "arc", "display_name": "Arc Browser", "display_name_en": "Arc Browser", "tag": "safe", "kind": "browser", "icon": "arc",
+    "explanation": "Cache de navigation d'Arc. Vos espaces, onglets épinglés et sessions ne sont pas touchés.",
+    "explanation_en": "Arc browsing cache. Spaces, pinned tabs and sessions remain untouched.",
+    "paths": ["%LOCALAPPDATA%\\Packages\\TheBrowserCompany.Arc_*\\LocalCache\\Local\\Arc\\User Data\\*\\Cache", "%LOCALAPPDATA%\\Packages\\TheBrowserCompany.Arc_*\\LocalCache\\Local\\Arc\\User Data\\*\\Code Cache", "%LOCALAPPDATA%\\Packages\\TheBrowserCompany.Arc_*\\LocalCache\\Local\\Arc\\User Data\\*\\GPUCache"]
+  },
+  {
+    "key": "zen", "display_name": "Zen Browser", "display_name_en": "Zen Browser", "tag": "safe", "kind": "browser",
+    "explanation": "Cache disque de Zen Browser (cache2). Vos espaces et profils sont conservés.",
+    "explanation_en": "Zen Browser disk cache (cache2). Workspaces and profiles are preserved.",
+    "paths": ["%LOCALAPPDATA%\\zen\\Profiles\\*\\cache2", "%LOCALAPPDATA%\\zen\\Profiles\\*\\startupCache"]
   },
   {
     "key": "firefox", "display_name": "Firefox", "display_name_en": "Firefox", "tag": "safe", "kind": "browser", "icon": "firefox",
@@ -136,6 +154,60 @@
     "explanation": "Fichiers temporaires et journaux de Zoom. Vos enregistrements sont dans Documents\\Zoom et ne sont pas touchés.",
     "explanation_en": "Zoom temporary files and logs. Recordings in Documents\\Zoom are not touched.",
     "paths": ["%APPDATA%\\Zoom\\logs", "%APPDATA%\\Zoom\\data\\Cache"]
+  },
+  {
+    "key": "capcut", "display_name": "CapCut (cache vidéo)", "display_name_en": "CapCut (video cache)", "tag": "safe", "kind": "media",
+    "explanation": "Aperçus temporaires et caches d'effets de CapCut. Vos projets et médias sources restent intacts.",
+    "explanation_en": "CapCut temporary render previews and effect caches. Projects and source media remain untouched.",
+    "paths": ["%LOCALAPPDATA%\\CapCut\\User Data\\Cache"]
+  },
+  {
+    "key": "davinci-resolve", "display_name": "DaVinci Resolve (CacheClip)", "display_name_en": "DaVinci Resolve (CacheClip)", "tag": "medium", "kind": "media",
+    "explanation": "Rendus optimisés et CacheClip de DaVinci Resolve. Reconstruits à l'ouverture de la timeline.",
+    "explanation_en": "Optimized render cache (CacheClip) from DaVinci Resolve. Rebuilt when opening timelines.",
+    "paths": ["%APPDATA%\\Blackmagic Design\\DaVinci Resolve\\Support\\CacheClip"]
+  },
+  {
+    "key": "canva", "display_name": "Canva", "display_name_en": "Canva", "tag": "safe", "kind": "design",
+    "explanation": "Cache local de l'application Canva Desktop. Vos créations restent dans votre compte Canva.",
+    "explanation_en": "Canva Desktop local cache. Your designs remain safely in your Canva account.",
+    "paths": ["%APPDATA%\\Canva\\Cache", "%APPDATA%\\Canva\\Code Cache", "%APPDATA%\\Canva\\GPUCache"]
+  },
+  {
+    "key": "epic-games", "display_name": "Epic Games Launcher (cache web)", "display_name_en": "Epic Games Launcher (web cache)", "tag": "safe", "kind": "games",
+    "explanation": "Cache du navigateur de la boutique Epic Games. Vos jeux installés et sauvegardes restent intacts.",
+    "explanation_en": "Epic Games Store embedded web cache. Installed games and saves remain untouched.",
+    "paths": ["%LOCALAPPDATA%\\EpicGamesLauncher\\Saved\\webcache", "%LOCALAPPDATA%\\EpicGamesLauncher\\Saved\\webcache_4147", "%LOCALAPPDATA%\\EpicGamesLauncher\\Saved\\webcache_4430"]
+  },
+  {
+    "key": "battlenet", "display_name": "Battle.net (cache navigateur)", "display_name_en": "Battle.net (browser cache)", "tag": "safe", "kind": "games",
+    "explanation": "Cache web du lanceur Blizzard Battle.net. Vos jeux ne sont pas touchés.",
+    "explanation_en": "Blizzard Battle.net launcher web cache. Installed games are untouched.",
+    "paths": ["%LOCALAPPDATA%\\Battle.net\\BrowserCaches", "%LOCALAPPDATA%\\Battle.net\\Cache"]
+  },
+  {
+    "key": "ubisoft", "display_name": "Ubisoft Connect (cache)", "display_name_en": "Ubisoft Connect (cache)", "tag": "safe", "kind": "games",
+    "explanation": "Cache temporaire et miniatures du lanceur Ubisoft Connect.",
+    "explanation_en": "Temporary launcher cache and thumbnails for Ubisoft Connect.",
+    "paths": ["%LOCALAPPDATA%\\Ubisoft Game Launcher\\spool"]
+  },
+  {
+    "key": "telegram-temp", "display_name": "Telegram Desktop (cache média)", "display_name_en": "Telegram Desktop (media cache)", "tag": "safe", "kind": "chat",
+    "explanation": "Images et aperçus mis en cache par Telegram Desktop. Tout reste re-téléchargeable depuis vos conversations.",
+    "explanation_en": "Cached media and previews in Telegram Desktop. Everything stays available in your cloud chats.",
+    "paths": ["%APPDATA%\\Telegram Desktop\\tdata\\user_data\\cache", "%APPDATA%\\Telegram Desktop\\tdata\\user_data\\media_cache"]
+  },
+  {
+    "key": "postman", "display_name": "Postman (cache)", "display_name_en": "Postman (cache)", "tag": "safe", "kind": "productivity", "icon": "postman",
+    "explanation": "Cache de rendu de Postman. Vos collections, environnements et requêtes restent intacts.",
+    "explanation_en": "Postman renderer cache. Collections, environments and requests remain untouched.",
+    "paths": ["%APPDATA%\\Postman\\Cache", "%APPDATA%\\Postman\\Code Cache", "%APPDATA%\\Postman\\GPUCache"]
+  },
+  {
+    "key": "insomnia", "display_name": "Insomnia (cache)", "display_name_en": "Insomnia (cache)", "tag": "safe", "kind": "productivity", "icon": "insomnia",
+    "explanation": "Cache de rendu d'Insomnia. Vos espaces de travail et requêtes API ne sont pas touchés.",
+    "explanation_en": "Insomnia renderer cache. Workspaces and API requests remain untouched.",
+    "paths": ["%APPDATA%\\Insomnia\\Cache", "%APPDATA%\\Insomnia\\Code Cache", "%APPDATA%\\Insomnia\\GPUCache"]
   },
   {
     "key": "electron-updaters", "display_name": "Mises à jour d'applications téléchargées", "display_name_en": "Downloaded app updates", "tag": "safe", "kind": "updater", "icon": "electron",

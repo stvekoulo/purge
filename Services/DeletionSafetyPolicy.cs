@@ -12,6 +12,7 @@ public enum DeletionDecision { Allowed, NotInAllowlist, ProtectedLocation, Repar
 public static class DeletionSafetyPolicy
 {
     private static readonly Lazy<HashSet<string>> Protected = new(BuildProtected);
+    private static readonly Lazy<string[]> ProtectedVaultPrefixes = new(BuildProtectedVaultPrefixes);
     private static readonly HashSet<string> SystemRootNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "Windows", "Program Files", "Program Files (x86)", "ProgramData",
@@ -56,6 +57,7 @@ public static class DeletionSafetyPolicy
         var normalized = PathScope.Normalize(fullPath);
         if (normalized is null) return true;
         if (Protected.Value.Contains(normalized)) return true;
+        if (ProtectedVaultPrefixes.Value.Any(v => PathScope.IsWithin(normalized, v))) return true;
         // A removable drive can appear after the lazy protected-root snapshot.
         var root = Path.GetPathRoot(normalized);
         if (string.IsNullOrEmpty(root)) return true;
@@ -113,9 +115,40 @@ public static class DeletionSafetyPolicy
         set.Add(Path.Combine(home, "Downloads"));
         set.Add(Path.Combine(home, "AppData"));
         set.Add(Path.GetTempPath().TrimEnd('\\'));
-        var oneDrive = Environment.GetEnvironmentVariable("OneDrive");
-        if (!string.IsNullOrEmpty(oneDrive)) set.Add(oneDrive.TrimEnd('\\'));
+        foreach (var envVar in new[] { "OneDrive", "OneDriveConsumer", "OneDriveCommercial" })
+        {
+            var val = Environment.GetEnvironmentVariable(envVar);
+            if (!string.IsNullOrWhiteSpace(val)) set.Add(val.TrimEnd('\\'));
+        }
         return set;
+    }
+
+    /// Sensitive credential, cryptographic key, and password-vault trees: neither
+    /// the folder nor any descendant inside it may ever be deleted by Purge.
+    private static string[] BuildProtectedVaultPrefixes()
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string[] raw =
+        [
+            Path.Combine(home, ".ssh"),
+            Path.Combine(home, ".gnupg"),
+            Path.Combine(home, ".aws"),
+            Path.Combine(home, ".kube"),
+            Path.Combine(home, ".azure"),
+            Path.Combine(roaming, "Microsoft", "Crypto"),
+            Path.Combine(roaming, "Microsoft", "Protect"),
+            Path.Combine(roaming, "Microsoft", "Credentials"),
+            Path.Combine(local, "Microsoft", "Credentials"),
+            Path.Combine(local, "Microsoft", "Vault"),
+            Path.Combine(local, "1Password"),
+            Path.Combine(roaming, "1Password"),
+            Path.Combine(roaming, "Bitwarden"),
+            Path.Combine(roaming, "KeePass"),
+            Path.Combine(local, "Proton", "Proton Pass"),
+        ];
+        return raw.Select(PathScope.Normalize).Where(p => p is not null).Cast<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     public static string Describe(DeletionDecision decision) => decision switch

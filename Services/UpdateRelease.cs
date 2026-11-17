@@ -27,6 +27,7 @@ public static class UpdateRelease
         if (version <= ParseVersion(currentVersion)) return null;
         var displayVersion = version.Revision == 0 ? version.ToString(3) : version.ToString(4);
         string expected = $"Purge-{displayVersion}-win-{architecture}-Setup.exe";
+        string releaseBody = root.TryGetProperty("body", out var body) ? body.GetString() ?? "" : "";
         UpdateAsset? installer = null;
         if (root.TryGetProperty("assets", out var assets))
         {
@@ -35,6 +36,11 @@ public static class UpdateRelease
                 if (asset.GetProperty("name").GetString() != expected) continue;
                 string url = asset.GetProperty("browser_download_url").GetString() ?? "";
                 string digest = asset.TryGetProperty("digest", out var d) ? d.GetString() ?? "" : "";
+                if (string.IsNullOrEmpty(digest))
+                {
+                    var fromBody = TryExtractSha256FromBody(releaseBody, expected);
+                    if (fromBody is not null) digest = "sha256:" + fromBody;
+                }
                 long size = asset.GetProperty("size").GetInt64();
                 if (!IsTrustedUrl(url) || !digest.StartsWith("sha256:", StringComparison.Ordinal)
                     || digest.Length != 71 || !digest[7..].All(Uri.IsHexDigit)
@@ -45,8 +51,20 @@ public static class UpdateRelease
             }
         }
         return new(displayVersion, root.TryGetProperty("name", out var name) ? name.GetString() ?? "" : "",
-            root.TryGetProperty("body", out var body) ? body.GetString() ?? "" : "",
-            "https://github.com/stvekoulo/purge/releases", installer);
+            releaseBody, "https://github.com/stvekoulo/purge/releases", installer);
+    }
+
+    private static string? TryExtractSha256FromBody(string body, string assetName)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return null;
+        foreach (var rawLine in body.Split('\n'))
+        {
+            var line = rawLine.Trim();
+            if (!line.EndsWith(assetName, StringComparison.OrdinalIgnoreCase) || line.Length < 66) continue;
+            var hex = line[..64];
+            if (char.IsWhiteSpace(line[64]) && hex.All(Uri.IsHexDigit)) return hex.ToLowerInvariant();
+        }
+        return null;
     }
 
     public static bool IsTrustedUrl(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri)

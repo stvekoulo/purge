@@ -13,23 +13,24 @@ public static class ExplorerReveal
         if (string.IsNullOrWhiteSpace(path)) return;
         try
         {
+            var explorerExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
             if (path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", path) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(explorerExe, path) { UseShellExecute = true });
                 return;
             }
             var full = Path.GetFullPath(path);
             if (File.Exists(full))
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{full}\"") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(explorerExe, $"/select,\"{full}\"") { UseShellExecute = true });
             }
             else if (Directory.Exists(full))
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", $"\"{full}\"") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(explorerExe, $"\"{full}\"") { UseShellExecute = true });
             }
             else if (Path.GetDirectoryName(full) is { } parent && Directory.Exists(parent))
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", $"\"{parent}\"") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(explorerExe, $"\"{parent}\"") { UseShellExecute = true });
             }
         }
         catch { }

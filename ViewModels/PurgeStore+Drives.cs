@@ -25,6 +25,7 @@ public sealed partial class PurgeStore
         : LargePhase == ScanPhase.Scanning ? Loc.T("Fichiers volumineux", "Large files")
         : OneDrivePhase == ScanPhase.Scanning ? "OneDrive"
         : UninstallPhase == ScanPhase.Scanning ? Loc.T("Applications et restes", "Apps and leftovers")
+        : OptimizationPhase == ScanPhase.Scanning ? Loc.T("Optimisation", "Optimization")
         : EverythingElsePhase == ScanPhase.Scanning ? Loc.T("Carte des dossiers", "Folder map")
         : "";
     public int DriveCatalogVersion { get; private set; }
@@ -44,6 +45,7 @@ public sealed partial class PurgeStore
         foreach (var item in InstalledApps) item.RefreshLocalizedText();
         foreach (var item in OrphanLeftovers) item.RefreshLocalizedText();
         foreach (var item in CliTools) item.RefreshLocalizedText();
+        RefreshOptimizationLocalization();
         OnPropertyChanged(nameof(ScanError));
         OnPropertyChanged(nameof(TrashActionMessage));
         if (IsCleaning)
@@ -64,7 +66,7 @@ public sealed partial class PurgeStore
 
     public void RefreshAllFilteredViews() => OnUi(() =>
     {
-        ApplyFilter(); ApplyDevFilter(); ApplyLargeFilter(); ApplyOneDriveFilter(); ApplyUninstallFilter();
+        ApplyFilter(); ApplyDevFilter(); ApplyLargeFilter(); ApplyOneDriveFilter(); ApplyUninstallFilter(); ApplyOptimizationFilter();
     });
 
     public void SetDrive(string key)
@@ -147,6 +149,7 @@ public sealed partial class PurgeStore
         if (LargePhase == ScanPhase.Scanning) LargePhase = ScanPhase.NotScanned;
         if (OneDrivePhase == ScanPhase.Scanning) OneDrivePhase = ScanPhase.NotScanned;
         if (UninstallPhase == ScanPhase.Scanning) UninstallPhase = ScanPhase.NotScanned;
+        if (OptimizationPhase == ScanPhase.Scanning) OptimizationPhase = ScanPhase.NotScanned;
         if (EverythingElsePhase == ScanPhase.Scanning) EverythingElsePhase = ScanPhase.NotScanned;
         SetScanNotice(ScanNotice.Stopped);
         ScanLabel = "";

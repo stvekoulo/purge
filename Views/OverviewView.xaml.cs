@@ -60,7 +60,9 @@ public sealed partial class OverviewView : UserControl
         TxtCachesTitle.Text = Loc.T("Caches d'applications", "App Caches");
         TxtDevTitle.Text = Loc.T("Outils de développement", "Dev Tools");
         TxtLargeTitle.Text = Loc.T("Fichiers volumineux", "Large Files");
+        TxtOneDriveTitle.Text = Loc.T("OneDrive (espace local)", "OneDrive (local space)");
         TxtUninstallTitle.Text = Loc.T("Applications & Restes orphelins", "Installed Apps & Leftovers");
+        TxtOptTitle.Text = Loc.T("Optimisation & Démarrage", "Optimization & Startup");
         TxtEverythingTitle.Text = Loc.T("Explorer l'espace disque", "Explore disk space");
         TxtEverythingSubtitle.Text = Loc.T(
             "Parcourir, rechercher et comparer les dossiers du périmètre",
@@ -107,15 +109,60 @@ public sealed partial class OverviewView : UserControl
         TxtLargeSubtitle.Text = Store.LargeSubtitle;
         TxtLargeSize.Text = ByteFormatter.Format(Store.LargeFileBytes);
 
+        bool hasOneDrive = Store.IsOneDriveAvailable;
+        RowOneDrive.Visibility = SepOneDrive.Visibility = hasOneDrive ? Visibility.Visible : Visibility.Collapsed;
+        if (hasOneDrive)
+        {
+            TxtOneDriveSubtitle.Text = Store.OneDriveSubtitle;
+            TxtOneDriveSize.Text = ByteFormatter.Format(Store.OneDriveLocalBytes);
+            TxtOneDrivePercent.Text = ByteFormatter.Percent(Store.OneDriveLocalBytes, Store.DiskTotal);
+        }
+
         TxtUninstallSubtitle.Text = Store.UninstallSubtitle;
         TxtUninstallSize.Text = ByteFormatter.Format(Store.InstalledAppBytes + Store.LeftoverBytes);
+
+        TxtOptSubtitle.Text = Store.OptimizationSubtitle;
+        TxtOptBadge.Text = Store.StartupItems.Count > 0
+            ? Loc.T($"{Store.EnabledStartupCount} actives", $"{Store.EnabledStartupCount} active")
+            : Loc.T("Maintenance", "Maintenance");
     }
 
     private async void BtnScanAll_Click(object sender, RoutedEventArgs e) =>
         await Store.ScanEverythingAsync();
 
-    private async void BtnCleanSafe_Click(object sender, RoutedEventArgs e) =>
+    private async void BtnCleanSafe_Click(object sender, RoutedEventArgs e)
+    {
+        var keys = Store.CacheItems.Where(i => i.IsSafe).Select(i => i.Entry.Key)
+            .Concat(Store.DevItems.Where(i => i.IsSafe && i.Section == Models.DevSectionKind.GlobalCache).Select(i => i.Id));
+        var running = Services.RunningAppDetector.FindRunning(keys);
+        if (running.Count > 0 && XamlRoot is not null)
+        {
+            var names = string.Join(", ", running.Select(r => r.AppName));
+            var dlg = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                RequestedTheme = Theme.ThemeBrushes.IsDarkTheme() ? ElementTheme.Dark : ElementTheme.Light,
+                Title = Loc.T("Applications ouvertes détectées", "Running applications detected"),
+                Content = new TextBlock
+                {
+                    Text = Loc.T(
+                        $"{names} sont en cours d'exécution. Les fermer proprement permet de nettoyer la totalité de leur cache sans fichier verrouillé.",
+                        $"{names} are currently running. Closing them gracefully allows Purge to clean 100% of their cache without locked files."),
+                    TextWrapping = TextWrapping.Wrap,
+                    MaxWidth = 440,
+                },
+                PrimaryButtonText = Loc.T("Fermer et nettoyer", "Close & clean"),
+                SecondaryButtonText = Loc.T("Nettoyer sans fermer", "Clean without closing"),
+                CloseButtonText = Loc.T("Annuler", "Cancel"),
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            var res = await dlg.ShowAsync();
+            if (res == ContentDialogResult.None) return;
+            if (res == ContentDialogResult.Primary)
+                await Services.RunningAppDetector.CloseGracefullyAsync(running);
+        }
         await Store.CleanSafeItemsAsync();
+    }
 
     private void RowAppCaches_Click(object sender, RoutedEventArgs e) =>
         Store.SelectedTab = AppTab.AppCaches;
@@ -126,8 +173,14 @@ public sealed partial class OverviewView : UserControl
     private void RowLargeFiles_Click(object sender, RoutedEventArgs e) =>
         Store.SelectedTab = AppTab.LargeFiles;
 
+    private void RowOneDrive_Click(object sender, RoutedEventArgs e) =>
+        Store.SelectedTab = AppTab.OneDrive;
+
     private void RowUninstaller_Click(object sender, RoutedEventArgs e) =>
         Store.SelectedTab = AppTab.Uninstaller;
+
+    private void RowOptimization_Click(object sender, RoutedEventArgs e) =>
+        Store.SelectedTab = AppTab.Optimization;
 
     private void RowEverythingElse_Click(object sender, RoutedEventArgs e) =>
         Store.OverviewPage = OverviewSubPage.EverythingElse;

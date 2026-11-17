@@ -7,7 +7,7 @@ using PurgeWin.Utilities;
 
 namespace PurgeWin.ViewModels;
 
-public enum AppTab { Overview, AppCaches, DevTools, LargeFiles, OneDrive, Uninstaller, Settings, About }
+public enum AppTab { Overview, AppCaches, DevTools, LargeFiles, OneDrive, Uninstaller, Optimization, Settings, About }
 public enum OverviewSubPage { Summary, EverythingElse }
 public enum ScanPhase { NotScanned, Scanning, Done, Failed }
 
@@ -112,7 +112,7 @@ public sealed partial class PurgeStore : ObservableObject
         + DevItems.Where(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache).Sum(i => i.Bytes);
     public int SafeCount => CacheItems.Count(i => i.IsSafe)
         + DevItems.Count(i => i.IsSafe && i.Section == DevSectionKind.GlobalCache);
-    public bool IsScanning => new[] { CachePhase, DevPhase, LargePhase, OneDrivePhase, UninstallPhase, EverythingElsePhase }
+    public bool IsScanning => new[] { CachePhase, DevPhase, LargePhase, OneDrivePhase, UninstallPhase, OptimizationPhase, EverythingElsePhase }
         .Contains(ScanPhase.Scanning);
     public string LastScanText => IsScanning ? Loc.T("Analyse en cours…", "Scanning…")
         : LastScan == null ? Loc.T("Pas encore analysé", "Not scanned yet")
@@ -134,7 +134,8 @@ public sealed partial class PurgeStore : ObservableObject
         [
             (() => CachePhase, ScanAppCachesAsync), (() => DevPhase, ScanDevToolsAsync),
             (() => LargePhase, ScanLargeFilesAsync), (() => OneDrivePhase, ScanOneDriveAsync),
-            (() => UninstallPhase, ScanUninstallerAsync), (() => EverythingElsePhase, ScanEverythingElseAsync)
+            (() => UninstallPhase, ScanUninstallerAsync), (() => OptimizationPhase, ScanOptimizationAsync),
+            (() => EverythingElsePhase, ScanEverythingElseAsync)
         ];
         foreach (var scan in scans)
         {
@@ -189,19 +190,52 @@ public sealed partial class PurgeStore : ObservableObject
         }
     }
 
+    private Action<T> StreamLive<T>(ObservableCollection<T> collection, ScanContext context, Action<T>? attach = null)
+    {
+        long lastTick = 0;
+        var buffer = new List<T>();
+        return item =>
+        {
+            List<T>? batch = null;
+            lock (buffer)
+            {
+                buffer.Add(item);
+                long now = Environment.TickCount64;
+                if (now - lastTick >= 220)
+                {
+                    lastTick = now;
+                    batch = [..buffer];
+                    buffer.Clear();
+                }
+            }
+            if (batch is null) return;
+            OnUi(() =>
+            {
+                if (!_scopeSession.IsCurrent(context)) return;
+                foreach (var entry in batch)
+                {
+                    attach?.Invoke(entry);
+                    collection.Add(entry);
+                }
+                RefreshAllFilteredViews();
+                NotifyTotals();
+            });
+        };
+    }
+
     public Task ScanAppCachesAsync() => RunScanAsync(Loc.T("Caches d'apps", "App caches"), p => CachePhase = p,
-        c => CacheScanner.ScanAsync(null, c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase), c.Token, c.Scope.Roots),
+        c => { OnUi(() => CacheItems.Clear()); return CacheScanner.ScanAsync(StreamLive(CacheItems, c, item => item.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(CacheItem.IsSelected)) NotifySelection(); }), c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase), c.Token, c.Scope.Roots); },
         items => Replace(CacheItems, items, item => item.PropertyChanged += (_, e) =>
         { if (e.PropertyName == nameof(CacheItem.IsSelected)) NotifySelection(); }));
 
     public Task ScanDevToolsAsync() => RunScanAsync(Loc.T("Outils de dev", "Dev tools"), p => DevPhase = p,
-        c => DevScanner.ScanAsync(null, c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase),
-            Settings.StaleProjectDays, Settings.CustomProjectRoots.ToArray(), c.Scope.Roots, c.Token),
+        c => { OnUi(() => DevItems.Clear()); return DevScanner.ScanAsync(StreamLive(DevItems, c, item => item.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(DevItem.IsSelected)) NotifyDevSelection(); }), c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase),
+            Settings.StaleProjectDays, Settings.CustomProjectRoots.ToArray(), c.Scope.Roots, c.Token); },
         items => Replace(DevItems, items, item => item.PropertyChanged += (_, e) =>
         { if (e.PropertyName == nameof(DevItem.IsSelected)) NotifyDevSelection(); }));
 
     public Task ScanLargeFilesAsync() => RunScanAsync(Loc.T("Fichiers volumineux", "Large files"), p => LargePhase = p,
-        c => LargeFileScanner.ScanAsync(null, c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase), c.Scope.Roots, c.Token),
+        c => { OnUi(() => LargeFileItems.Clear()); return LargeFileScanner.ScanAsync(StreamLive(LargeFileItems, c, item => item.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(LargeFileItem.IsSelected)) NotifyLargeSelection(); }), c.Scope.Excluded.ToHashSet(StringComparer.OrdinalIgnoreCase), c.Scope.Roots, c.Token); },
         items => Replace(LargeFileItems, items, item => item.PropertyChanged += (_, e) =>
         { if (e.PropertyName == nameof(LargeFileItem.IsSelected)) NotifyLargeSelection(); }));
 

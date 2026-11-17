@@ -84,7 +84,7 @@ public sealed partial class PurgeStore
 
                     if (cleanLeftovers)
                     {
-                        foreach (var leftover in app.Leftovers)
+                        foreach (var leftover in app.Leftovers.Where(l => l.IsExactMatch))
                         {
                             if (Directory.Exists(leftover.Path) || File.Exists(leftover.Path))
                                 leftoverTargets.Add((app.DisplayName, leftover.Path));
@@ -128,7 +128,13 @@ public sealed partial class PurgeStore
                 var progress = new Progress<string>(name =>
                     CleaningLabel = Loc.T($"Nettoyage de {name}…", $"Cleaning {name}…"));
 
+                var sharedWithInstalled = InstalledApps
+                    .Where(other => !uninstalledKeys.Contains(other.Key))
+                    .SelectMany(other => other.Leftovers.Select(l => l.Path))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
                 var uniqueTargets = leftoverTargets
+                    .Where(t => !sharedWithInstalled.Contains(t.Path))
                     .GroupBy(t => t.Path, StringComparer.OrdinalIgnoreCase)
                     .Select(g => g.First())
                     .Where(t => Directory.Exists(t.Path) || File.Exists(t.Path))

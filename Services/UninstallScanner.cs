@@ -15,6 +15,7 @@ public static class UninstallScanner
         "D3DSCache", "PlaceholderTileLogoFolder", "Publishers", "VirtualStore", "Purge",
         "Comms", "PeerDistRepub", "SquirrelTemp", "CrashDumps", "NuGet", "pip", "uv",
         "npm-cache", "pnpm", "Yarn", "Google", "Mozilla", "BraveSoftware",
+        "Steam", "1Password", "Bitwarden", "KeePass",
     };
 
     public static async Task<(List<InstalledAppItem> Apps, List<OrphanLeftoverItem> Orphans, List<CliToolItem> CliTools)> ScanAllAsync(
@@ -111,6 +112,12 @@ public static class UninstallScanner
             }
             catch { }
         }
+
+        var exactClaimed = raw.Values
+            .SelectMany(a => a.Leftovers.Where(l => l.IsExactMatch).Select(l => l.Path))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var app in raw.Values)
+            app.Leftovers.RemoveAll(l => !l.IsExactMatch && exactClaimed.Contains(l.Path));
 
         return raw.Values.OrderByDescending(a => a.TotalBytes).ToList();
     }

@@ -29,27 +29,52 @@ public static class AppData
     }
 
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
+    private static readonly object IoLock = new();
+    private const int MaxHistoryEntries = 100;
+    private const int MaxPathsPerHistoryEntry = 50;
 
     public static T Load<T>(string name) where T : new()
     {
-        try
+        lock (IoLock)
         {
-            var path = Path.Combine(Folder, name);
-            return File.Exists(path) ? JsonSerializer.Deserialize<T>(File.ReadAllText(path)) ?? new T() : new T();
+            try
+            {
+                var path = Path.Combine(Folder, name);
+                return File.Exists(path) ? JsonSerializer.Deserialize<T>(File.ReadAllText(path)) ?? new T() : new T();
+            }
+            catch { return new T(); }
         }
-        catch { return new T(); }
     }
 
     public static void Save<T>(string name, T value)
     {
-        try
+        lock (IoLock)
         {
-            var path = Path.Combine(Folder, name);
-            var tmp = path + ".tmp";
-            File.WriteAllText(tmp, JsonSerializer.Serialize(value, Json));
-            File.Move(tmp, path, overwrite: true);
+            var tmp = Path.Combine(Folder, $"{name}.tmp-{Guid.NewGuid():N}");
+            try
+            {
+                if (value is HistoryLog log)
+                {
+                    if (log.Entries.Count > MaxHistoryEntries)
+                        log.Entries.RemoveRange(MaxHistoryEntries, log.Entries.Count - MaxHistoryEntries);
+                    foreach (var entry in log.Entries)
+                    {
+                        if (entry.Moved.Count > MaxPathsPerHistoryEntry)
+                            entry.Moved.RemoveRange(MaxPathsPerHistoryEntry, entry.Moved.Count - MaxPathsPerHistoryEntry);
+                        if (entry.Skipped.Count > MaxPathsPerHistoryEntry)
+                            entry.Skipped.RemoveRange(MaxPathsPerHistoryEntry, entry.Skipped.Count - MaxPathsPerHistoryEntry);
+                    }
+                }
+                var path = Path.Combine(Folder, name);
+                File.WriteAllText(tmp, JsonSerializer.Serialize(value, Json));
+                File.Move(tmp, path, overwrite: true);
+            }
+            catch { /* ignore disk full or lock */ }
+            finally
+            {
+                try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            }
         }
-        catch { /* ignore disk full or lock */ }
     }
 }
 
@@ -101,6 +126,8 @@ public sealed class HistoryEntry
             {
                 "safe" => Loc.T("Nettoyage rapide sécurisé", "Quick safe clean"),
                 "scheduled" => Loc.T("Nettoyage planifié", "Scheduled clean"),
+                "uninstall" => Loc.T("Désinstallation & nettoyage", "Uninstall & clean"),
+                "optimization" => Loc.T("Maintenance système", "System maintenance"),
                 _ => Loc.T("Nettoyage manuel", "Manual clean")
             };
             if (RecycleBinEmptied) return Loc.T($"{ItemCount} éléments nettoyés · Corbeille vidée définitivement · {mode}",

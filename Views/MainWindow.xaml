@@ -144,6 +144,15 @@
             </Grid>
           </Button>
 
+          <Button x:Name="NavOptimization" Click="NavOptimization_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,6" CornerRadius="{StaticResource RadiusMd}" Background="Transparent" BorderThickness="0">
+            <Grid ColumnSpacing="8">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <FontIcon Grid.Column="0" Glyph="&#xEC4A;" FontSize="14" Foreground="{ThemeResource TextSecondary}"/>
+              <TextBlock Grid.Column="1" x:Name="TxtNavOptimization" Text="Optimisation" Style="{StaticResource BodyText}" FontWeight="Medium"/>
+              <TextBlock Grid.Column="2" x:Name="TxtOptimizationBadge" Text="" Style="{StaticResource MetadataText}" FontWeight="SemiBold" Foreground="{ThemeResource TextTertiary}"/>
+            </Grid>
+          </Button>
+
           <Border Height="1" Background="{ThemeResource BorderSubtle}" Margin="8,8,8,8"/>
 
           <Button x:Name="NavSettings" Click="NavSettings_Click"

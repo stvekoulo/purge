@@ -2,6 +2,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using PurgeWin.Models;
+using PurgeWin.Services;
 using PurgeWin.Theme;
 using PurgeWin.Utilities;
 
@@ -11,7 +12,7 @@ namespace PurgeWin.Views;
 /// Windows Recycle Bin, highlighting any "Check first" (Medium) items at the top.
 public static class DeletionConfirmDialog
 {
-    public sealed record Candidate(string Title, string Subtitle, long Bytes, SafetyLevel Level);
+    public sealed record Candidate(string Title, string Subtitle, long Bytes, SafetyLevel Level, string? CacheKey = null);
 
     public static async Task<bool> ConfirmAsync(XamlRoot? xamlRoot, IReadOnlyList<Candidate> candidates)
     {
@@ -19,6 +20,7 @@ public static class DeletionConfirmDialog
 
         long totalBytes = candidates.Sum(c => c.Bytes);
         int checkCount = candidates.Count(c => c.Level != SafetyLevel.Safe);
+        var runningApps = RunningAppDetector.FindRunning(candidates.Select(c => c.CacheKey).OfType<string>());
 
         var rootPanel = new StackPanel { Spacing = 12, MinWidth = 440, MaxWidth = 520 };
 
@@ -31,6 +33,39 @@ public static class DeletionConfirmDialog
             TextWrapping = TextWrapping.Wrap,
             Foreground = ThemeBrushes.Get("TextSecondary"),
         });
+
+        CheckBox? closeRunningCheck = null;
+        if (runningApps.Count > 0)
+        {
+            var names = string.Join(", ", runningApps.Select(r => r.AppName));
+            var appStack = new StackPanel { Spacing = 6 };
+            appStack.Children.Add(new TextBlock
+            {
+                Text = Loc.T(
+                    $"Applications en cours d'exécution : {names}",
+                    $"Running applications detected: {names}"),
+                FontSize = 12,
+                FontWeight = FontWeights.SemiBold,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = ThemeBrushes.Get("StatusCheckText"),
+            });
+            closeRunningCheck = new CheckBox
+            {
+                IsChecked = true,
+                FontSize = 12,
+                Content = Loc.T(
+                    "Fermer proprement ces applications avant le nettoyage (évite les fichiers verrouillés)",
+                    "Close these applications gracefully before cleaning (prevents locked files)"),
+            };
+            appStack.Children.Add(closeRunningCheck);
+            rootPanel.Children.Add(new Border
+            {
+                Background = ThemeBrushes.Get("StatusCheckFill"),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12, 8, 12, 8),
+                Child = appStack,
+            });
+        }
 
         if (checkCount > 0)
         {
@@ -144,6 +179,8 @@ public static class DeletionConfirmDialog
         var result = await dlg.ShowAsync();
         if (result != ContentDialogResult.Primary) return false;
         store.SetAutoEmptyRecycleBin(empty.IsChecked == true);
+        if (closeRunningCheck?.IsChecked == true && runningApps.Count > 0)
+            await RunningAppDetector.CloseGracefullyAsync(runningApps);
         return true;
     }
 }

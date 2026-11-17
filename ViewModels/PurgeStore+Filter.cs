@@ -265,12 +265,11 @@ public sealed partial class PurgeStore
 
     private void UpdateSelectAllState()
     {
-        if (FilteredCacheItems.Count == 0) _isAllSelected = false;
+        if (FilteredCacheItems.Count == 0) IsAllSelected = false;
         else
         {
             var sel = FilteredCacheItems.Count(i => i.IsSelected);
-            _isAllSelected = sel == FilteredCacheItems.Count ? true : sel == 0 ? false : null;
+            IsAllSelected = sel == FilteredCacheItems.Count ? true : sel == 0 ? false : null;
         }
-        OnPropertyChanged(nameof(IsAllSelected));
     }
 }

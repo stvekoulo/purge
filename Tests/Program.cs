@@ -173,5 +173,32 @@ Check("Drive roots added after startup are protected", DeletionSafetyPolicy.IsPr
 Check("Direct cleanup protects operating system descendants", DeletionSafetyPolicy.IsSystemPath(@"Z:\Windows\System32\drivers")
     && DeletionSafetyPolicy.IsSystemPath(@"Z:\Program Files\Vendor\App")
     && !DeletionSafetyPolicy.IsSystemPath(@"Z:\Users\Steven\Documents\note.txt"));
+var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+var userRoaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+Check("Credential vaults and SSH/GPG keys are hardware-protected",
+    DeletionSafetyPolicy.IsProtected(Path.Combine(userHome, ".ssh", "id_ed25519"))
+    && DeletionSafetyPolicy.IsProtected(Path.Combine(userHome, ".gnupg", "private-keys-v1.d"))
+    && DeletionSafetyPolicy.IsProtected(Path.Combine(userRoaming, "Microsoft", "Crypto", "RSA"))
+    && DeletionSafetyPolicy.IsProtected(Path.Combine(userRoaming, "1Password", "data")));
+var tmpUpd = Path.Combine(Path.GetTempPath(), "PurgeStaleTest_" + Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(tmpUpd);
+try
+{
+    File.WriteAllBytes(Path.Combine(tmpUpd, "Purge-1.0.2-win-x64-Setup.exe"), [1, 2, 3]);
+    File.WriteAllBytes(Path.Combine(tmpUpd, "Purge-1.0.5-win-x64-Setup.exe"), [1, 2, 3, 4]);
+    File.WriteAllBytes(Path.Combine(tmpUpd, "Purge-1.0.5-win-x64-Setup.exe.partial-abc"), [9]);
+    var freedStale = UpdateService.PurgeStaleInstallers(tmpUpd, "1.0.3");
+    Check("Stale installed updates and partial files are cleaned while newer ready updates stay",
+        freedStale == 4 && !File.Exists(Path.Combine(tmpUpd, "Purge-1.0.2-win-x64-Setup.exe"))
+        && !File.Exists(Path.Combine(tmpUpd, "Purge-1.0.5-win-x64-Setup.exe.partial-abc"))
+        && File.Exists(Path.Combine(tmpUpd, "Purge-1.0.5-win-x64-Setup.exe")));
+}
+finally { if (Directory.Exists(tmpUpd)) Directory.Delete(tmpUpd, true); }
+var fallbackDigestHex = new string('a', 64);
+var bodyFallbackJson = $$"""
+{"tag_name":"v1.0.9","draft":false,"prerelease":false,"name":"v1.0.9","body":"{{fallbackDigestHex}}  Purge-1.0.9-win-x64-Setup.exe","assets":[{"name":"Purge-1.0.9-win-x64-Setup.exe","browser_download_url":"https://github.com/stvekoulo/purge/releases/download/v1.0.9/Purge-1.0.9-win-x64-Setup.exe","size":1024}]}
+""";
+Check("Release parser falls back to verified SHA-256 in release body when API digest is omitted",
+    UpdateRelease.Parse(bodyFallbackJson, "1.0.3", "x64")?.Asset?.Sha256 == fallbackDigestHex);
 Console.WriteLine($"Failures: {failed}");
 return failed == 0 ? 0 : 1;
