@@ -113,6 +113,7 @@ public sealed partial class MaintenanceTaskItem : ObservableObject
 
     [ObservableProperty] private bool _isSelected = true;
     [ObservableProperty] private bool _isRunning;
+    [ObservableProperty] private bool _lastSucceeded = true;
     [ObservableProperty] private string _lastResultFr = "";
     [ObservableProperty] private string _lastResultEn = "";
 
@@ -120,6 +121,8 @@ public sealed partial class MaintenanceTaskItem : ObservableObject
     public string Description => Loc.T(DescriptionFr, DescriptionEn);
     public string StatusText => Loc.T(LastResultFr, LastResultEn);
     public Visibility StatusVisibility => string.IsNullOrEmpty(StatusText) ? Visibility.Collapsed : Visibility.Visible;
+    public Brush StatusBgBrush => ThemeBrushes.Get(LastSucceeded ? "StatusSafeFill" : "StatusCheckFill");
+    public Brush StatusFgBrush => ThemeBrushes.Get(LastSucceeded ? "StatusSafeText" : "StatusCheckText");
     public string RunButtonText => IsRunning
         ? Loc.T("En cours…", "Running…")
         : Loc.T("Exécuter", "Run");
@@ -132,6 +135,12 @@ public sealed partial class MaintenanceTaskItem : ObservableObject
     {
         OnPropertyChanged(nameof(RunButtonText));
         OnPropertyChanged(nameof(CanRun));
+    }
+
+    partial void OnLastSucceededChanged(bool value)
+    {
+        OnPropertyChanged(nameof(StatusBgBrush));
+        OnPropertyChanged(nameof(StatusFgBrush));
     }
 
     partial void OnLastResultFrChanged(string value)
@@ -152,6 +161,8 @@ public sealed partial class MaintenanceTaskItem : ObservableObject
         OnPropertyChanged(nameof(Description));
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(StatusVisibility));
+        OnPropertyChanged(nameof(StatusBgBrush));
+        OnPropertyChanged(nameof(StatusFgBrush));
         OnPropertyChanged(nameof(RunButtonText));
         OnPropertyChanged(nameof(IconBgBrush));
         OnPropertyChanged(nameof(IconFgBrush));

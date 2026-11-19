@@ -26,6 +26,7 @@ public sealed partial class AppCachesView : UserControl
 
     private void UpdateUI()
     {
+        if (DispatcherQueue is { } q && !q.HasThreadAccess) { q.TryEnqueue(UpdateUI); return; }
         var store = PurgeStore.Shared;
 
         TxtPageTitle.Text = Loc.T("Caches d'applications", "App Caches");

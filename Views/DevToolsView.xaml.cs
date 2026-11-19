@@ -24,6 +24,7 @@ public sealed partial class DevToolsView : UserControl
 
     private void SyncUi()
     {
+        if (DispatcherQueue is { } q && !q.HasThreadAccess) { q.TryEnqueue(SyncUi); return; }
         PageTitle.Text = Loc.T("Outils de dev", "Dev Tools");
         SubtitleText.Text = Store.DevSubtitle;
 

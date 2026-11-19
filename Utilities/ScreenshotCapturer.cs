@@ -46,9 +46,14 @@ public static class ScreenshotCapturer
         await Task.Delay(500);
         await CaptureMultiAsync(window, dirs, "screenshot-optimization-startup-dark.png");
 
-        // 3. Optimization — System Maintenance (Dark)
+        // 3. Optimization — System Maintenance (Dark) + run maintenance live to verify UI thread safety
         s.OptimizationSubTab = Models.OptimizationSubTab.Maintenance;
+        await Task.Delay(400);
+        await s.RunSelectedMaintenanceAsync();
         await Task.Delay(500);
+        await CaptureMultiAsync(window, dirs, "screenshot-optimization-maintenance-celebration-dark.png");
+        s.DismissCelebration();
+        await Task.Delay(400);
         await CaptureMultiAsync(window, dirs, "screenshot-optimization-maintenance-dark.png");
 
         window.Close();

@@ -31,6 +31,7 @@ public sealed partial class OptimizationView : UserControl
 
     private void SyncUi()
     {
+        if (DispatcherQueue is { } q && !q.HasThreadAccess) { q.TryEnqueue(SyncUi); return; }
         PageTitle.Text = Loc.T("Optimisation", "Optimization");
         SubtitleText.Text = Store.OptimizationSubtitle;
 

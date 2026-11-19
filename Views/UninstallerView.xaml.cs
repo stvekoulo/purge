@@ -32,6 +32,7 @@ public sealed partial class UninstallerView : UserControl
 
     private void SyncUi()
     {
+        if (DispatcherQueue is { } q && !q.HasThreadAccess) { q.TryEnqueue(SyncUi); return; }
         PageTitle.Text = Loc.T("Désinstalleur", "Uninstaller");
         SubtitleText.Text = Store.UninstallSubtitle;
 

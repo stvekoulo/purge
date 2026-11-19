@@ -26,6 +26,7 @@ public sealed partial class OverviewView : UserControl
 
     private void UpdateUI()
     {
+        if (DispatcherQueue is { } q && !q.HasThreadAccess) { q.TryEnqueue(UpdateUI); return; }
         TxtPageTitle.Text = Loc.T("Vue d'ensemble", "Overview") + (Store.IsAllDrives ? "" : " · " + Store.ScopeTitle);
         TxtLastScan.Text = Store.LastScanText;
         TxtDrivesLabel.Text = Loc.T("Disques :", "Drives:");

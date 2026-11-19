@@ -25,6 +25,7 @@ public sealed partial class OneDriveView : UserControl
 
     private void SyncUi()
     {
+        if (DispatcherQueue is { } q && !q.HasThreadAccess) { q.TryEnqueue(SyncUi); return; }
         PageTitle.Text = "OneDrive";
         SubtitleText.Text = Store.OneDriveSubtitle;
 

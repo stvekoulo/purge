@@ -1,13 +1,20 @@
-using System.Diagnostics;
+using System.Runtime.InteropServices;
 using PurgeWin.Models;
 using PurgeWin.Utilities;
 
 namespace PurgeWin.Services;
 
 /// <summary>Executes safe, reversible Windows maintenance tasks (DNS flush,
-/// Explorer thumbnail cache refresh, Microsoft Store cache, stale app updaters).</summary>
+/// Explorer thumbnail cache refresh, Microsoft Store cache, stale app updaters).
+/// Background workers return pure value tuples so ObservableObject properties are
+/// only mutated on the UI thread.</summary>
 public static class MaintenanceRunner
 {
+    [DllImport("dnsapi.dll", EntryPoint = "DnsFlushResolverCache")]
+    private static extern bool DnsFlushResolverCache();
+
+    private sealed record TaskOutcome(long Freed, bool Ok, string ResultFr, string ResultEn);
+
     public static List<MaintenanceTaskItem> CreateDefaultTasks() =>
     [
         new()
@@ -16,8 +23,8 @@ public static class MaintenanceRunner
             Glyph = "\uE774",
             TitleFr = "Vider le cache DNS Windows",
             TitleEn = "Flush Windows DNS Cache",
-            DescriptionFr = "Efface les résolutions de domaines obsolètes (ipconfig /flushdns) pour corriger les lenteurs ou erreurs réseau.",
-            DescriptionEn = "Clears stale DNS resolver entries (ipconfig /flushdns) to fix slow connections or domain lookup issues.",
+            DescriptionFr = "Efface les résolutions de domaines obsolètes (cache DNS Windows) pour corriger les lenteurs ou erreurs réseau.",
+            DescriptionEn = "Clears stale DNS resolver entries (Windows DNS cache) to fix slow connections or domain lookup issues.",
         },
         new()
         {
@@ -50,17 +57,22 @@ public static class MaintenanceRunner
 
     public static async Task<(long FreedBytes, bool Success)> RunTaskAsync(MaintenanceTaskItem task)
     {
+        var taskId = task.Id;
         task.IsRunning = true;
         try
         {
-            return await Task.Run(() => task.Id switch
+            var outcome = await Task.Run(() => taskId switch
             {
-                "flush-dns" => RunFlushDns(task),
-                "refresh-thumbnails" => RunThumbnailRefresh(task),
-                "store-cache" => RunStoreCacheClean(task),
-                "stale-updaters" => RunStaleUpdatersClean(task),
-                _ => (0L, false),
+                "flush-dns" => RunFlushDns(),
+                "refresh-thumbnails" => RunThumbnailRefresh(),
+                "store-cache" => RunStoreCacheClean(),
+                "stale-updaters" => RunStaleUpdatersClean(),
+                _ => new TaskOutcome(0L, false, "", ""),
             });
+            task.LastSucceeded = outcome.Ok;
+            task.LastResultFr = outcome.ResultFr;
+            task.LastResultEn = outcome.ResultEn;
+            return (outcome.Freed, outcome.Ok);
         }
         finally
         {
@@ -68,38 +80,29 @@ public static class MaintenanceRunner
         }
     }
 
-    private static (long Freed, bool Ok) RunFlushDns(MaintenanceTaskItem task)
+    private static TaskOutcome RunFlushDns()
     {
         try
         {
-            var ipconfig = Path.Combine(Environment.SystemDirectory, "ipconfig.exe");
-            var psi = new ProcessStartInfo(ipconfig) { CreateNoWindow = true, UseShellExecute = false };
-            psi.ArgumentList.Add("/flushdns");
-            using var proc = Process.Start(psi);
-            proc?.WaitForExit(5000);
-            bool ok = proc?.ExitCode == 0;
-            task.LastResultFr = ok ? "✓ Cache DNS vidé avec succès" : "Échec de la commande ipconfig";
-            task.LastResultEn = ok ? "✓ DNS cache flushed successfully" : "ipconfig command failed";
-            return (0, ok);
+            bool ok = DnsFlushResolverCache();
+            return new(
+                0,
+                ok,
+                ok ? "✓ Cache DNS vidé avec succès" : "Service Client DNS indisponible",
+                ok ? "✓ DNS cache flushed successfully" : "DNS Client service unavailable");
         }
         catch
         {
-            task.LastResultFr = "Impossible d'exécuter ipconfig";
-            task.LastResultEn = "Could not run ipconfig";
-            return (0, false);
+            return new(0, false, "Impossible de vider le cache DNS", "Could not flush DNS cache");
         }
     }
 
-    private static (long Freed, bool Ok) RunThumbnailRefresh(MaintenanceTaskItem task)
+    private static TaskOutcome RunThumbnailRefresh()
     {
         var explorerDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Microsoft", "Windows", "Explorer");
         if (!Directory.Exists(explorerDir))
-        {
-            task.LastResultFr = "✓ Aucun cache de miniatures superflu";
-            task.LastResultEn = "✓ No stale thumbnail cache found";
-            return (0, true);
-        }
+            return new(0, true, "✓ Aucun cache de miniatures superflu", "✓ No stale thumbnail cache found");
 
         long freed = 0;
         int moved = 0;
@@ -114,25 +117,23 @@ public static class MaintenanceRunner
             }
             catch { /* active thumbcache locked by Explorer is safely kept */ }
         }
-        task.LastResultFr = moved > 0
-            ? $"✓ {moved} fichier(s) nettoyé(s) ({ByteFormatter.Format(freed)})"
-            : "✓ Miniatures actives déjà propres (fichiers ouverts conservés)";
-        task.LastResultEn = moved > 0
-            ? $"✓ {moved} file(s) cleaned ({ByteFormatter.Format(freed)})"
-            : "✓ Active thumbnails already clean (in-use files kept)";
-        return (freed, true);
+        return new(
+            freed,
+            true,
+            moved > 0
+                ? $"✓ {moved} fichier(s) nettoyé(s) ({ByteFormatter.Format(freed)})"
+                : "✓ Miniatures actives déjà propres (fichiers ouverts conservés)",
+            moved > 0
+                ? $"✓ {moved} file(s) cleaned ({ByteFormatter.Format(freed)})"
+                : "✓ Active thumbnails already clean (in-use files kept)");
     }
 
-    private static (long Freed, bool Ok) RunStoreCacheClean(MaintenanceTaskItem task)
+    private static TaskOutcome RunStoreCacheClean()
     {
         var storeCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Packages", "Microsoft.WindowsStore_8wekyb3d8bbwe", "LocalCache");
         if (!Directory.Exists(storeCache))
-        {
-            task.LastResultFr = "✓ Cache Microsoft Store déjà vide";
-            task.LastResultEn = "✓ Microsoft Store cache already empty";
-            return (0, true);
-        }
+            return new(0, true, "✓ Cache Microsoft Store déjà vide", "✓ Microsoft Store cache already empty");
 
         long freed = 0;
         int moved = 0;
@@ -146,16 +147,16 @@ public static class MaintenanceRunner
             }
             catch { }
         }
-        task.LastResultFr = moved > 0
-            ? $"✓ Cache nettoyé ({ByteFormatter.Format(freed)})"
-            : "✓ Cache Microsoft Store déjà propre";
-        task.LastResultEn = moved > 0
-            ? $"✓ Cache cleaned ({ByteFormatter.Format(freed)})"
-            : "✓ Microsoft Store cache already clean";
-        return (freed, true);
+        return new(
+            freed,
+            true,
+            moved > 0 && freed > 0 ? $"✓ Cache nettoyé ({ByteFormatter.Format(freed)})"
+                : moved > 0 ? "✓ Cache nettoyé" : "✓ Cache Microsoft Store déjà propre",
+            moved > 0 && freed > 0 ? $"✓ Cache cleaned ({ByteFormatter.Format(freed)})"
+                : moved > 0 ? "✓ Cache cleaned" : "✓ Microsoft Store cache already clean");
     }
 
-    private static (long Freed, bool Ok) RunStaleUpdatersClean(MaintenanceTaskItem task)
+    private static TaskOutcome RunStaleUpdatersClean()
     {
         long freed = UpdateService.PurgeStaleInstallers(
             Path.Combine(AppData.Folder, "Updates"), UpdateService.CurrentVersion);
@@ -171,12 +172,10 @@ public static class MaintenanceRunner
             catch { }
         }
 
-        task.LastResultFr = freed > 0
-            ? $"✓ {ByteFormatter.Format(freed)} d'installeurs obsolètes purgés"
-            : "✓ Aucun installeur obsolète en attente";
-        task.LastResultEn = freed > 0
-            ? $"✓ {ByteFormatter.Format(freed)} of stale installers purged"
-            : "✓ No stale update installers found";
-        return (freed, true);
+        return new(
+            freed,
+            true,
+            freed > 0 ? $"✓ {ByteFormatter.Format(freed)} d'installeurs obsolètes purgés" : "✓ Aucun installeur obsolète en attente",
+            freed > 0 ? $"✓ {ByteFormatter.Format(freed)} of stale installers purged" : "✓ No stale update installers found");
     }
 }

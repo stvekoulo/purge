@@ -25,6 +25,7 @@ public sealed partial class LargeFilesView : UserControl
 
     private void SyncUi()
     {
+        if (DispatcherQueue is { } q && !q.HasThreadAccess) { q.TryEnqueue(SyncUi); return; }
         PageTitle.Text = Loc.T("Fichiers volumineux", "Large Files");
         SubtitleText.Text = Store.LargeSubtitle;
 
